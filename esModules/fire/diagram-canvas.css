@@ -1,0 +1,112 @@
+
+
+/* Entry point */
+#app {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+
+  min-height: 100vh;
+  max-height: 100vh;
+
+  min-width: 100vw;
+  max-width: 100vw;
+}
+
+/* Split app into top and bottom */
+#bottom-panel {
+  flex-grow: 1;
+
+  display: flex;
+  flex-direction: row;
+}
+
+@media (max-width: 800px) {
+  #bottom-panel {
+    flex-grow: 1;
+
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+}
+
+#top-panel {
+  flex-grow: 0;
+
+  display: flex;
+  flex-direction: row;
+}
+
+/* Split bottom panel into left and right */
+#left-panel {
+  min-width: 250px;
+  max-width: 250px;
+  min-height: 100%;
+  background: #ddd;
+  overflow: scroll;
+
+  display: flex;
+  flex-direction: column;
+}
+
+/* TODO Decrease this width once we make left-panel collapsable */
+@media (max-width: 800px) {
+  #left-panel {
+    background: #ddd;
+
+    display: flex;
+    flex-direction: column;
+    min-width: 100vw;
+  }
+}
+
+#right-panel {
+  min-width: 200px;
+  min-height: 100%;
+  flex-grow: 1;
+
+  display: flex;
+  flex-direction: column;
+}
+
+#midi-panel {
+  flex-grow: 1;
+
+  /* display: flex;
+  flex-direction: row; */
+  background-color: #f1f1f1;
+}
+
+#title-menu > * {
+  padding-left: 6px;
+}
+
+#main-panel {
+  flex-grow: 1;
+  /* TODO move this to #right-panel to make the entire right panel scrollable when too big. */
+  overflow: scroll;
+}
+
+
+svg text {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+svg line:hover {
+  cursor: pointer;
+  padding: 3px;
+}
+svg a {
+  text-decoration: underline;
+}
+
+#nav-panel a {
+  color: black;
+}
+
+#canvas-div {
+  overflow: scroll;
+}

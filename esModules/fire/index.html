@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <title>ViolaFire</title>
+    <!-- The core Firebase JS SDK is always required and must be listed first -->
+    <script src="https://www.gstatic.com/firebasejs/6.6.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/6.6.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/6.6.0/firebase-firestore.js"></script>
+    <script src="firebase.js"></script>
+  </head>
+  <meta name="description" content="ViolaFire">
+</head>
+
+<body>
+  <style>
+    body {
+      margin: 0;
+    }
+    #top-bar {
+      overflow: hidden;
+      background-color: #ccc;
+      position: fixed; /* Set the navbar to fixed position */
+      top: 0; /* Position the navbar at the top of the page */
+      width: 100%; /* Full width */
+      display: flex;
+      flex-direction: row-reverse;
+      flex-grow: 0;
+      background-color: #f1f1f1;
+    }
+    #top-bar > * {
+      padding: 15px 5px;
+    }
+    p {
+      font-size: 24px;
+      color: #333;
+      font-family: 'Muli', sans-serif;
+      margin-bottom: 15px;
+    }
+
+    ol {
+      margin: 0;
+      padding-top: 50px;
+    }
+
+    li {
+      font: 200 20px/1.5 Helvetica, Verdana, sans-serif;
+      padding-top: 8px;
+      border-bottom: 1px solid #ccc;
+    }
+
+  </style>
+  <div id='top-bar'>
+    <div>
+      <span id='my-stuff'></span>
+    </div>
+    <div>
+      <button id='sign-in-button'>Sign In</button>
+    </div>
+    <div>
+      <button id='next-button'>></button>
+    </div>
+    <div>
+      <button id='prev-button'><</button>
+    </div>
+    <div>
+      <a id='new-music-link' href='./music.html'>New</a>
+    </div>
+  </div>
+  <ol id='diagram-list'>
+  </ol>
+  <script type='module' src='./index.js'></script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+// Em7sus4b9/B
+{
+  "root": {
+     "letter": "E",
+     "numSharps": 0
+  },
+  "quality": "m",
+  "extension": 7,
+  "suspension": 4,
+  "alterations": [
+     {
+        "extension": 9,
+        "isSharp": false
+     }
+  ],
+  "bass": {
+     "letter": "B",
+     "numSharps": 0
+  }
+}
+
+// C
+{
+  "root": {
+     "letter": "C",
+     "numSharps": 0
+  },
+  "quality": null,
+  "extension": null,
+  "suspension": null,
+  "alterations": [],
+  "bass": null
+}

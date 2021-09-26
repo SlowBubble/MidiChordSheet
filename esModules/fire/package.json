@@ -1,0 +1,27 @@
+{
+  "name": "diagram-canvas",
+  "version": "0.0.1",
+  "description": "Canvas for diagramming",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/n/A.git"
+  },
+  "keywords": [
+    "svg"
+  ],
+  "author": "clubfest",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/n/A/issues"
+  },
+  "homepage": "https://github.com/n/A#readme",
+  "dependencies": {
+    "hotkeys-js": "^3.4.4",
+    "canvy": "^1.5.3",
+    "snabbdom": "^0.7.3"
+  }
+}

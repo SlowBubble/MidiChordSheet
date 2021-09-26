@@ -1,0 +1,17 @@
+
+/* Normally hidden elements */
+.edge-selection:hover {
+  opacity: 0.2;
+}
+.resize-padding:hover {
+  opacity: 0.2;
+}
+
+#copy-buffer {
+  position: fixed;
+  z-index: -9;
+}
+#paste-buffer {
+  position: fixed;
+  z-index: -9;
+}

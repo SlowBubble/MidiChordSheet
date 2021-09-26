@@ -1,0 +1,11 @@
+
+#nav-panel {
+  display: flex;
+  flex-direction: row-reverse;
+  flex-grow: 0;
+  background-color: #f1f1f1;
+}
+
+#nav-panel > * {
+  padding: 15px 10px;
+}

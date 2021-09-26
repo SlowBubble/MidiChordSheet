@@ -43,7 +43,7 @@ function setupInteraction(songReplayer, song) {
 }
 function loadSongFromUrl() {
   const url = new URL(document.URL);
-  const title = url.searchParams.get('title') || 'Unnamed';
+  const title = url.searchParams.get('title') || 'Untitled';
   const dataStr = url.searchParams.get('data');
   if (!dataStr) {
     return;

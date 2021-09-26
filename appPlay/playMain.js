@@ -53,8 +53,11 @@ function setupInteraction(actionMgr) {
   hotkeysDoc(',', _ => actionMgr.decrTempo());
   hotkeysDoc('.', _ => actionMgr.incrTempo());
 
-  hotkeysDoc('[', _ => actionMgr.decrTimeSigUpperNumeral());
-  hotkeysDoc(']', _ => actionMgr.incrTimeSigUpperNumeral());
+  hotkeysDoc('r', _ => actionMgr.incrRepeat());
+  hotkeysDoc('shift+r', _ => actionMgr.decrRepeat());
+
+  hotkeysDoc(';', _ => actionMgr.decrTimeSigUpperNumeral());
+  hotkeysDoc(`'`, _ => actionMgr.incrTimeSigUpperNumeral());
 
   hotkeysDoc('-', _ => actionMgr.transposeDown());
   hotkeysDoc('=', _ => actionMgr.transposeUp());

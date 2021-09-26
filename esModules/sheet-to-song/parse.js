@@ -34,7 +34,7 @@ export function parseKeyValsToSongInfo(keyVals) {
     body: body,
   });
   return {
-    song: songForm.toSong(),
+    song: songForm.toSong(initialHeaders[HeaderType.Repeat]),
     initialHeaders: initialHeaders,
   };
 }
@@ -47,7 +47,8 @@ function createInitialHeaders(chunkedLocsWithPickup, keyVals) {
   headers[HeaderType.Key] = song.keySigChanges.defaultVal;
   headers[HeaderType.Swing] = song.swingChanges.defaultVal;
   headers[HeaderType.Transpose] = 0;
-  headers[HeaderType.Syncopation] = 30;
+  headers[HeaderType.Syncopation] = 20;
+  headers[HeaderType.Repeat] = 0;
 
   if (chunkedLocsWithPickup.length > 0 &&
       chunkedLocsWithPickup[0].chordHeaderLocs.length > 0) {
@@ -281,6 +282,7 @@ export const HeaderType = Object.freeze({
   CompingStyle: 'CompingStyle',
   Syncopation: 'Syncopation',
   Transpose: 'Transpose',
+  Repeat: 'Repeat',
 });
 
 function processKeyVal(key, valStr, warnError) {
@@ -328,6 +330,10 @@ function processKeyVal(key, valStr, warnError) {
         value: valStr,
       };
     case 'repeat':
+      return {
+        type: HeaderType.Repeat,
+        value: parseInt(valStr),
+      };
     case 'copy':
       return {
         type: HeaderType.Copy,

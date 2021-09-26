@@ -10,7 +10,7 @@ export class SongPart {
   constructor({
     song = {}, // Song, which can have a melody or rest. Comping will be added in SongForm.
     compingStyle = CompingStyle.default,
-    syncopationPct = 30,
+    syncopationPct = 20,
   }) {
     this.song = new Song(song);
     this.compingStyle = compingStyle;
@@ -79,7 +79,6 @@ export class SongPart {
       const minTreble = Math.max(bassNoteNum, bassNoteNum2, 51) + 1;
       // Treble
       const specifiedColorNoteNums = chord.getSpecifiedColorNoteNums();
-      console.log(specifiedColorNoteNums);
       const trebleNoteNums = genNearestNums(specifiedColorNoteNums, prevTrebleNoteNums, minTreble, maxTreble);
       if ((dur8n.geq(8) || (dur8n.geq(6) && Math.random() < 0.4)) && idx + 1 < changes.length) {
         const third = chord.root.toNoteNum() + chord.getThirdInterval();

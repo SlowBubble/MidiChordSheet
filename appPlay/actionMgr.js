@@ -21,7 +21,6 @@ export class ActionMgr {
     this.renderMgr.render(songInfo.song);
     this.song = songInfo.song;
     this.initialHeaders = songInfo.initialHeaders;
-    console.log(songInfo.initialHeaders)
   }
 
   getSong() {
@@ -107,6 +106,22 @@ export class ActionMgr {
     const timeSig = this.initialHeaders[HeaderType.Meter];
     timeSig.upperNumeral += 1;
     setUrlParam(HeaderType.Meter, timeSig.toString());
+    this.reloadSong();
+  }
+
+  incrRepeat() {
+    let repeat = this.initialHeaders[HeaderType.Repeat];
+    repeat += 1;
+    setUrlParam(HeaderType.Repeat, repeat);
+    this.reloadSong();
+  }
+  decrRepeat() {
+    let repeat = this.initialHeaders[HeaderType.Repeat];
+    if (repeat <= 0) {
+      return;
+    }
+    repeat -= 1;
+    setUrlParam(HeaderType.Repeat, repeat);
     this.reloadSong();
   }
 }

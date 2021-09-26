@@ -1,5 +1,6 @@
 import { intervals } from './interval.js';
 import { Spelling } from './spell.js';
+import { mod } from '../math-util/mathUtil.js';
 
 export class Chord {
   constructor({
@@ -74,6 +75,9 @@ export class Chord {
   isAugmented() {
     return this.getThirdInterval() == intervals.M3 && this.getFifthInterval() == intervals.m6;
   }
+  isHalfDiminished() {
+    return this.getThirdInterval() == intervals.m3 && this.getFifthInterval() == intervals.tritone && this. getSeventhInterval() == intervals.m7;
+  }
 
   getThirdInterval() {
     if (this.suspension == 2) {
@@ -115,6 +119,79 @@ export class Chord {
 
   getAlteredAmount(extension) {
     return this._altMap[extension] || 0;
+  }
+
+  // In order of importance
+  getSpecifiedColorNoteNums(includeAll, keySig) {
+    const res = new Set();
+    const rootNoteNum = this.root.toNoteNum();
+    const isBassNoteNum = noteNum => {
+      const bassNoteNum = this.bass ? this.bass.toNoteNum() : rootNoteNum;
+      return mod(bassNoteNum - noteNum, 12) == 0
+    };
+    const addToResIfNotBass = noteNum => {
+      if (!isBassNoteNum(noteNum)) {
+        res.add(mod(noteNum, 12));
+      }
+    };
+
+    addToResIfNotBass(rootNoteNum + this.getThirdInterval());
+  
+    if (this.extension) {
+      addToResIfNotBass(rootNoteNum + this.getSeventhInterval());
+      if (this.extension.extensionNum === 9) {
+        addToResIfNotBass(rootNoteNum + intervals.M2);
+      }
+      if (this.extension.extensionNum === 11) {
+        addToResIfNotBass(rootNoteNum + intervals.P4);
+      }
+      if (this.extension.extensionNum === 13) {
+        addToResIfNotBass(rootNoteNum + intervals.M6);
+      }
+    }
+    if (this.quality == 'dim' || this.quality == 'aug') {
+      addToResIfNotBass(rootNoteNum + this.getFifthInterval());
+    }
+    Object.entries(this._altMap).forEach(([extNum, numSharps]) => {
+      if (extNum === '5') {
+        addToResIfNotBass(rootNoteNum + intervals.P5 + numSharps);
+      }
+      if (extNum === '9') {
+        addToResIfNotBass(rootNoteNum + intervals.M2 + numSharps);
+      }
+      if (extNum === '11') {
+        addToResIfNotBass(rootNoteNum + intervals.P4 + numSharps);
+      }
+      if (extNum === '6' || extNum === '13') {
+        addToResIfNotBass(rootNoteNum + intervals.M6 + numSharps);
+      }
+    });
+    
+    if (includeAll || res.size < 2) {
+      addToResIfNotBass(this.root.toNoteNum());
+    }
+
+    if (includeAll || res.size < 2) {
+      addToResIfNotBass(rootNoteNum + this.getFifthInterval());
+    }
+    if (includeAll) {
+      const isLocrian = this.isHalfDiminished();
+      const isPhrygian = keySig && (this.quality === 'm' && mod(this.root.toNoteNum(), keySig.toNoteNum(), 12) == intervals.M3)
+      if (!isLocrian && !isPhrygian) {
+        addToResIfNotBass(rootNoteNum + intervals.M2);
+      }
+    }
+    if (includeAll) {
+      if (this.getThirdInterval() == intervals.m3) {
+        addToResIfNotBass(rootNoteNum + intervals.P4);
+      }
+    }
+    // if (includeAll) {
+    //   if (this.getThirdInterval() == intervals.M3 && this.getFifthInterval() != intervals.m6) {
+    //     addToResIfNotBass(rootNoteNum + intervals.M6);
+    //   }
+    // }
+    return [...res];
   }
 
   _toStringForExtension() {

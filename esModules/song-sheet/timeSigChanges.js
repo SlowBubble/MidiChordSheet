@@ -18,7 +18,7 @@ export class TimeSig {
     return this.upperNumeral >= 6 && this.upperNumeral % 3 === 0;
   }
   toString() {
-    return `${this.upperNumeral} ${this.lowerNumeral}`;
+    return `${this.upperNumeral}/${this.lowerNumeral}`;
   }
   getDurPerMeasure8n() {
     return makeFrac(8 * this.upperNumeral, this.lowerNumeral);

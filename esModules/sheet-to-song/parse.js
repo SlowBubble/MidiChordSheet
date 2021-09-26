@@ -1,7 +1,7 @@
 
 import { makeFrac } from "../fraction/fraction.js";
 import { Chord } from '../chord/chord.js';
-import { makeSpelling } from "../chord/spell.js";
+import { makeSpelling, fromNoteNumWithFlat } from "../chord/spell.js";
 import { TimeSig } from "../song-sheet/timeSigChanges.js";
 import { Swing } from "../song-sheet/swingChanges.js";
 import { chunkArray } from "../array-util/arrayUtil.js";
@@ -11,56 +11,113 @@ import { SongForm } from "./songForm.js";
 import { CompingStyle, SongPart } from "./songPart.js";
 
 
-export function parseSheetToSong(gridData, title) {
+export function parseKeyValsToSongInfo(keyVals) {
+  const gridData = JSON.parse(keyVals.data);
   const chordLocs = parseChordLocations(gridData);
   const headerLocs = parseHeaderLocations(gridData);
   const chordHeaderLocs = combineChordAndHeader(chordLocs, headerLocs, gridData.length);
   const chunkedLocs = chunkLocationsByPart(chordHeaderLocs);
   const chunkedLocsWithPickup = extractPickup(chunkedLocs);
-  const songParts = toSongParts(chunkedLocsWithPickup);
+
+  const initialHeaders = createInitialHeaders(chunkedLocsWithPickup, keyVals);
+  const songParts = toSongParts(chunkedLocsWithPickup, initialHeaders);
+  console.log(songParts)
   const possIntro = songParts.find(part => part.song.title.trim().toLowerCase() === 'intro');
   const possOutro = songParts.find(part => part.song.title.trim().toLowerCase() === 'outro');
   const body = songParts.filter(
     part => ['intro', 'outro'].indexOf(part.song.title.trim().toLowerCase()) < 0
   ).map(part => part.song.title);
   const songForm = new SongForm({
-    title: title, parts: songParts,
+    title: keyVals.title, parts: songParts,
     intro: possIntro ? possIntro.song.title : '',
     outro: possOutro ? possOutro.song.title : '',
     body: body,
   });
-  return songForm.toSong();
+  return {
+    song: songForm.toSong(),
+    initialHeaders: initialHeaders,
+  };
+}
+
+function createInitialHeaders(chunkedLocsWithPickup, keyVals) {
+  const song = new Song({});
+  const headers = {}
+  headers[HeaderType.Meter] = song.timeSigChanges.defaultVal;
+  headers[HeaderType.Tempo] = song.tempo8nPerMinChanges.defaultVal;
+  headers[HeaderType.Key] = song.keySigChanges.defaultVal;
+  headers[HeaderType.Swing] = song.swingChanges.defaultVal;
+  headers[HeaderType.Transpose] = 0;
+  headers[HeaderType.Syncopation] = 30;
+
+  if (chunkedLocsWithPickup.length > 0 &&
+      chunkedLocsWithPickup[0].chordHeaderLocs.length > 0) {
+    Object.entries(chunkedLocsWithPickup[0].chordHeaderLocs[0].headers).forEach(([key, val]) => {
+      headers[key] = val;
+    });
+  }
+  Object.entries(keyVals).forEach(([key, val]) => {
+    const res = processKeyVal(
+      key.trim().toLowerCase(),
+      val.trim().toLowerCase());
+    if (!res) {
+      return;
+    }
+    headers[res.type] = res.value;
+  });
+  return headers;
 }
 
 // Returns [{song: Song, compingStyle: CompingStyle}]
-function toSongParts(chunkedLocsWithPickup) {
+function toSongParts(chunkedLocsWithPickup, initialHeader) {
   const partNameToPart = {};
   let currTimeSig;
-  return chunkedLocsWithPickup.map(chunk => {
+  let currTempo;
+  let currKeySig;
+  let currSwing;
+  let currTranspose;
+  let currSyncopation;
+
+  return chunkedLocsWithPickup.map((chunk, idx) => {
     const firstLoc = chunk.chordHeaderLocs[0];
-    const headers = firstLoc.headers;
+    const headers = idx === 0 ? initialHeader : firstLoc.headers;
     let song = new Song({});
     const partForCopying = partNameToPart[headers[HeaderType.Copy]];
     if (partForCopying) {
       song = new Song(partForCopying.song);
     }
     song.title = headers[HeaderType.Part];
-    
-    if (headers[HeaderType.Meter]) {
+
+    // Pull data from headers or previous headers.
+    // Lint(If change): sync with createInitialHeaders
+    if (headers[HeaderType.Meter] !== undefined) {
       currTimeSig = headers[HeaderType.Meter];
     }
-    if (currTimeSig) {
-      song.timeSigChanges.defaultVal = currTimeSig;
-    } else {
-      currTimeSig = song.timeSigChanges.defaultVal;
+    song.timeSigChanges.defaultVal = currTimeSig;
+
+    if (headers[HeaderType.Tempo] !== undefined) {
+      currTempo = headers[HeaderType.Tempo]
     }
-    if (headers[HeaderType.Tempo]) {
-      song.tempo8nPerMinChanges.defaultVal = headers[HeaderType.Tempo];
+    song.tempo8nPerMinChanges.defaultVal = currTempo;
+
+    if (headers[HeaderType.Transpose] !== undefined) {
+      currTranspose = headers[HeaderType.Transpose];
     }
-    const swing = headers[HeaderType.Swing];
-    if (swing) {
-      song.swingChanges.defaultVal = swing;
+
+    if (headers[HeaderType.Key] !== undefined) {
+      currKeySig = headers[HeaderType.Key];
     }
+    const transposedKeySig = fromNoteNumWithFlat(currKeySig.toNoteNum() + currTranspose);
+    song.keySigChanges.defaultVal = transposedKeySig;
+
+    if (headers[HeaderType.Swing] !== undefined) {
+      currSwing = headers[HeaderType.Swing];
+    }
+    song.swingChanges.defaultVal = currSwing;
+
+    if (headers[HeaderType.Syncopation] !== undefined) {
+      currSyncopation = headers[HeaderType.Syncopation];
+    }
+
     // Relative to the current part.
     const idxToTime8n = absoluteIdx => {
       const durPerCell8n = currTimeSig.getDurPerMeasure8n();
@@ -92,13 +149,17 @@ function toSongParts(chunkedLocsWithPickup) {
     const lastLoc = chunk.chordHeaderLocs[chunk.chordHeaderLocs.length - 1];
     const end8n = idxToTime8n(lastLoc.cellIdx + 1);
     song.chordChanges.removeWithinInterval(end8n);
+    song.chordChanges.getChanges().forEach(change => {
+      change.val.shift(currKeySig, transposedKeySig);
+    });
+    // Even though we will not use this voice later. We need it now for
+    // getEnd8n to work correctly.
     song.getVoice(0).noteGps = [new QuantizedNoteGp({
       start8n: song.pickup8n.negative(),
       end8n: end8n,
       realEnd8n: end8n,
     })];
-
-    const part = new SongPart({song: song});
+    const part = new SongPart({song: song, syncopationPct: currSyncopation});
     partNameToPart[song.title] = part;
     return part;
   });
@@ -194,34 +255,35 @@ function parseHeaderLocations(gridData) {
       if (possKeyVal.length !== 2) {
         return;
       }
-      try {
-        const {type, value} = processKeyVal(
-          possKeyVal[0].trim().toLowerCase(),
-          possKeyVal[1].trim().toLowerCase());
-        return {
-          type: type,
-          value: value,
-          rowIdx: rowIdx,
-          colIdx: colIdx,
-        };
-      } catch (err) {
-        console.warn('Failed to parse a potential header: ', cell)
+      const res = processKeyVal(
+        possKeyVal[0].trim().toLowerCase(),
+        possKeyVal[1].trim().toLowerCase(), /* warnError= */ true);
+      if (!res) {
+        return;
       }
+      return {
+        type: res.type,
+        value: res.value,
+        rowIdx: rowIdx,
+        colIdx: colIdx,
+      };
     }).filter(res => res);
   });
 }
 
-const HeaderType = Object.freeze({
+export const HeaderType = Object.freeze({
   Key: 'Key',
   Meter: 'Meter',
   Swing: 'Swing',
   Tempo: 'Tempo',
   Part: 'Part',
   Copy: 'Copy',
-  CompingStyle: 'CompingStyle'
+  CompingStyle: 'CompingStyle',
+  Syncopation: 'Syncopation',
+  Transpose: 'Transpose',
 });
 
-function processKeyVal(key, valStr) {
+function processKeyVal(key, valStr, warnError) {
   switch(key) {
     case 'key':
     case 'k':
@@ -276,10 +338,22 @@ function processKeyVal(key, valStr) {
         type: HeaderType.CompingStyle,
         value: CompingStyle[valStr] || CompingStyle.default,
       };
+    case 'transpose':
+    return {
+      type: HeaderType.Transpose,
+      value: parseInt(valStr),
+    };
+    case 'syncopation':
+    return {
+      type: HeaderType.Syncopation,
+      value: parseInt(valStr),
+    };
     // case 'form':
     //   // E.g. (a-b)-c Makes it possible to extend the song as (a-b)-(a-b)-c
     default:
-      console.warn('Unknown header key: ', key);
+      if (warnError) {
+        console.warn('Unknown header key: ', key);
+      }
   }
 }
 

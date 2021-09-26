@@ -2,14 +2,19 @@ import { Song } from "../song-sheet/song.js";
 import { makeSimpleQng } from "../song-sheet/quantizedNoteGp.js";
 import { clefType, Voice } from "../song-sheet/voice.js";
 import { intervals } from "../chord/interval.js";
+import { shuffle } from "../array-util/arrayUtil.js";
+
+const num8nPerBeat = 2;
 
 export class SongPart {
   constructor({
     song = {}, // Song, which can have a melody or rest. Comping will be added in SongForm.
     compingStyle = CompingStyle.default,
+    syncopationPct = 30,
   }) {
     this.song = new Song(song);
     this.compingStyle = compingStyle;
+    this.syncopationFactor = syncopationPct / 100;
   }
 
   // TODO remove
@@ -58,8 +63,11 @@ export class SongPart {
             bassNoteNum2 += 12;
           }
         }
-        const syncopated = dur8n.geq(6) ? Math.random() < 0.35 : Math.random() < 0.2;
-        const dur8nFromEnd = syncopated ? 1 : 2;
+        let syncopateBass = dur8n.geq(8) ? Math.random() < this.syncopationFactor : Math.random() < this.syncopationFactor / 1.5;
+        if (dur8n.equals(6)) {
+          syncopateBass = false;
+        }
+        const dur8nFromEnd = syncopateBass ? 1 : 2;
         bassQngs.push(makeSimpleQng(change.start8n, end8n.minus(dur8nFromEnd), [bassNoteNum]));
         bassQngs.push(makeSimpleQng(end8n.minus(dur8nFromEnd), end8n, [bassNoteNum2]));
         prevBassNoteNum = bassNoteNum2;
@@ -70,17 +78,23 @@ export class SongPart {
       
       const minTreble = Math.max(bassNoteNum, bassNoteNum2, 51) + 1;
       // Treble
-      const third = chord.root.toNoteNum() + chord.getThirdInterval();
-      const seventh = chord.root.toNoteNum() + chord.getSeventhInterval();
-      const fifth = chord.root.toNoteNum() + chord.getFifthInterval();
-      const interval9Or11 = chord.isMinor() || chord.isDiminished() ? intervals.P4 :  intervals.M2;
-      const ninthOr11th = chord.root.toNoteNum() + interval9Or11;
-      const trebleNoteNums = genNearestNums([third, seventh], prevTrebleNoteNums, minTreble, maxTreble);
-      if (dur8n.geq(6) && idx + 1 < changes.length) {
+      const specifiedColorNoteNums = chord.getSpecifiedColorNoteNums();
+      console.log(specifiedColorNoteNums);
+      const trebleNoteNums = genNearestNums(specifiedColorNoteNums, prevTrebleNoteNums, minTreble, maxTreble);
+      if ((dur8n.geq(8) || (dur8n.geq(6) && Math.random() < 0.4)) && idx + 1 < changes.length) {
+        const third = chord.root.toNoteNum() + chord.getThirdInterval();
+        const seventh = chord.root.toNoteNum() + chord.getSeventhInterval();
+        const fifth = chord.root.toNoteNum() + chord.getFifthInterval();
+        const interval9Or11 = chord.isMinor() || chord.isDiminished() ? intervals.P4 :  intervals.M2;
+        const ninthOr11th = chord.root.toNoteNum() + interval9Or11;
         const useFifth = Math.random() < 0.6;
-        const syncopated = Math.random() < 0.5;
         const color = useFifth ? fifth : ninthOr11th;
         let trebleNoteNums2 = genNearestNums([third, seventh, color], trebleNoteNums, minTreble, maxTreble);
+        // For this to work, we need to unavoid clusters of 3 notes, in particular, if 11th or 13th is involved,
+        // move them up and octave or move the 3 or 5 or 7 down an octave.
+        // const colorNoteNums2 = shuffle(
+        //   chord.getSpecifiedColorNoteNums(/* includeAll= */true, this.song.keySigChanges.defaultVal)).slice(0, 3);
+        // let trebleNoteNums2 = genNearestNums(colorNoteNums2, trebleNoteNums, minTreble, maxTreble);
         const topTrebleNoteNum = Math.max(...trebleNoteNums);
         const topTrebleNoteNum2 = Math.max(...trebleNoteNums2);
         if (topTrebleNoteNum === topTrebleNoteNum2) {
@@ -93,8 +107,22 @@ export class SongPart {
             trebleNoteNums2 = moveDown(trebleNoteNums2);
           }
         }
-        const dur8nFromEnd = syncopated ? (dur8n.equals(6) ? 3 : 5) : 4;
-        trebleQngs.push(makeSimpleQng(change.start8n, end8n.minus(dur8nFromEnd), trebleNoteNums));
+        const syncopateFirstBeat = Math.random() < this.syncopationFactor / 2;
+        let dur8nFromEnd;
+        if (dur8n.equals(6)) {
+          dur8nFromEnd = num8nPerBeat;
+        } else {
+          const syncopateLatterBeat = Math.random() < this.syncopationFactor;
+          const delaySyncopation = Math.random() < 0.25;
+          const syncAmount = delaySyncopation ? -1 : 1;
+          dur8nFromEnd = syncopateLatterBeat ? num8nPerBeat * 2 + syncAmount : num8nPerBeat * 2;
+        }
+        if (syncopateFirstBeat) {
+          trebleQngs.push(makeSimpleQng(change.start8n, change.start8n.plus(num8nPerBeat - 1), []));
+          trebleQngs.push(makeSimpleQng(change.start8n.plus(num8nPerBeat - 1), end8n.minus(dur8nFromEnd), trebleNoteNums));
+        } else {
+          trebleQngs.push(makeSimpleQng(change.start8n, end8n.minus(dur8nFromEnd), trebleNoteNums));
+        }
         trebleQngs.push(makeSimpleQng(end8n.minus(dur8nFromEnd), end8n, trebleNoteNums2));
         prevTrebleNoteNums = trebleNoteNums2;
       } else {

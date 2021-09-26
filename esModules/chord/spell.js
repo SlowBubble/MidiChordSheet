@@ -157,7 +157,15 @@ export class Spelling {
     range(0, charShift).forEach(_ => {
       newLetter = getNextLetter(newLetter);
     });
-    return fromNoteNumWithLetter(this.toNoteNum() + noteNumShift, newLetter);
+    const targetNoteNum = this.toNoteNum() + noteNumShift;
+    const possSpelling = fromNoteNumWithLetter(targetNoteNum, newLetter);
+    if (Math.abs(possSpelling.numSharps) < 2) {
+      return possSpelling;
+    }
+    if (possSpelling.numSharps >= 2) {
+      return fromNoteNumWithSharp(targetNoteNum);
+    }
+    return fromNoteNumWithFlat(targetNoteNum);
   }
 }
 

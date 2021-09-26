@@ -1,18 +1,21 @@
 
-import { parseSheetToSong } from "../esModules/sheet-to-song/parse.js";
 import { RenderMgr } from "../esModules/sheet-to-song/render.js";
 import { SongReplayer } from "../esModules/song-replay/songReplay.js";
 import * as banner from '../esModules/ephemeral-banner/index.js';
 import * as sound from '../esModules/musical-sound/musicalSound.js';
 import * as pubSub from '../esModules/pub-sub/pubSub.js';
+import { ActionMgr } from "./actionMgr.js";
+import { hotkeysDoc } from "../esModules/hotkeys-doc/hotkeysDoc.js";
+
 
 setup()
 
 function setup() {
-  const song = loadSongFromUrl();
   const canvasDiv = document.getElementById("canvas-div");
   const renderMgr = new RenderMgr(canvasDiv);
-  renderMgr.render(song);
+  // const urlData = getUrlData();
+  // const song = parseSheetToSong(urlData.jsonPayload, urlData.keyVals.title);
+  // renderMgr.render(song);
 
   const [soundPub, soundSub] = pubSub.make();
   const [metronomeBeatPub, metronomeBeatSub] = pubSub.make();
@@ -27,31 +30,33 @@ function setup() {
     musicalSound: musicalSound, 
     metronomeBeatPub: metronomeBeatPub,
   });
+  const actionMgr = new ActionMgr({
+    songReplayer: songReplayer,
+    eBanner: eBanner,
+    renderMgr: renderMgr,
+    menuDiv: document.getElementById("menu"),
+  });
+  actionMgr.reloadSong();
 
-  setupInteraction(songReplayer, song);
+  setupInteraction(actionMgr);
 }
 
-function setupInteraction(songReplayer, song) {
-  document.getElementById("play-btn").onclick = _ => {
-    if (songReplayer.isPlaying()) {
-      songReplayer.stop();
-    } else {
-      songReplayer.play(song, {addDrumBeat: true})
-    }
-  };
+function setupInteraction(actionMgr) {
+  document.getElementById("play-btn").onclick = _ => actionMgr.playOrPause();
+  hotkeysDoc('space', _ => actionMgr.playOrPause());
+
+  document.getElementById("menu-btn").onclick = _ => actionMgr.toggleMenu();
+  hotkeysDoc('m', _ => actionMgr.toggleMenu());
+
+  hotkeysDoc('s', _ => actionMgr.toggleSwing());
+
+  hotkeysDoc(',', _ => actionMgr.decrTempo());
+  hotkeysDoc('.', _ => actionMgr.incrTempo());
+
+  hotkeysDoc('[', _ => actionMgr.decrTimeSigUpperNumeral());
+  hotkeysDoc(']', _ => actionMgr.incrTimeSigUpperNumeral());
+
+  hotkeysDoc('-', _ => actionMgr.transposeDown());
+  hotkeysDoc('=', _ => actionMgr.transposeUp());
   
 }
-function loadSongFromUrl() {
-  const url = new URL(document.URL);
-  const title = url.searchParams.get('title') || 'Untitled';
-  const dataStr = url.searchParams.get('data');
-  if (!dataStr) {
-    return;
-  }
-  // const title = 'testing';
-  // const dataStr = `[["","Key: C","","",""],["","Part: V1","","",""],["","Tempo: 180","","",""],["","Swing: light","","",""],["_ Gsus","Cmaj7","Bm7b5 | E7#11","Am9","Gm7 | C7b13"],["","","","",""],["","F6add9","Fm7 | Bb7b13","Ebm7 | Ab7b13","Dm7 | G7b13"],["","","","",""],["","Part: V2","","",""],["","Repeat: V1","","",""],["","-","-","-","-"],["","","","",""],["","-","Fm7 | Bb7","Ebm7 | Ab7",""],["","","","",""],["","Part: Outro","","",""],["","Dm7 | Em7","Fmaj7","Dm7 | Em7","Fmaj7"],["","","","",""],["","Dm7 | Em7","Fmaj7","_ Dm7 | Em7 Fmaj7 | F7 G7 | Db7 _","C6"]]`
-  const data = JSON.parse(dataStr);
-  console.log(data);
-  return parseSheetToSong(data, title);
-}
-

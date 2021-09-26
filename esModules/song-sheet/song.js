@@ -15,7 +15,7 @@ export class Song {
     voices = [{}],
     keySigChanges = {},
     timeSigChanges = {},
-    tempo8nPerMinChanges = {defaultVal: 120},
+    tempo8nPerMinChanges = {defaultVal: 180},
     swingChanges = {},
   }) {
     this.title = title;

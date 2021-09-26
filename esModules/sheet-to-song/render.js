@@ -15,6 +15,7 @@ export class RenderMgr {
     stateMgr.setPickup(song.pickup8n.over(8).negative());
     stateMgr.setTempo(song.tempo8nPerMinChanges.defaultVal);
     stateMgr.doc.tempoStr = song.swingChanges.defaultVal.ratio.toFloat() > 1 ? 'Swing' : '';
+    stateMgr.doc.keySigSp = song.keySigChanges.defaultVal;
     
     stateMgr.doc.voices = [];
     song.getVisibleVoices().forEach((voice, idx) => {

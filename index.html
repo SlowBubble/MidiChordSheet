@@ -8,6 +8,7 @@
     <meta http-equiv="Expires" content="0">
     <title>MidiShop</title>
     <link rel="stylesheet" href="appPlay/play.css">
+    <!-- <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"> -->
 
     <!-- shims for midi.js package -->
     <script src="lib/midi.js/inc/shim/Base64.js" type="text/javascript"></script>
@@ -24,6 +25,7 @@
     <script src="lib/midi.js/js/util/dom_request_xhr.js" type="text/javascript"></script>
     <script src="lib/midi.js/js/util/dom_request_script.js" type="text/javascript"></script>
 
+    <script src="./lib/hotkeys.js"></script>
     <script src="./lib/abcjs-basic.js" type="text/javascript"></script>
 
     <script src="./esModules/chord/chordParser.js"></script>
@@ -31,14 +33,20 @@
     <script type='module' src='./appPlay/playMain.js'></script>
   </head>
   <body>
-    <div>
-      <button id='play-btn'>Play</button>
-      <button id='reset-btn'>Reset</button>
+    <div id='container'>
+      <div id='main'>
+        <div>
+          <button id='menu-btn'>Menu</button>
+          <button id='play-btn'>▶</button>
+        </div>
+        <div id="canvas-div"></div>
+      </div>
+      <div id='menu' style='display: none'>
+        <button id='reset-btn'>Reset</button>
+        <button id='decr-tempo-btn'>- tempo</button>
+        <button id='incr-tempo-btn'>+ tempo</button>
+      </div>
     </div>
-    <div>
-      <button id='decr-tempo-btn'>- tempo</button>
-      <button id='incr-tempo-btn'>+ tempo</button>
-    </div>
-    <div id="canvas-div"></div>
+
   </body>
 </html>

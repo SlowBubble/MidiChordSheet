@@ -15,6 +15,7 @@ export class SongReplayer {
   // opts:
   //   - start8n (Required)
   //   - addDrumBeat
+  //   - numBeatDivisions
   play(song, opts) {
     opts = opts || {};
 

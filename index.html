@@ -6,7 +6,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>MidiShop</title>
+    <title>Midi Sheet</title>
     <link rel="stylesheet" href="appPlay/play.css">
     <!-- <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"> -->
 
@@ -42,9 +42,121 @@
         <div id="canvas-div"></div>
       </div>
       <div id='menu' style='display: none'>
-        <button id='reset-btn'>Reset</button>
-        <button id='decr-tempo-btn'>- tempo</button>
-        <button id='incr-tempo-btn'>+ tempo</button>
+        <table id='menu-table'>
+          <tr>
+            <td>
+              Tempo
+            </td>
+            <td id='tempo-display'>
+              180
+            </td>
+            <td>
+              <div>
+                <button id='incr-tempo-btn'>▲</button>
+              </div>
+              <div>
+                <button id='decr-tempo-btn'>▼</button>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              # of Repeat
+            </td>
+            <td id='repeat-display'>
+              2
+            </td>
+            <td>
+              <div>
+                <button id='incr-repeats-btn'>▲</button>
+              </div>
+              <div>
+                <button id='decr-repeats-btn'>▼</button>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              Swing
+            </td>
+            <td id='swing-display'>
+              Medium
+            </td>
+            <td>
+              <div>
+                <button id='incr-swing-btn'>▲</button>
+              </div>
+              <div>
+                <button id='decr-swing-btn'>▼</button>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              Key
+            </td>
+            <td id='key-display'>
+              C
+            </td>
+            <td>
+              <div>
+                <button id='transpose-up-btn'>▲</button>
+              </div>
+              <div>
+                <button id='transpose-down-btn'>▼</button>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              Beats per bar
+            </td>
+            <td id='upper-numeral-display'>
+              4
+            </td>
+            <td>
+             <div>
+               <button id='incr-upper-numeral-btn'>▲</button>
+             </div>
+             <div>
+               <button id='decr-upper-numeral-btn'>▼</button>
+             </div>
+           </td>
+          </tr>
+          <!-- TODO separate this into a new table for Comping-->
+          <tr>
+            <td>
+              Syncopation
+            </td>
+            <td id='syncopation-display'>
+              20
+            </td>
+            <td>
+              <div>
+                <button id='incr-syncopation-btn'>▲</button>
+              </div>
+              <div>
+                <button id='decr-syncopation-btn'>▼</button>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              Drum beats
+            </td>
+            <td id='subdivision-display'>
+              20
+            </td>
+            <td>
+              <div>
+                <button id='incr-subdivision-btn'>▲</button>
+              </div>
+              <div>
+                <button id='decr-subdivision-btn'>▼</button>
+              </div>
+            </td>
+          </tr>
+        </table>
       </div>
     </div>
 

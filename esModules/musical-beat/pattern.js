@@ -11,12 +11,12 @@ export class MidiPattern {
   }
 }
 
-export function genMidiPattern(timeSig, isSwinging) {
-  const beatInfo = computeBeatInfo(timeSig);
+export function genMidiPattern(timeSig, isSwinging, numBeatDivisions) {
+  const beatInfo = computeBeatInfo(timeSig, numBeatDivisions);
   const strongBeats = genStrongBeats(beatInfo.numBeats);
   const evtsArrs = genNoteOnEvtsArrs({
     strongBeats: strongBeats, numBeatDivisions: beatInfo.numBeatDivisions,
-    isSwinging: isSwinging,
+    isSwinging: beatInfo.numBeatDivisions > 2 ? false : isSwinging,
   });
   return new MidiPattern({
     evtsArrs: evtsArrs,
@@ -24,11 +24,11 @@ export function genMidiPattern(timeSig, isSwinging) {
   });
 }
 
-export function computeBeatInfo(timeSig) {
+export function computeBeatInfo(timeSig, numBeatDivisions) {
   const {upperNumeral, lowerNumeral} = timeSig;
   const periodDur8n = makeFrac(upperNumeral * 8, lowerNumeral);
   let numBeats = timeSig.isCompound() ? upperNumeral / 3 : upperNumeral;
-  let numBeatDivisions = timeSig.isCompound() ? 3 : 2;
+  numBeatDivisions = numBeatDivisions || (timeSig.isCompound() ? 3 : 2);
   return {
     numBeats: numBeats,
     numBeatDivisions: numBeatDivisions,

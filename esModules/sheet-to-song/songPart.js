@@ -23,6 +23,7 @@ export class SongPart {
     const bassQngs = [];
     const trebleQngs = [];
 
+    const longDur8n = 8;
     const maxBass = 56;
     const minBass = 40;
     const maxTreble = 76;
@@ -30,17 +31,18 @@ export class SongPart {
     let prevTrebleNoteNums = [66];
     let isDenseBass = false;
     changes.forEach((change, idx) => {
+      const isFinalNote = idx + 1 === changes.length;
       if (idx === 0 && this.song.pickup8n.lessThan(change.start8n)) {
         bassQngs.push(makeSimpleQng(this.song.pickup8n, change.start8n, []));
         trebleQngs.push(makeSimpleQng(this.song.pickup8n, change.start8n, []));
       }
       // Bass
-      const end8n = idx + 1 < changes.length ? changes[idx + 1].start8n : this.song.getEnd8n();
+      const end8n = isFinalNote ? this.song.getEnd8n() : changes[idx + 1].start8n;
       const chord = change.val;
       const bass = chord.bass || chord.root;
       const bassNoteNum = genNearestNums([bass.toNoteNum()], [prevBassNoteNum], minBass, maxBass);
       const dur8n = end8n.minus(change.start8n);
-      if (dur8n.geq(6)) {
+      if (dur8n.geq(longDur8n)) {
         isDenseBass = false;
       }
       if (dur8n.equals(4)) {
@@ -52,7 +54,7 @@ export class SongPart {
       }
       // Make this higher than bassNoteNum unless it's higher than maxBass
       let bassNoteNum2 = chord.root.toNoteNum(4);
-      if ((dur8n.geq(6) || (isDenseBass && dur8n.equals(4))) && idx + 1 < changes.length) {
+      if ((dur8n.geq(longDur8n) || (isDenseBass && dur8n.equals(4))) && !isFinalNote) {
         if (chord.bass) {
           if (bassNoteNum2 > maxBass) {
             bassNoteNum2 -= 12;
@@ -64,7 +66,7 @@ export class SongPart {
           }
         }
         let syncopateBass = dur8n.geq(8) ? Math.random() < this.syncopationFactor : Math.random() < this.syncopationFactor / 1.5;
-        if (dur8n.equals(6)) {
+        if (dur8n.equals(longDur8n)) {
           syncopateBass = false;
         }
         const dur8nFromEnd = syncopateBass ? 1 : 2;
@@ -80,7 +82,7 @@ export class SongPart {
       // Treble
       const specifiedColorNoteNums = chord.getSpecifiedColorNoteNums();
       const trebleNoteNums = genNearestNums(specifiedColorNoteNums, prevTrebleNoteNums, minTreble, maxTreble);
-      if ((dur8n.geq(8) || (dur8n.geq(6) && Math.random() < 0.4)) && idx + 1 < changes.length) {
+      if ((dur8n.geq(8) || (dur8n.geq(longDur8n) && Math.random() < 0.4)) && !isFinalNote) {
         const third = chord.root.toNoteNum() + chord.getThirdInterval();
         const seventh = chord.root.toNoteNum() + chord.getSeventhInterval();
         const fifth = chord.root.toNoteNum() + chord.getFifthInterval();
@@ -108,7 +110,7 @@ export class SongPart {
         }
         const syncopateFirstBeat = Math.random() < this.syncopationFactor / 2;
         let dur8nFromEnd;
-        if (dur8n.equals(6)) {
+        if (dur8n.equals(longDur8n)) {
           dur8nFromEnd = num8nPerBeat;
         } else {
           const syncopateLatterBeat = Math.random() < this.syncopationFactor;

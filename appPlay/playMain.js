@@ -13,9 +13,6 @@ setup()
 function setup() {
   const canvasDiv = document.getElementById("canvas-div");
   const renderMgr = new RenderMgr(canvasDiv);
-  // const urlData = getUrlData();
-  // const song = parseSheetToSong(urlData.jsonPayload, urlData.keyVals.title);
-  // renderMgr.render(song);
 
   const [soundPub, soundSub] = pubSub.make();
   const [metronomeBeatPub, metronomeBeatSub] = pubSub.make();
@@ -39,6 +36,8 @@ function setup() {
   actionMgr.reloadSong();
 
   setupInteraction(actionMgr);
+
+  actionMgr.toggleMenu();
 }
 
 function setupInteraction(actionMgr) {
@@ -49,17 +48,36 @@ function setupInteraction(actionMgr) {
   hotkeysDoc('m', _ => actionMgr.toggleMenu());
 
   hotkeysDoc('s', _ => actionMgr.toggleSwing());
+  document.getElementById("incr-swing-btn").onclick = _ => actionMgr.toggleSwing();
+  document.getElementById("decr-swing-btn").onclick = _ => actionMgr.toggleSwing();
 
-  hotkeysDoc(',', _ => actionMgr.decrTempo());
-  hotkeysDoc('.', _ => actionMgr.incrTempo());
+  hotkeysDoc('t', _ => actionMgr.increaseTempo());
+  hotkeysDoc('shift+t', _ => actionMgr.decreaseTempo());
+  document.getElementById("incr-tempo-btn").onclick = _ => actionMgr.increaseTempo();
+  document.getElementById("decr-tempo-btn").onclick = _ => actionMgr.decreaseTempo();
 
-  hotkeysDoc('r', _ => actionMgr.incrRepeat());
-  hotkeysDoc('shift+r', _ => actionMgr.decrRepeat());
+  hotkeysDoc('r', _ => actionMgr.incrementRepeat());
+  hotkeysDoc('shift+r', _ => actionMgr.decrementRepeat());
+  document.getElementById("incr-repeats-btn").onclick = _ => actionMgr.incrementRepeat();
+  document.getElementById("decr-repeats-btn").onclick = _ => actionMgr.decrementRepeat();
 
-  hotkeysDoc(';', _ => actionMgr.decrTimeSigUpperNumeral());
-  hotkeysDoc(`'`, _ => actionMgr.incrTimeSigUpperNumeral());
+  hotkeysDoc(`u`, _ => actionMgr.incrTimeSigUpperNumeral());
+  hotkeysDoc('shift+u', _ => actionMgr.decrTimeSigUpperNumeral());
+  document.getElementById("incr-upper-numeral-btn").onclick = _ => actionMgr.incrTimeSigUpperNumeral();
+  document.getElementById("decr-upper-numeral-btn").onclick = _ => actionMgr.decrTimeSigUpperNumeral();
 
-  hotkeysDoc('-', _ => actionMgr.transposeDown());
-  hotkeysDoc('=', _ => actionMgr.transposeUp());
-  
+  hotkeysDoc('k', _ => actionMgr.transposeKeyUp());
+  hotkeysDoc('shift+k', _ => actionMgr.transposeKeyDown());
+  document.getElementById("transpose-up-btn").onclick = _ => actionMgr.transposeKeyUp();
+  document.getElementById("transpose-down-btn").onclick = _ => actionMgr.transposeKeyDown();
+
+  hotkeysDoc('o', _ => actionMgr.increaseOffbeatSyncopation());
+  hotkeysDoc('shift+o', _ => actionMgr.decreaseOffbeatSyncopation());
+  document.getElementById("incr-syncopation-btn").onclick = _ => actionMgr.increaseOffbeatSyncopation();
+  document.getElementById("decr-syncopation-btn").onclick = _ => actionMgr.decreaseOffbeatSyncopation();
+
+  hotkeysDoc('b', _ => actionMgr.incrementBeatSubdivision());
+  hotkeysDoc('shift+b', _ => actionMgr.decreaseOffbeatSyncopation());
+  document.getElementById("incr-subdivision-btn").onclick = _ => actionMgr.incrementBeatSubdivision();
+  document.getElementById("decr-subdivision-btn").onclick = _ => actionMgr.decrementBeatSubdivision();
 }

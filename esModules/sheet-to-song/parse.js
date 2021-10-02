@@ -9,6 +9,7 @@ import { Song } from "../song-sheet/song.js";
 import { QuantizedNoteGp } from "../song-sheet/quantizedNoteGp.js";
 import { SongForm } from "./songForm.js";
 import { CompingStyle, SongPart } from "./songPart.js";
+import { computeBeatInfo } from "../musical-beat/pattern.js";
 
 
 export function parseKeyValsToSongInfo(keyVals) {
@@ -65,6 +66,10 @@ function createInitialHeaders(chunkedLocsWithPickup, keyVals) {
     }
     headers[res.type] = res.value;
   });
+
+  if (!headers[HeaderType.Subdivision]) {
+    headers[HeaderType.Subdivision] = computeBeatInfo(headers[HeaderType.Meter]).numBeatDivisions;
+  }
   return headers;
 }
 
@@ -283,6 +288,7 @@ export const HeaderType = Object.freeze({
   Syncopation: 'Syncopation',
   Transpose: 'Transpose',
   Repeat: 'Repeat',
+  Subdivision: 'Subdivision',
 });
 
 function processKeyVal(key, valStr, warnError) {
@@ -315,6 +321,11 @@ function processKeyVal(key, valStr, warnError) {
         type: HeaderType.Swing,
         value: new Swing({ratio: ratio})
       };
+    case 'subdivision':
+      return {
+        type: HeaderType.Subdivision,
+        value: parseInt(valStr),
+      }
     case '8th-note-tempo':
     case 'tempo':
     case 'q':

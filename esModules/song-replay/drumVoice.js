@@ -7,14 +7,14 @@ import { Voice } from "../song-sheet/voice.js";
 
 // Note: this voice cannot just be added to the song because the pickup may not line up.
 export function createDrumVoice(song, {
-  drumVolume, padLeft, muteFinalMeasure
+  drumVolume, padLeft, muteFinalMeasure, numBeatDivisions,
 }) {
   drumVolume = drumVolume === undefined ? 1.5 : drumVolume;
 
   const voice = new Voice({});
   voice.settings.instrument = instruments.synth_drum;
   const isSwinging = song.swingChanges.defaultVal.ratio.greaterThan(1);
-  const pattern = genMidiPattern(song.timeSigChanges.defaultVal, isSwinging);
+  const pattern = genMidiPattern(song.timeSigChanges.defaultVal, isSwinging, numBeatDivisions);
   const genQngsFor1Period = (initial8n, mute) => {
     return pattern.evtsArrs.flatMap((evts, arrIdx) => {
       const time8n = initial8n.plus(pattern.durPerDivision8n.times(arrIdx));
@@ -45,8 +45,8 @@ export function createDrumVoice(song, {
   return voice;
 }
 
-export function createBeat8nArr(song) {
-  const {numBeats, durPerBeat8n, period8n} = computeBeatInfo(song.timeSigChanges.defaultVal);
+export function createBeat8nArr(song, numBeatDivisions) {
+  const {numBeats, durPerBeat8n, period8n} = computeBeatInfo(song.timeSigChanges.defaultVal, numBeatDivisions);
   const start8n = song.getStart8n();
   const end8n = song.getEnd8n();
   const startIdx = Math.ceil(start8n.toFloat() / period8n.toFloat()) - 1;

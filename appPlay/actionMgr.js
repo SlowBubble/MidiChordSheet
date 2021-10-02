@@ -1,4 +1,5 @@
 import { parseKeyValsToSongInfo, HeaderType } from "../esModules/sheet-to-song/parse.js";
+import { fromNoteNumWithFlat } from "../esModules/chord/spell.js";
 
 export class ActionMgr {
   constructor({
@@ -21,6 +22,19 @@ export class ActionMgr {
     this.renderMgr.render(songInfo.song);
     this.song = songInfo.song;
     this.initialHeaders = songInfo.initialHeaders;
+
+    const subdivisions = this.initialHeaders[HeaderType.Subdivision];
+    let swing = urlKeyVals[HeaderType.Swing] || 'Straight';
+    if (subdivisions > 2 && swing !== 'Straight') {
+      swing += '*';
+    }
+    document.getElementById('subdivision-display').textContent = subdivisions;
+    document.getElementById('tempo-display').textContent = this.initialHeaders[HeaderType.Tempo];
+    document.getElementById('swing-display').textContent = swing;
+    document.getElementById('key-display').textContent = fromNoteNumWithFlat(
+      this.initialHeaders[HeaderType.Key].toNoteNum() + this.initialHeaders[HeaderType.Transpose]);
+    document.getElementById('repeat-display').textContent = this.initialHeaders[HeaderType.Repeat];
+    document.getElementById('upper-numeral-display').textContent = this.initialHeaders[HeaderType.Meter].upperNumeral;
   }
 
   getSong() {
@@ -34,7 +48,10 @@ export class ActionMgr {
     if (this.songReplayer.isPlaying()) {
       this.songReplayer.stop();
     } else {
-      this.songReplayer.play(this.getSong(), {addDrumBeat: true})
+      this.songReplayer.play(this.getSong(), {
+        addDrumBeat: true, padLeft: true, muteFinalMeasure: true,
+        numBeatDivisions: this.initialHeaders[HeaderType.Subdivision],
+      });
     }
   }
 
@@ -51,12 +68,12 @@ export class ActionMgr {
     if (swing.ratio.greaterThan(1)) {
       setUrlParam(HeaderType.Swing);
     } else {
-      setUrlParam(HeaderType.Swing, 'medium');
+      setUrlParam(HeaderType.Swing, 'Medium');
     }
     this.reloadSong();
   }
 
-  decrTempo() {
+  decreaseTempo() {
     const tempo = this.initialHeaders[HeaderType.Tempo];
     if (tempo - 10 <= 0) {
       return;
@@ -64,31 +81,31 @@ export class ActionMgr {
     setUrlParam(HeaderType.Tempo, tempo - 10);
     this.reloadSong();
   }
-  incrTempo() {
+  increaseTempo() {
     const tempo = this.initialHeaders[HeaderType.Tempo];
     setUrlParam(HeaderType.Tempo, tempo + 10);
     this.reloadSong();
   }
 
-  transposeDown() {
+  transposeKeyDown() {
     const transpose = this.initialHeaders[HeaderType.Transpose];
     setUrlParam(HeaderType.Transpose, (transpose - 1) % 12);
     this.reloadSong();
   }
-  transposeUp() {
+  transposeKeyUp() {
     const transpose = this.initialHeaders[HeaderType.Transpose];
     setUrlParam(HeaderType.Transpose, (transpose + 1) % 12);
     this.reloadSong();
   }
 
-  decrSyncopation() {
+  decreaseOffbeatSyncopation() {
     const syncopationPct = this.initialHeaders[HeaderType.Syncopation];
-    setUrlParam(HeaderType.Syncopation, syncopationPct - 5);
+    setUrlParam(HeaderType.Syncopation, syncopationPct - 3);
     this.reloadSong();
   }
-  incrSyncopation() {
+  increaseOffbeatSyncopation() {
     const syncopationPct = this.initialHeaders[HeaderType.Syncopation];
-    setUrlParam(HeaderType.Syncopation, syncopationPct + 5);
+    setUrlParam(HeaderType.Syncopation, syncopationPct + 3);
     this.reloadSong();
   }
 
@@ -109,19 +126,35 @@ export class ActionMgr {
     this.reloadSong();
   }
 
-  incrRepeat() {
+  incrementRepeat() {
     let repeat = this.initialHeaders[HeaderType.Repeat];
     repeat += 1;
     setUrlParam(HeaderType.Repeat, repeat);
     this.reloadSong();
   }
-  decrRepeat() {
+  decrementRepeat() {
     let repeat = this.initialHeaders[HeaderType.Repeat];
     if (repeat <= 0) {
       return;
     }
     repeat -= 1;
     setUrlParam(HeaderType.Repeat, repeat);
+    this.reloadSong();
+  }
+
+  incrementBeatSubdivision() {
+    let subdivision = this.initialHeaders[HeaderType.Subdivision];
+    subdivision += 1;
+    setUrlParam(HeaderType.Subdivision, subdivision);
+    this.reloadSong();
+  }
+  decrementBeatSubdivision() {
+    let subdivision = this.initialHeaders[HeaderType.Subdivision];
+    if (subdivision <= 1) {
+      return;
+    }
+    subdivision -= 1;
+    setUrlParam(HeaderType.Subdivision, subdivision);
     this.reloadSong();
   }
 }
@@ -142,6 +175,8 @@ function toInternalUrl(externalUrlStr) {
 }
 
 function toExternalUrlStr(internalUrl) {
+  // This causes data= to come last because the rest of the param keys are upper cases, which has a smaller unicode code point.
+  internalUrl.searchParams.sort();
   return internalUrl.href.replace('?','#');
 }
 
@@ -154,8 +189,8 @@ function getUrlKeyVals() {
   if (!keyVals.data) {
     keyVals.title = 'Uncle Sun';
     keyVals.data = '[["","Tempo: 180","","",""],["","Key: C","","",""],["","Cmaj7","C6","Em","Em A7"],["","","","",""],["","Em7b5","Fmaj7","Bb7","C6"]]';
-    keyVals.title = 'Etude No. 3';
-    keyVals.data = `[["","Key: C","","",""],["","Part: V1","","",""],["","Tempo: 180","","",""],["","Swing: light","","",""],["_ Gsus","Cmaj7","Bm7b5 | E7#11","Am9","Gm7 | C7b13"],["","","","",""],["","F6add9","Fm7 | Bb7b13","Ebm7 | Ab7b13","Dm7 | G7b13"],["","","","",""],["","Part: V2","","",""],["","Repeat: V1","","",""],["","-","-","-","-"],["","","","",""],["","-","Fm7 | Bb7","Ebm7 | Ab7",""],["","","","",""],["","Part: Outro","","",""],["","Dm7 | Em7","Fmaj7","Dm7 | Em7","Fmaj7"],["","","","",""],["","Dm7 | Em7","Fmaj7","_ Dm7 | Em7 Fmaj7 | F7 G7 | Db7 _","C6"]]`
+    // keyVals.title = 'Etude No. 3';
+    // keyVals.data = `[["","Key: C","","",""],["","Part: V1","","",""],["","Tempo: 180","","",""],["","Swing: light","","",""],["_ Gsus","Cmaj7","Bm7b5 | E7#11","Am9","Gm7 | C7b13"],["","","","",""],["","F6add9","Fm7 | Bb7b13","Ebm7 | Ab7b13","Dm7 | G7b13"],["","","","",""],["","Part: V2","","",""],["","Repeat: V1","","",""],["","-","-","-","-"],["","","","",""],["","-","Fm7 | Bb7","Ebm7 | Ab7",""],["","","","",""],["","Part: Outro","","",""],["","Dm7 | Em7","Fmaj7","Dm7 | Em7","Fmaj7"],["","","","",""],["","Dm7 | Em7","Fmaj7","_ Dm7 | Em7 Fmaj7 | F7 G7 | Db7 _","C6"]]`
   }
   return keyVals;
 

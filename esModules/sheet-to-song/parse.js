@@ -22,7 +22,6 @@ export function parseKeyValsToSongInfo(keyVals) {
 
   const initialHeaders = createInitialHeaders(chunkedLocsWithPickup, keyVals);
   const songParts = toSongParts(chunkedLocsWithPickup, initialHeaders);
-  console.log(songParts)
   const possIntro = songParts.find(part => part.song.title.trim().toLowerCase() === 'intro');
   const possOutro = songParts.find(part => part.song.title.trim().toLowerCase() === 'outro');
   const body = songParts.filter(
@@ -35,7 +34,10 @@ export function parseKeyValsToSongInfo(keyVals) {
     body: body,
   });
   return {
-    song: songForm.toSong(initialHeaders[HeaderType.Repeat]),
+    // TODO: song and songParts are kind of redundant. May be get rid of song?
+    // song: songForm.toSong(initialHeaders[HeaderType.Repeat]),
+    title: songForm.title,
+    songParts: songForm.getParts(initialHeaders[HeaderType.Repeat]),
     initialHeaders: initialHeaders,
   };
 }

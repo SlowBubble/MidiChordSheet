@@ -1,5 +1,7 @@
 import { parseKeyValsToSongInfo, HeaderType } from "../esModules/sheet-to-song/parse.js";
 import { fromNoteNumWithFlat } from "../esModules/chord/spell.js";
+import { joinSongParts } from "../esModules/sheet-to-song/songForm.js";
+import { ChordSvgMgr } from "../esModules/chord-svg/chordSvg.js";
 
 export class ActionMgr {
   constructor({
@@ -7,6 +9,7 @@ export class ActionMgr {
     eBanner,
     renderMgr,
     menuDiv,
+    metronomeBeatSub,
   }) {
     this.songReplayer = songReplayer;
     this.eBanner = eBanner;
@@ -14,13 +17,46 @@ export class ActionMgr {
     this.menuDiv = menuDiv;
     this.song = null;
     this.initialHeaders = {};
+    this.chordSvgMgr = new ChordSvgMgr();
+    this.displayChordsOnly = true;
+    this.chordsCanvas = document.getElementById('chords-canvas');
+    // null means play from the start.
+    this.currTime8n = null;
+    metronomeBeatSub(beat => {
+      this.setCurrTime8n(beat.time8n);
+      if (this.displayChordsOnly) {
+        this.renderChordsCanvas();
+      }
+    });
+  }
+
+  // Note that this may be more wasteful than needed.
+  render() {
+    if (this.displayChordsOnly) {
+      this.renderMgr.clear();
+      this.renderChordsCanvas();
+    } else {
+      this.renderMgr.render(this.song);
+      this.clearChordsCanvas();
+    }
+  }
+  toggleChordView() {
+    this.displayChordsOnly = !this.displayChordsOnly;
+    this.render();
+  }
+
+  renderChordsCanvas() {
+    this.chordsCanvas.innerHTML = '';
+    this.chordsCanvas.append(...this.chordSvgMgr.getSvgs());
+  }
+  clearChordsCanvas() {
+    this.chordsCanvas.innerHTML = '';
   }
 
   reloadSong() {
     const urlKeyVals = getUrlKeyVals();
     const songInfo = parseKeyValsToSongInfo(urlKeyVals);
-    this.renderMgr.render(songInfo.song);
-    this.song = songInfo.song;
+    this.song = joinSongParts(songInfo.songParts, songInfo.title);
     this.initialHeaders = songInfo.initialHeaders;
 
     const subdivisions = this.initialHeaders[HeaderType.Subdivision];
@@ -35,6 +71,9 @@ export class ActionMgr {
       this.initialHeaders[HeaderType.Key].toNoteNum() + this.initialHeaders[HeaderType.Transpose]);
     document.getElementById('repeat-display').textContent = this.initialHeaders[HeaderType.Repeat];
     document.getElementById('upper-numeral-display').textContent = this.initialHeaders[HeaderType.Meter].upperNumeral;
+
+    this.chordSvgMgr = new ChordSvgMgr(songInfo.songParts, this.currTime8n);
+    this.render();
   }
 
   getSong() {
@@ -49,10 +88,32 @@ export class ActionMgr {
       this.songReplayer.stop();
     } else {
       this.songReplayer.play(this.getSong(), {
+        start8n: this.currTime8n && this.currTime8n.lessThan(this.song.getEnd8n()) ? this.currTime8n : undefined,
         addDrumBeat: true, padLeft: true, muteFinalMeasure: true,
         numBeatDivisions: this.initialHeaders[HeaderType.Subdivision],
       });
     }
+  }
+
+  setCurrTime8n(time8n) {
+    this.currTime8n = time8n;
+    this.chordSvgMgr.setCurrTime8n(this.currTime8n);
+  }
+  stop(lineNum) {
+    if (this.songReplayer.isPlaying()) {
+      this.songReplayer.stop();
+    }
+    if (lineNum) {
+      const barsPerLine = 4;
+      const durPerMeasure8n = this.song.timeSigChanges.defaultVal.getDurPerMeasure8n();
+      const possTime8n = durPerMeasure8n.times(lineNum * barsPerLine);
+      if (possTime8n.lessThan(this.song.getEnd8n())) {
+        this.setCurrTime8n(possTime8n)
+      }
+    } else {
+      this.setCurrTime8n(null)
+    }
+    this.render();
   }
 
   toggleMenu() {

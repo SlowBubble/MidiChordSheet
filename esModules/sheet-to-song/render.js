@@ -44,5 +44,9 @@ export class RenderMgr {
     const abcStr = stateMgr.getAbc();
     ABCJS.renderAbc(this._canvasDiv, abcStr, params, moreParams);
   }
+
+  clear() {
+    this._canvasDiv.innerHTML = '';
+  }
   
 }

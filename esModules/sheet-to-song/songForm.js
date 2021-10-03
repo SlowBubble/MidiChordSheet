@@ -18,14 +18,29 @@ export class SongForm {
     this.outro = outro;
   }
 
-  // For now, we will just deal with chordChanges with a single voice filled with rests.
   toSong(numRepeats) {
+    const parts = this.getParts(numRepeats);
+    if (parts.length === 0) {
+      return new Song({title: this.title});
+    }
+    parts[0].updateComping(); // TODO remove
+    const res = new Song(parts[0].song);
+    res.title = this.title;
+
+    parts.slice(1).forEach(part => {
+      appendToSong(res, part);
+    });
+    // addComping(res, parts);
+
+    return res;
+  }
+
+  getParts(numRepeats) {
+    numRepeats = numRepeats || 0;
     const nameToPart = {};
     this.parts.forEach(part => {
       nameToPart[part.song.title] = part;
     });
-
-    numRepeats = numRepeats || 0;
     const sequence = [];
     if (this.intro) {
       sequence.push(this.intro);
@@ -39,18 +54,24 @@ export class SongForm {
     if (sequence.length === 0) {
       return new Song({title: this.title});
     }
-    const parts = sequence.map(name => nameToPart[name]);
-    parts[0].updateComping(); // TODO remove
-    const res = new Song(parts[0].song);
-    res.title = this.title;
-
-    parts.slice(1).forEach(part => {
-      appendToSong(res, part);
-    });
-    // addComping(res, parts);
-
-    return res;
+    return sequence.map(name => nameToPart[name]);
   }
+}
+
+export function joinSongParts(parts, title) {
+  if (parts.length === 0) {
+    return new Song({title: title});
+  }
+  parts[0].updateComping(); // TODO remove
+  const res = new Song(parts[0].song);
+  res.title = title;
+
+  parts.slice(1).forEach(part => {
+    appendToSong(res, part);
+  });
+  // addComping(res, parts);
+
+  return res;
 }
 
 function addComping(song, parts) {

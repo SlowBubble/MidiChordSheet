@@ -29,6 +29,18 @@ export class Chord {
   toString() {
     return this._toString();
   }
+  toPrettyString() {
+    const str = this.toString();
+    return str
+      .replace('m7b5', 'ø')
+      .replace('dim', '°')
+      .replace('maj', 'Δ')
+      .replace('M', 'Δ')
+      .replace('aug', '+')
+      // .replace('b', '♭')
+      // .replace('#', '♯')
+    ;
+  }
   toRomanNumeralString(baseKey) {
     return this._toString(baseKey);
   }

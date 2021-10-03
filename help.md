@@ -2,17 +2,25 @@
 
 # Headers
 
-Headers can be placed on top of a chord to specify changes to the music:
+Headers can be placed on top of a chord to specify changes to the music.
+
+Main:
 - Key
 - Meter
 - Swing
 - Tempo
+
+Structure:
 - Part
 - Copy
-- Syncopation
-- Transpose
 - Repeat
+
+Comping:
+- Syncopation
 - Subdivision
+
+Others:
+- Transpose
 
 # Example
 

@@ -6,6 +6,8 @@ import { shuffle } from "../array-util/arrayUtil.js";
 
 const num8nPerBeat = 2;
 
+// TODO we will need to add structural info, such as whether this part is copied from
+// another part, so that we can render a shorter version in the future.
 export class SongPart {
   constructor({
     song = {}, // Song, which can have a melody or rest. Comping will be added in SongForm.
@@ -57,7 +59,7 @@ export class SongPart {
       }
       // Make this higher than bassNoteNum unless it's higher than maxBass
       let bassNoteNum2 = chord.root.toNoteNum(4);
-      if ((dur8n.greaterThan(longDur8n) || (isDenseBass && dur8n.leq(longDur8n) && dur8n.geq(durFor2Beats))) && !isFinalNote) {
+      if (((dur8n.greaterThan(longDur8n) && Math.random() < 0.7) || (isDenseBass && dur8n.leq(longDur8n) && dur8n.geq(durFor2Beats))) && !isFinalNote) {
         if (chord.bass) {
           if (bassNoteNum2 > maxBass) {
             bassNoteNum2 -= 12;

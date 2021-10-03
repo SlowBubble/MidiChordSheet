@@ -4,15 +4,20 @@ Generate a backing track from data in a spreadsheet of chords.
 
 # Features
 
+## WIP
+
+- Rendering only the chords.
+  - Support animation while playing
+  - Use 3x, 2x, 1x to show the progress of repeats.
+
+
 ## P1
 
+- Display a chord at the start of a measure even if it did not change from the last measure.
 - Fix color notes clustering
   - need a way to identify what needs to not be on the bottom.
 - Deal with 3/4 comping separately
   - Current bandaid is to do 1 long chord.
-- Rendering only the chords.
-  - Support animation while playing
-  - Use 3x, 2x, 1x to show the progress of repeats.
 
 ## P2
 

@@ -23,7 +23,10 @@ export class SongPart {
     const bassQngs = [];
     const trebleQngs = [];
 
-    const longDur8n = 8;
+    // Not sure why comping becomes static when longDur8n is set to 8 instead of 6.
+    const durFor3Beats = 3 * num8nPerBeat;
+    const durFor2Beats = 2 * num8nPerBeat;
+    const longDur8n = durFor3Beats;
     const maxBass = 56;
     const minBass = 40;
     const maxTreble = 76;
@@ -42,19 +45,19 @@ export class SongPart {
       const bass = chord.bass || chord.root;
       const bassNoteNum = genNearestNums([bass.toNoteNum()], [prevBassNoteNum], minBass, maxBass);
       const dur8n = end8n.minus(change.start8n);
-      if (dur8n.geq(longDur8n)) {
+      if (dur8n.greaterThan(longDur8n)) {
         isDenseBass = false;
       }
-      if (dur8n.equals(4)) {
+      if (dur8n.leq(longDur8n)) {
         if (isDenseBass) {
           isDenseBass = Math.random() < 0.85;
         } else {
-          isDenseBass = Math.random() < 0.4;
+          isDenseBass = Math.random() < 0.35;
         }
       }
       // Make this higher than bassNoteNum unless it's higher than maxBass
       let bassNoteNum2 = chord.root.toNoteNum(4);
-      if ((dur8n.geq(longDur8n) || (isDenseBass && dur8n.equals(4))) && !isFinalNote) {
+      if ((dur8n.greaterThan(longDur8n) || (isDenseBass && dur8n.leq(longDur8n) && dur8n.geq(durFor2Beats))) && !isFinalNote) {
         if (chord.bass) {
           if (bassNoteNum2 > maxBass) {
             bassNoteNum2 -= 12;
@@ -82,7 +85,11 @@ export class SongPart {
       // Treble
       const specifiedColorNoteNums = chord.getSpecifiedColorNoteNums();
       const trebleNoteNums = genNearestNums(specifiedColorNoteNums, prevTrebleNoteNums, minTreble, maxTreble);
-      if ((dur8n.geq(8) || (dur8n.geq(longDur8n) && Math.random() < 0.4)) && !isFinalNote) {
+      // Tuned for the 3/4 meter song, "Someday My Prince Will Come"
+      const isDenseTreble = (isDenseBass ?
+        Math.random() < this.syncopationFactor :
+        Math.random() < this.syncopationFactor * 2);
+      if ((dur8n.geq(8) || (dur8n.geq(longDur8n) && isDenseTreble)) && !isFinalNote) {
         const third = chord.root.toNoteNum() + chord.getThirdInterval();
         const seventh = chord.root.toNoteNum() + chord.getSeventhInterval();
         const fifth = chord.root.toNoteNum() + chord.getFifthInterval();

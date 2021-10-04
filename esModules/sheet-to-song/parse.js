@@ -51,6 +51,7 @@ function createInitialHeaders(chunkedLocsWithPickup, keyVals) {
   headers[HeaderType.Swing] = song.swingChanges.defaultVal;
   headers[HeaderType.Transpose] = 0;
   headers[HeaderType.Syncopation] = 20;
+  headers[HeaderType.Density] = 20;
   headers[HeaderType.Repeat] = 0;
 
   if (chunkedLocsWithPickup.length > 0 &&
@@ -84,6 +85,7 @@ function toSongParts(chunkedLocsWithPickup, initialHeader) {
   let currSwing;
   let currTranspose;
   let currSyncopation;
+  let currDensity;
 
   return chunkedLocsWithPickup.map((chunk, idx) => {
     const firstLoc = chunk.chordHeaderLocs[0];
@@ -124,6 +126,10 @@ function toSongParts(chunkedLocsWithPickup, initialHeader) {
 
     if (headers[HeaderType.Syncopation] !== undefined) {
       currSyncopation = headers[HeaderType.Syncopation];
+    }
+
+    if (headers[HeaderType.Density] !== undefined) {
+      currDensity = headers[HeaderType.Density];
     }
 
     // Relative to the current part.
@@ -167,7 +173,7 @@ function toSongParts(chunkedLocsWithPickup, initialHeader) {
       end8n: end8n,
       realEnd8n: end8n,
     })];
-    const part = new SongPart({song: song, syncopationPct: currSyncopation});
+    const part = new SongPart({song: song, syncopationPct: currSyncopation, densityPct: currDensity});
     partNameToPart[song.title] = part;
     return part;
   });
@@ -288,6 +294,7 @@ export const HeaderType = Object.freeze({
   Copy: 'Copy',
   CompingStyle: 'CompingStyle',
   Syncopation: 'Syncopation',
+  Density: 'Density',
   Transpose: 'Transpose',
   Repeat: 'Repeat',
   Subdivision: 'Subdivision',
@@ -365,6 +372,11 @@ function processKeyVal(key, valStr, warnError) {
     case 'syncopation':
     return {
       type: HeaderType.Syncopation,
+      value: parseInt(valStr),
+    };
+    case 'density':
+    return {
+      type: HeaderType.Density,
       value: parseInt(valStr),
     };
     // case 'form':

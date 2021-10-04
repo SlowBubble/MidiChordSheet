@@ -2,6 +2,7 @@ import { parseKeyValsToSongInfo, HeaderType } from "../esModules/sheet-to-song/p
 import { fromNoteNumWithFlat } from "../esModules/chord/spell.js";
 import { joinSongParts } from "../esModules/sheet-to-song/songForm.js";
 import { ChordSvgMgr } from "../esModules/chord-svg/chordSvg.js";
+import { makeFrac } from "../esModules/fraction/fraction.js";
 
 export class ActionMgr {
   constructor({
@@ -116,6 +117,31 @@ export class ActionMgr {
     this.render();
   }
 
+  moveDown() {
+    this.move(true);
+  }
+  moveUp() {
+    this.move(false);
+  }
+  move(isIncreasing) {
+    const barsPerLine = 4;
+    const durPerMeasure8n = this.song.timeSigChanges.defaultVal.getDurPerMeasure8n();
+    const currTime = this.currTime8n || makeFrac(0);
+    const fracLineNum = currTime.over(durPerMeasure8n).over(barsPerLine);
+    let lineNum = Math.floor(fracLineNum.toFloat());
+    if (isIncreasing) {
+      lineNum += 1;
+    } else {
+      if (fracLineNum.isWhole()) {
+          lineNum -= 1;
+      }
+    }
+    if (lineNum <= 0) {
+      lineNum = null;
+    }
+    this.stop(lineNum);
+  }
+
   toggleMenu() {
     if (this.menuDiv.style.display === 'none') {
       this.menuDiv.style.display = '';
@@ -167,6 +193,17 @@ export class ActionMgr {
   increaseOffbeatSyncopation() {
     const syncopationPct = this.initialHeaders[HeaderType.Syncopation];
     setUrlParam(HeaderType.Syncopation, syncopationPct + 3);
+    this.reloadSong();
+  }
+
+  decreaseDensity() {
+    const densityPct = this.initialHeaders[HeaderType.Density];
+    setUrlParam(HeaderType.Density, densityPct - 3);
+    this.reloadSong();
+  }
+  increaseDensity() {
+    const densityPct = this.initialHeaders[HeaderType.Density];
+    setUrlParam(HeaderType.Density, densityPct + 3);
     this.reloadSong();
   }
 

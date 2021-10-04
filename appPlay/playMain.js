@@ -73,9 +73,12 @@ function setupInteraction(actionMgr) {
   document.getElementById("transpose-down-btn").onclick = _ => actionMgr.transposeKeyDown();
 
   hotkeysDoc('o', _ => actionMgr.increaseOffbeatSyncopation());
-  hotkeysDoc('shift+o', _ => actionMgr.decreaseOffbeatSyncopation());
+  hotkeysDoc('shift+o', _ => actionMgr.decreaseDensity());
   document.getElementById("incr-syncopation-btn").onclick = _ => actionMgr.increaseOffbeatSyncopation();
   document.getElementById("decr-syncopation-btn").onclick = _ => actionMgr.decreaseOffbeatSyncopation();
+
+  hotkeysDoc('d', _ => actionMgr.increaseDensity());
+  hotkeysDoc('shift+d', _ => actionMgr.decreaseDensity());
 
   hotkeysDoc('b', _ => actionMgr.incrementBeatSubdivision());
   hotkeysDoc('shift+b', _ => actionMgr.decreaseOffbeatSyncopation());
@@ -83,15 +86,7 @@ function setupInteraction(actionMgr) {
   document.getElementById("decr-subdivision-btn").onclick = _ => actionMgr.decrementBeatSubdivision();
 
   hotkeysDoc('c', _ => actionMgr.toggleChordView());
-  // Consider using other number for line numbers.
   hotkeysDoc('0', _ => actionMgr.stop());
-  hotkeysDoc('1', _ => actionMgr.stop(1));
-  hotkeysDoc('2', _ => actionMgr.stop(2));
-  hotkeysDoc('3', _ => actionMgr.stop(3));
-  hotkeysDoc('4', _ => actionMgr.stop(4));
-  hotkeysDoc('5', _ => actionMgr.stop(5));
-  hotkeysDoc('6', _ => actionMgr.stop(6));
-  hotkeysDoc('7', _ => actionMgr.stop(7));
-  hotkeysDoc('8', _ => actionMgr.stop(8));
-  hotkeysDoc('9', _ => actionMgr.stop(9));
+  hotkeysDoc('up', _ => actionMgr.moveUp());
+  hotkeysDoc('down', _ => actionMgr.moveDown());
 }

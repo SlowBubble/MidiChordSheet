@@ -13,10 +13,12 @@ export class SongPart {
     song = {}, // Song, which can have a melody or rest. Comping will be added in SongForm.
     compingStyle = CompingStyle.default,
     syncopationPct = 20,
+    densityPct = 20,
   }) {
     this.song = new Song(song);
     this.compingStyle = compingStyle;
     this.syncopationFactor = syncopationPct / 100;
+    this.densityFactor = densityPct / 100;
   }
 
   // TODO remove
@@ -25,10 +27,9 @@ export class SongPart {
     const bassQngs = [];
     const trebleQngs = [];
 
-    // Not sure why comping becomes static when longDur8n is set to 8 instead of 6.
+    const durFor4Beats = 4 * num8nPerBeat;
     const durFor3Beats = 3 * num8nPerBeat;
     const durFor2Beats = 2 * num8nPerBeat;
-    const longDur8n = durFor3Beats;
     const maxBass = 56;
     const minBass = 40;
     const maxTreble = 76;
@@ -47,19 +48,19 @@ export class SongPart {
       const bass = chord.bass || chord.root;
       const bassNoteNum = genNearestNums([bass.toNoteNum()], [prevBassNoteNum], minBass, maxBass);
       const dur8n = end8n.minus(change.start8n);
-      if (dur8n.greaterThan(longDur8n)) {
+      if (dur8n.greaterThan(durFor3Beats) || dur8n.lessThan(durFor2Beats)) {
         isDenseBass = false;
-      }
-      if (dur8n.leq(longDur8n)) {
+      } else {
         if (isDenseBass) {
-          isDenseBass = Math.random() < 0.85;
+          isDenseBass = Math.random() < this.densityFactor * 4;
         } else {
-          isDenseBass = Math.random() < 0.35;
+          isDenseBass = Math.random() < this.densityFactor * 1.5;
         }
       }
+      const isDenseBaseForLongDur =  (dur8n.greaterThan(durFor3Beats) && Math.random() < this.densityFactor * 3);
       // Make this higher than bassNoteNum unless it's higher than maxBass
       let bassNoteNum2 = chord.root.toNoteNum(4);
-      if (((dur8n.greaterThan(longDur8n) && Math.random() < 0.7) || (isDenseBass && dur8n.leq(longDur8n) && dur8n.geq(durFor2Beats))) && !isFinalNote) {
+      if ((isDenseBaseForLongDur || isDenseBass) && !isFinalNote) {
         if (chord.bass) {
           if (bassNoteNum2 > maxBass) {
             bassNoteNum2 -= 12;
@@ -71,7 +72,7 @@ export class SongPart {
           }
         }
         let syncopateBass = dur8n.geq(8) ? Math.random() < this.syncopationFactor : Math.random() < this.syncopationFactor / 1.5;
-        if (dur8n.equals(longDur8n)) {
+        if (dur8n.equals(durFor3Beats)) {
           syncopateBass = false;
         }
         const dur8nFromEnd = syncopateBass ? 1 : 2;
@@ -88,10 +89,17 @@ export class SongPart {
       const specifiedColorNoteNums = chord.getSpecifiedColorNoteNums();
       const trebleNoteNums = genNearestNums(specifiedColorNoteNums, prevTrebleNoteNums, minTreble, maxTreble);
       // Tuned for the 3/4 meter song, "Someday My Prince Will Come"
-      const isDenseTreble = (isDenseBass ?
-        Math.random() < this.syncopationFactor :
-        Math.random() < this.syncopationFactor * 2);
-      if ((dur8n.geq(8) || (dur8n.geq(longDur8n) && isDenseTreble)) && !isFinalNote) {
+      let isDenseTreble = false;
+      if (dur8n.geq(durFor4Beats)) {
+        isDenseTreble = (isDenseBaseForLongDur ?
+          Math.random() < this.densityFactor * 3 :
+          Math.random() < this.densityFactor * 4);
+      } else if (dur8n.geq(durFor3Beats)) {
+        isDenseTreble = (isDenseBaseForLongDur ?
+          Math.random() < this.densityFactor :
+          Math.random() < this.densityFactor * 2);
+      }
+      if (isDenseTreble && !isFinalNote) {
         const third = chord.root.toNoteNum() + chord.getThirdInterval();
         const seventh = chord.root.toNoteNum() + chord.getSeventhInterval();
         const fifth = chord.root.toNoteNum() + chord.getFifthInterval();
@@ -119,7 +127,7 @@ export class SongPart {
         }
         const syncopateFirstBeat = Math.random() < this.syncopationFactor / 2;
         let dur8nFromEnd;
-        if (dur8n.equals(longDur8n)) {
+        if (dur8n.equals(durFor3Beats)) {
           dur8nFromEnd = num8nPerBeat;
         } else {
           const syncopateLatterBeat = Math.random() < this.syncopationFactor;

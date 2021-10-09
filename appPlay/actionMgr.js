@@ -48,7 +48,8 @@ export class ActionMgr {
 
   renderChordsCanvas() {
     this.chordsCanvas.innerHTML = '';
-    this.chordsCanvas.append(...this.chordSvgMgr.getSvgs());
+    // this.chordsCanvas.append(...this.chordSvgMgr.getSvgs());
+    this.chordsCanvas.append(this.chordSvgMgr.getSvg());
   }
   clearChordsCanvas() {
     this.chordsCanvas.innerHTML = '';
@@ -88,58 +89,76 @@ export class ActionMgr {
     if (this.songReplayer.isPlaying()) {
       this.songReplayer.stop();
     } else {
-      this.songReplayer.play(this.getSong(), {
-        start8n: this.currTime8n && this.currTime8n.lessThan(this.song.getEnd8n()) ? this.currTime8n : undefined,
-        addDrumBeat: true, padLeft: true, muteFinalMeasure: true,
-        numBeatDivisions: this.initialHeaders[HeaderType.Subdivision],
-      });
+      this.play();
     }
+  }
+
+  play() {
+    if (this.songReplayer.isPlaying()) {
+      return;
+    }
+    this.songReplayer.play(this.getSong(), {
+      start8n: this.currTime8n && this.currTime8n.leq(this.song.getFinalChordTime8n()) ? this.currTime8n : undefined,
+      addDrumBeat: true, padLeft: true, muteFinalMeasure: true,
+      numBeatDivisions: this.initialHeaders[HeaderType.Subdivision],
+    });
   }
 
   setCurrTime8n(time8n) {
     this.currTime8n = time8n;
     this.chordSvgMgr.setCurrTime8n(this.currTime8n);
   }
-  stop(lineNum) {
-    if (this.songReplayer.isPlaying()) {
-      this.songReplayer.stop();
-    }
-    if (lineNum) {
-      const barsPerLine = 4;
-      const durPerMeasure8n = this.song.timeSigChanges.defaultVal.getDurPerMeasure8n();
-      const possTime8n = durPerMeasure8n.times(lineNum * barsPerLine);
-      if (possTime8n.lessThan(this.song.getEnd8n())) {
-        this.setCurrTime8n(possTime8n)
-      }
-    } else {
+
+  moveToStart() {
+    this.actAndResume(_ => {
       this.setCurrTime8n(null)
-    }
-    this.render();
+      this.render();
+    });
   }
 
+  moveLeft() {
+    this.move(-1);
+  }
+  moveRight() {
+    this.move(1);
+  }
   moveDown() {
-    this.move(true);
+    this.move(4);
   }
   moveUp() {
-    this.move(false);
+    this.move(-4);
   }
-  move(isIncreasing) {
-    const barsPerLine = 4;
-    const durPerMeasure8n = this.song.timeSigChanges.defaultVal.getDurPerMeasure8n();
-    const currTime = this.currTime8n || makeFrac(0);
-    const fracLineNum = currTime.over(durPerMeasure8n).over(barsPerLine);
-    let lineNum = Math.floor(fracLineNum.toFloat());
-    if (isIncreasing) {
-      lineNum += 1;
-    } else {
-      if (fracLineNum.isWhole()) {
-          lineNum -= 1;
+
+  actAndResume(action) {
+    const shouldStopAndResume = this.songReplayer.isPlaying();
+    if (shouldStopAndResume) {
+      this.songReplayer.stop();
+    }
+    action();
+    if (shouldStopAndResume) {
+      this.play();
+    }
+  }
+
+  move(numBars) {
+    this.actAndResume(_ => {
+      numBars = numBars || 1;
+      const durPerMeasure8n = this.song.timeSigChanges.defaultVal.getDurPerMeasure8n();
+      const currTime = this.currTime8n || makeFrac(0);
+      const unroundedBarNum = currTime.over(durPerMeasure8n).toFloat();
+      let barNum = numBars > 0 ? Math.ceil(unroundedBarNum) : Math.floor(unroundedBarNum);
+      barNum += numBars;
+  
+      let newTime8n = null;
+      if (barNum > 0) {
+        newTime8n = durPerMeasure8n.times(barNum);
+        if (newTime8n.geq(this.song.getEnd8n())) {
+          newTime8n = this.song.getEnd8n();
+        }
       }
-    }
-    if (lineNum <= 0) {
-      lineNum = null;
-    }
-    this.stop(lineNum);
+      this.setCurrTime8n(newTime8n);
+      this.render();
+    });
   }
 
   toggleMenu() {

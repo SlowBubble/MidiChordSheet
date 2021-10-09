@@ -56,6 +56,14 @@ export class Song {
       return end8n.leq(accum) ? accum : end8n;
     }, this.getStart8n());
   }
+  getFinalChordTime8n() {
+    const changes = this.chordChanges.getChanges();
+    if (changes.length === 0) {
+      return makeFrac(0);
+    }
+    const lastChange = changes.slice(changes.length - 1)[0];
+    return lastChange.start8n;
+  }
   // [Frac].
   _getBarsInTime8n() {
     const res = [];
@@ -69,6 +77,7 @@ export class Song {
     res.push(end8n);
     return res;
   }
+  // Not sure if this is actually good, since for endings, we don't the chord to be repeated.
   getChordChangesAcrossBars() {
 
   }

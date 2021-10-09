@@ -6,10 +6,14 @@ Generate a backing track from data in a spreadsheet of chords.
 
 ## WIP
 
-- Rendering only the chords.
-  - Support animation while playing
-  - Use 3x, 2x, 1x to show the progress of repeats.
+- Design how to add melody.
+- Record backing track.
 
+## Design how to add melody
+
+- Start with design in Sheets.
+  - Design a grammar and use Nearley to build a parser of it.
+  - Use autoResizeColumns and then adjust all columns to the max width.
 
 ## P1
 
@@ -50,6 +54,7 @@ Generate a backing track from data in a spreadsheet of chords.
 
 ## Done
 
+- Rendering only the chords.
 - A play button to resume/pause the backing track.
   - Shortcut: space.
 - Tempo.

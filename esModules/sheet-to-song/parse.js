@@ -10,6 +10,7 @@ import { QuantizedNoteGp } from "../song-sheet/quantizedNoteGp.js";
 import { SongForm } from "./songForm.js";
 import { CompingStyle, SongPart } from "./songPart.js";
 import { computeBeatInfo } from "../musical-beat/pattern.js";
+import { parseCell } from "../sheet-melody/parseSheet.js";
 
 
 export function parseKeyValsToSongInfo(keyVals) {
@@ -116,8 +117,6 @@ function toSongParts(chunkedLocsWithPickup, initialHeader) {
     if (headers[HeaderType.Key] !== undefined) {
       currKeySig = headers[HeaderType.Key];
     }
-    const transposedKeySig = fromNoteNumWithFlat(currKeySig.toNoteNum() + currTranspose);
-    song.keySigChanges.defaultVal = transposedKeySig;
 
     if (headers[HeaderType.Swing] !== undefined) {
       currSwing = headers[HeaderType.Swing];
@@ -163,9 +162,7 @@ function toSongParts(chunkedLocsWithPickup, initialHeader) {
     const lastLoc = chunk.chordHeaderLocs[chunk.chordHeaderLocs.length - 1];
     const end8n = idxToTime8n(lastLoc.cellIdx + 1);
     song.chordChanges.removeWithinInterval(end8n);
-    song.chordChanges.getChanges().forEach(change => {
-      change.val.shift(currKeySig, transposedKeySig);
-    });
+
     // Even though we will not use this voice later. We need it now for
     // getEnd8n to work correctly.
     song.getVoice(0).noteGps = [new QuantizedNoteGp({
@@ -173,8 +170,21 @@ function toSongParts(chunkedLocsWithPickup, initialHeader) {
       end8n: end8n,
       realEnd8n: end8n,
     })];
+
+    // Get hold of the original song before transposing.
+    // TODO see if it's better to move this transposing out of this function to an ensuing function
+    // to avoid the copying?
+    const untransposedSong = new Song(song);
+    const transposedKeySig = fromNoteNumWithFlat(currKeySig.toNoteNum() + currTranspose);
+    song.chordChanges.getChanges().forEach(change => {
+      change.val.shift(currKeySig, transposedKeySig);
+    });
+    song.keySigChanges.defaultVal = transposedKeySig;
     const part = new SongPart({song: song, syncopationPct: currSyncopation, densityPct: currDensity});
-    partNameToPart[song.title] = part;
+    const untransposedPart = new SongPart(part);
+    untransposedPart.song = untransposedSong;
+
+    partNameToPart[song.title] = untransposedPart;
     return part;
   });
 }
@@ -291,6 +301,7 @@ export const HeaderType = Object.freeze({
   Swing: 'Swing',
   Tempo: 'Tempo',
   Part: 'Part',
+  VoicePart: 'VoicePart',
   Copy: 'Copy',
   CompingStyle: 'CompingStyle',
   Syncopation: 'Syncopation',
@@ -349,6 +360,13 @@ function processKeyVal(key, valStr, warnError) {
         type: HeaderType.Part,
         value: valStr,
       };
+    // TODO make the string before part be the voice id;
+    // in this case the voice id is "Voice" (need to remove toLowerCase).
+    case 'voicepart':
+      return {
+        type: HeaderType.VoicePart,
+        value: valStr,
+      };
     case 'repeat':
       return {
         type: HeaderType.Repeat,
@@ -397,6 +415,8 @@ const ChordInfoType = Object.freeze({
   Unknown: 'Unknown',
 });
 
+// TODO extend to either chord or voice.
+//  parseCell(String.raw`_ ; te \do | \ra \do ; \te`);
 // Returns [{type: ChordInfoType, chord: ?Chord, cellIdx: Number, fractionalIdx: Frac,
 //    rowIdx: Number, colIdx: Number, zeroTimeColIdx, number, isNewLine: bool}]
 function parseChordLocations(gridData) {

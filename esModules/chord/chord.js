@@ -32,7 +32,7 @@ export class Chord {
   toPrettyString() {
     const str = this.toString();
     return str
-      .replace('m7b5', 'ø')
+      .replace('m7b5', 'ø7')
       .replace('dim', '°')
       .replace('maj', 'Δ')
       .replace('M', 'Δ')

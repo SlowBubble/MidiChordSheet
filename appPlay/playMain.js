@@ -86,7 +86,9 @@ function setupInteraction(actionMgr) {
   document.getElementById("decr-subdivision-btn").onclick = _ => actionMgr.decrementBeatSubdivision();
 
   hotkeysDoc('c', _ => actionMgr.toggleChordView());
-  hotkeysDoc('0', _ => actionMgr.stop());
+  hotkeysDoc('0', _ => actionMgr.moveToStart());
   hotkeysDoc('up', _ => actionMgr.moveUp());
   hotkeysDoc('down', _ => actionMgr.moveDown());
+  hotkeysDoc('left', _ => actionMgr.moveLeft());
+  hotkeysDoc('right', _ => actionMgr.moveRight());
 }

@@ -1,6 +1,6 @@
 import { makeFrac } from "../fraction/fraction.js";
 import { SongPart } from "../sheet-to-song/songPart.js";
-import { makeSvgElt } from "./svgUtil.js";
+import { makeSvgElt, getBoundingBox } from "./svgUtil.js";
 import { range } from "../array-util/arrayUtil.js";
 import { mod } from "../math-util/mathUtil.js";
 
@@ -15,15 +15,21 @@ export class ChordSvgMgr {
   getSvgs() {
     let time8nInSong = makeFrac(0);
     const svgs = this.songParts.map(part => {
-      const svg = genSvg(part, this.currTime8n, time8nInSong, {});
-      svg.style['border-top'] = '1px solid black';
-      svg.style['margin-top'] = '10px';
-      svg.style['padding-top'] = '10px';
+      const chordSvg = genChordSvg(part, this.currTime8n, time8nInSong, {});
       time8nInSong = time8nInSong.plus(part.song.getEnd8n());
-      return svg;
+      if (part.song.title === '::Unnamed::') {
+        return chordSvg;
+      }
+      const partNameSvg = genPartNameSvg(part.song.title, {});  
+      return stackSvgs(partNameSvg, chordSvg);
     });
     // TODO normalize all svgs to have the same x-coord for the first bar.
     return svgs;
+  }
+  getSvg() {
+    const svg = stackSvgs(...this.getSvgs());
+    svg.style['padding-top'] = '20px';
+    return svg;
   }
 
   // Returns whether or a new set of SVGs need to be generated.
@@ -33,9 +39,43 @@ export class ChordSvgMgr {
   }
 }
 
+function stackSvgs(...svgs) {
+  let currY = 0;
+  let maxWidth = 0;
+  svgs.forEach(svg => {
+    svg.setAttribute('y', currY);
+    currY += parseInt(svg.getAttribute('height'));
+    maxWidth = Math.max(maxWidth, parseInt(svg.getAttribute('width')));
+  });
+  const svg = makeSvgElt('svg', {width: maxWidth, height: currY});
+  svg.append(...svgs);
+  return svg;
+}
 
+function genPartNameSvg(name, {bottomMargin = 10, xPadding = 6, yPadding = 2}) {
+  const bbox = getBoundingBox(name, {'font-size': 22});
+  const paddedWidth = bbox.width + 2 * xPadding;
+  const paddedHeight = bbox.height + 2 * yPadding;
+  const textSvg = makeSvgElt('text', {
+    x: xPadding, y: paddedHeight / 2, 'dominant-baseline': 'central',
+    'font-size': 22,
+  }, name);
+  const rectSvg = makeSvgElt('rect', {
+    x: 0,
+    y: 0,
+    'fill': 'none',
+    'stroke': 'black',
+    width: paddedWidth, height: paddedHeight
+  });
+  const svg = makeSvgElt('svg', {
+    height: paddedHeight + bottomMargin,
+    width: paddedWidth,
+  });
+  svg.append(textSvg, rectSvg);
+  return svg;
+}
 // TODO figure of how to handle overlapping text.
-function genSvg(part, currTime8n, time8nInSong, {
+function genChordSvg(part, currTime8n, time8nInSong, {
   fontSize = 22, widthPerBar = 220, heightPerBar = 45,
   spacingBetweenBars = 30,
   barsPerLine = 4,
@@ -90,7 +130,7 @@ function genSvg(part, currTime8n, time8nInSong, {
     const {x, y} = time8nToPos(change.start8n);
     const passed = time8nInSong.plus(change.start8n).leq(currTime8n);
     return makeSvgElt('text', {
-      x: x, y: y, 'dominant-baseline': 'middle',
+      x: x, y: y, 'dominant-baseline': 'central',
       'font-size': fontSize,
       'font-weight': passed ? 'bold' : 'normal',
       fill: passed ? 'red' : 'black',

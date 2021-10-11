@@ -10,7 +10,6 @@ import { QuantizedNoteGp } from "../song-sheet/quantizedNoteGp.js";
 import { SongForm } from "./songForm.js";
 import { CompingStyle, SongPart } from "./songPart.js";
 import { computeBeatInfo } from "../musical-beat/pattern.js";
-import { parseCell } from "../sheet-melody/parseSheet.js";
 
 
 export function parseKeyValsToSongInfo(keyVals) {
@@ -64,7 +63,7 @@ function createInitialHeaders(chunkedLocsWithPickup, keyVals) {
   Object.entries(keyVals).forEach(([key, val]) => {
     const res = processKeyVal(
       key.trim().toLowerCase(),
-      val.trim().toLowerCase());
+      val.trim());
     if (!res) {
       return;
     }
@@ -189,6 +188,8 @@ function toSongParts(chunkedLocsWithPickup, initialHeader) {
   });
 }
 
+export const defaultPartName = '::Unnamed::';
+
 function chunkLocationsByPart(chordHeaderLocs) {
   const zerothLoc = chordHeaderLocs.find(loc => loc.fractionalIdx.equals(0));
   if (!zerothLoc.headers) {
@@ -196,7 +197,7 @@ function chunkLocationsByPart(chordHeaderLocs) {
   }
   if (!zerothLoc.headers[HeaderType.Part]) {
     // Use colons to avoid name collision.
-    zerothLoc.headers[HeaderType.Part] = '::Unnamed::';
+    zerothLoc.headers[HeaderType.Part] = defaultPartName;
   }
   return chunkArray(chordHeaderLocs, loc => loc.headers && loc.headers[HeaderType.Part]);
 }
@@ -281,7 +282,7 @@ function parseHeaderLocations(gridData) {
       }
       const res = processKeyVal(
         possKeyVal[0].trim().toLowerCase(),
-        possKeyVal[1].trim().toLowerCase(), /* warnError= */ true);
+        possKeyVal[1].trim(), /* warnError= */ true);
       if (!res) {
         return;
       }
@@ -311,7 +312,7 @@ export const HeaderType = Object.freeze({
   Subdivision: 'Subdivision',
 });
 
-function processKeyVal(key, valStr, warnError) {
+export function processKeyVal(key, valStr, warnError) {
   switch(key) {
     case 'key':
     case 'k':
@@ -331,6 +332,7 @@ function processKeyVal(key, valStr, warnError) {
     case 'swing':
       // Light swing by default.
       let ratio = makeFrac(3, 2);
+      valStr = valStr.toLowerCase();
       if (valStr === 'heavy' || valStr === 'hard') {
         ratio = makeFrac(5, 2);
       } else if (valStr === 'medium' || valStr === 'triplet') {
@@ -415,8 +417,6 @@ const ChordInfoType = Object.freeze({
   Unknown: 'Unknown',
 });
 
-// TODO extend to either chord or voice.
-//  parseCell(String.raw`_ ; te \do | \ra \do ; \te`);
 // Returns [{type: ChordInfoType, chord: ?Chord, cellIdx: Number, fractionalIdx: Frac,
 //    rowIdx: Number, colIdx: Number, zeroTimeColIdx, number, isNewLine: bool}]
 function parseChordLocations(gridData) {
@@ -427,6 +427,7 @@ function parseChordLocations(gridData) {
   // Determined fracIdx by looking at the first key-value cell.
   let zeroTimeColIdx = null;
   let currCellIdx = null;
+  let isChordMode = true;
 
   const initCellIdxIfNeeded = colIdx => {
     if (zeroTimeColIdx === null) {
@@ -457,6 +458,16 @@ function parseChordLocations(gridData) {
         if (zeroTimeColIdx === null) {
           zeroTimeColIdx = colIdx
         }
+        const key = cell.toLowerCase().split(':')[0];
+        if (key === 'part') {
+          isChordMode = true;
+        } else if (key.endsWith('part')) {
+          isChordMode = false;
+        }
+        return;
+      }
+
+      if (!isChordMode) {
         return;
       }
       const chordInfos = parseStringIntoChordInfos(cell);

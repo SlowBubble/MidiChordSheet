@@ -18,6 +18,7 @@ export class SongForm {
     this.outro = outro;
   }
 
+  // Note that this is unused.
   toSong(numRepeats) {
     const parts = this.getParts(numRepeats);
     if (parts.length === 0) {
@@ -87,7 +88,10 @@ function appendToSong(song, part) {
 
   part.updateComping(); // TODO remove
   song.voices.forEach((voice, idx) => {
-    voice.upsert(part.song.voices[idx].noteGps.filter(ng => ng.start8n.geq(0)), shift8n)
+    // Currently a later part can have fewer voices than an earlier part.
+    if (idx < part.song.voices.length) {
+      voice.upsert(part.song.voices[idx].noteGps.filter(ng => ng.start8n.geq(0)), shift8n);
+    }
   });
 
   part.song.chordChanges.getChanges().forEach(change => {

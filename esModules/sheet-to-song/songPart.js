@@ -148,10 +148,17 @@ export class SongPart {
         prevTrebleNoteNums = trebleNoteNums;
       }
     });
-    this.song.voices = [
-      new Voice({noteGps: trebleQngs, clef: clefType.Treble}),
-      new Voice({noteGps: bassQngs, clef: clefType.Bass}),
-    ];
+    const trebleVoice = new Voice({
+      noteGps: trebleQngs, clef: clefType.Treble,
+    });
+    const bassVoice = new Voice({noteGps: bassQngs, clef: clefType.Bass});
+    // Having just one rest note means we should replace the voices entirely.
+    if (this.song.voices[0].noteGps.length === 1 && this.song.voices[0].noteGps[0].midiNotes.length === 0 ) {
+      this.song.voices = [trebleVoice, bassVoice];
+    } else {
+      this.song.addVoice(trebleVoice);
+      this.song.addVoice(bassVoice);
+    }
   }
 }
 

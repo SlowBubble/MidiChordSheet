@@ -8,14 +8,15 @@ MelodicCell -> Splits {% id %}
 Splits -> Splits _ Bar _ Notes {% data => {return data.flat().filter(item => item !== null); } %}
         | Notes {% id %}
 
+# Don't use {% id %} for Note because we want a singleton array.
 Notes -> Notes _ Note {% data => {return data.flat().filter(item => item !== null); } %}
-       | Note {% id %}
+       | Note
 
 # Note that because Solfege does not do post-processing using {% id %},
-# data[0] is an singleton array, e.g. ["/", "/"].
-# data[1] is an singleton array, e.g. ["daw"].
-Note -> [/]:* Solfege  {% data => {return {type:'Note', solfege: data[1][0], octave: data[0].length}} %}
-	| [\\]:+ Solfege  {% data => {return {type:'Note', solfege: data[1][0], octave: -data[0].length}} %}
+# data[0] is an array, e.g. ["/", "/"].
+# data[1] is a singleton array, e.g. ["daw"].
+Note -> [/]:* Solfege  {% data => {return {type:'Note', solfege: data[1][0], octave: -data[0].length}} %}
+	| [\\]:+ Solfege  {% data => {return {type:'Note', solfege: data[1][0], octave: data[0].length}} %}
 	| "_" {% _ => {return {type:'Blank'}} %}
 	| "-" {% _ => {return {type:'Slot'}} %}
 	| "x" {% _ => {return {type:'Rest'}} %}

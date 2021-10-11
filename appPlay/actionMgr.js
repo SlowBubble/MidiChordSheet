@@ -3,6 +3,7 @@ import { fromNoteNumWithFlat } from "../esModules/chord/spell.js";
 import { joinSongParts } from "../esModules/sheet-to-song/songForm.js";
 import { ChordSvgMgr } from "../esModules/chord-svg/chordSvg.js";
 import { makeFrac } from "../esModules/fraction/fraction.js";
+import { parseKeyValsToSongInfo2 } from "../esModules/sheet-to-song/parseV2.js";
 
 export class ActionMgr {
   constructor({
@@ -57,8 +58,10 @@ export class ActionMgr {
 
   reloadSong() {
     const urlKeyVals = getUrlKeyVals();
-    const songInfo = parseKeyValsToSongInfo(urlKeyVals);
+    // const songInfo = parseKeyValsToSongInfo(urlKeyVals);
+    const songInfo = parseKeyValsToSongInfo2(urlKeyVals);
     this.song = joinSongParts(songInfo.songParts, songInfo.title);
+    console.log(this.song);
     this.initialHeaders = songInfo.initialHeaders;
 
     const subdivisions = this.initialHeaders[HeaderType.Subdivision];
@@ -306,8 +309,6 @@ function getUrlKeyVals() {
   if (!keyVals.data) {
     keyVals.title = 'Uncle Sun';
     keyVals.data = '[["","Tempo: 180","","",""],["","Key: C","","",""],["","Cmaj7","C6","Em","Em A7"],["","","","",""],["","Em7b5","Fmaj7","Bb7","C6"]]';
-    // keyVals.title = 'Etude No. 3';
-    // keyVals.data = `[["","Key: C","","",""],["","Part: V1","","",""],["","Tempo: 180","","",""],["","Swing: light","","",""],["_ Gsus","Cmaj7","Bm7b5 | E7#11","Am9","Gm7 | C7b13"],["","","","",""],["","F6add9","Fm7 | Bb7b13","Ebm7 | Ab7b13","Dm7 | G7b13"],["","","","",""],["","Part: V2","","",""],["","Repeat: V1","","",""],["","-","-","-","-"],["","","","",""],["","-","Fm7 | Bb7","Ebm7 | Ab7",""],["","","","",""],["","Part: Outro","","",""],["","Dm7 | Em7","Fmaj7","Dm7 | Em7","Fmaj7"],["","","","",""],["","Dm7 | Em7","Fmaj7","_ Dm7 | Em7 Fmaj7 | F7 G7 | Db7 _","C6"]]`
   }
   return keyVals;
 

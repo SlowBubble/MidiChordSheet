@@ -21,6 +21,10 @@ export class SongReplayer {
 
     const voices = song.getSoundingVoices();
     if (opts.addDrumBeat) {
+      const changes = song.chordChanges.getChanges();
+      if (changes.length) {
+        opts.lastBeatStart8n = changes[changes.length - 1].start8n;
+      }
       voices.push(createDrumVoice(song, opts));
     }
     const channelInfos = voices.map((voice, idx) => {

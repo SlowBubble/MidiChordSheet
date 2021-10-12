@@ -102,7 +102,7 @@ export class ActionMgr {
     }
     this.songReplayer.play(this.getSong(), {
       start8n: this.currTime8n && this.currTime8n.leq(this.song.getFinalChordTime8n()) ? this.currTime8n : undefined,
-      addDrumBeat: true, padLeft: true, muteFinalMeasure: true,
+      addDrumBeat: true, padLeft: true,
       numBeatDivisions: this.initialHeaders[HeaderType.Subdivision],
     });
   }

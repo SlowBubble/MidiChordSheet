@@ -7,7 +7,7 @@ import { Voice } from "../song-sheet/voice.js";
 
 // Note: this voice cannot just be added to the song because the pickup may not line up.
 export function createDrumVoice(song, {
-  drumVolume, padLeft, muteFinalMeasure, numBeatDivisions,
+  drumVolume, padLeft, numBeatDivisions, lastBeatStart8n,
 }) {
   drumVolume = drumVolume === undefined ? 1.5 : drumVolume;
 
@@ -15,9 +15,10 @@ export function createDrumVoice(song, {
   voice.settings.instrument = instruments.synth_drum;
   const isSwinging = song.swingChanges.defaultVal.ratio.greaterThan(1);
   const pattern = genMidiPattern(song.timeSigChanges.defaultVal, isSwinging, numBeatDivisions);
-  const genQngsFor1Period = (initial8n, mute) => {
+  const genQngsFor1Period = (initial8n, lastBeatStart8n) => {
     return pattern.evtsArrs.flatMap((evts, arrIdx) => {
       const time8n = initial8n.plus(pattern.durPerDivision8n.times(arrIdx));
+      const mute = lastBeatStart8n && lastBeatStart8n.lessThan(time8n);
       return new QuantizedNoteGp({
         start8n: time8n,
         end8n: time8n.plus(pattern.durPerDivision8n),
@@ -35,7 +36,7 @@ export function createDrumVoice(song, {
   const startIdx = Math.ceil(start8n.toFloat() / period8n.toFloat()) - 1;
   const endIdx = Math.ceil(end8n.toFloat() / period8n.toFloat());
   for (let idx = startIdx; idx < endIdx; idx++) {
-    voice.noteGps.push(...genQngsFor1Period(period8n.times(idx), muteFinalMeasure && idx == endIdx - 1).filter(qng => {
+    voice.noteGps.push(...genQngsFor1Period(period8n.times(idx), lastBeatStart8n).filter(qng => {
       if (qng.start8n.geq(end8n)) {
         return false;
       }

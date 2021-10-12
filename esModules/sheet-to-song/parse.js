@@ -1,7 +1,7 @@
 
 import { makeFrac } from "../fraction/fraction.js";
 import { Chord } from '../chord/chord.js';
-import { makeSpelling, fromNoteNumWithFlat } from "../chord/spell.js";
+import { makeSpelling } from "../chord/spell.js";
 import { TimeSig } from "../song-sheet/timeSigChanges.js";
 import { Swing } from "../song-sheet/swingChanges.js";
 import { chunkArray } from "../array-util/arrayUtil.js";
@@ -116,6 +116,7 @@ function toSongParts(chunkedLocsWithPickup, initialHeader) {
     if (headers[HeaderType.Key] !== undefined) {
       currKeySig = headers[HeaderType.Key];
     }
+    song.keySigChanges.defaultVal = currKeySig;
 
     if (headers[HeaderType.Swing] !== undefined) {
       currSwing = headers[HeaderType.Swing];
@@ -142,7 +143,7 @@ function toSongParts(chunkedLocsWithPickup, initialHeader) {
     }
 
     chunk.pickup.concat(chunk.chordHeaderLocs).forEach(loc => {
-      if (loc.chordType === ChordInfoType.Slot) {
+      if (loc.chordType === ChordInfoType.Slot || loc.chordType === ChordInfoType.TurnAroundStart) {
         return;
       }
       const isFirstChordInCell = loc.fractionalIdx.isWhole();
@@ -170,7 +171,15 @@ function toSongParts(chunkedLocsWithPickup, initialHeader) {
       realEnd8n: end8n,
     })];
 
-    const part = new SongPart({song: song, syncopationPct: currSyncopation, densityPct: currDensity, transpose: currTranspose});
+    const part = new SongPart({
+      song: song, syncopationPct: currSyncopation,
+      densityPct: currDensity, transpose: currTranspose,
+    });
+    const turnAroundLoc = chunk.chordHeaderLocs.find(loc => loc.chordType === ChordInfoType.TurnAroundStart);
+    if (turnAroundLoc) {
+      part.turnaroundStart8n = idxToTime8n(turnAroundLoc.fractionalIdx);
+    }
+
     partNameToPart[song.title] = part;
     return part;
   });
@@ -402,6 +411,7 @@ const ChordInfoType = Object.freeze({
   Blank: 'Blank',
   // Used for a copied section.
   Slot: 'Slot',
+  TurnAroundStart: 'TurnAroundStart',
   Unknown: 'Unknown',
 });
 
@@ -459,7 +469,7 @@ function parseChordLocations(gridData) {
         return;
       }
       const chordInfos = parseStringIntoChordInfos(cell);
-      const len = chordInfos.length;
+      const len = chordInfos.filter(info => info.type !== ChordInfoType.TurnAroundStart).length;
       if (len === 0) {
         return;
       }
@@ -471,13 +481,18 @@ function parseChordLocations(gridData) {
       lenientAboutErrors = true;
       initCellIdxIfNeeded(colIdx);
 
-      chordInfos.forEach((info, idx) => {
-        info.cellIdx = currCellIdx
-        info.fractionalIdx = makeFrac(idx, len).plus(currCellIdx);
-        info.isNewLine = idx === 0 && isNewLine;
+      let infoIdx = 0;
+      chordInfos.forEach(info => {
+        info.cellIdx = currCellIdx;
+        info.fractionalIdx = makeFrac(infoIdx, len).plus(currCellIdx);
+        info.isNewLine = infoIdx === 0 && isNewLine;
         info.rowIdx = rowIdx;
         info.colIdx = colIdx;
         info.zeroTimeColIdx = zeroTimeColIdx;
+
+        if (info.type !== ChordInfoType.TurnAroundStart) {
+          infoIdx++;
+        }
       });
       isNewLine = false;
       currCellIdx += 1;
@@ -496,9 +511,14 @@ function parseStringIntoChordInfos(cell) {
     if (text === '|') {
       return false;
     }
+    if (text === ')') {
+      return false;
+    }
     return true;
   }).map(text => {
-
+    if (text === '(') {
+      return {type: ChordInfoType.TurnAroundStart};
+    }
     try {
       const chord = new Chord(Parser.parse(text.replaceAll('maj', 'M').replaceAll('-', 'm')));
       return {type: ChordInfoType.Chord, chord: chord}

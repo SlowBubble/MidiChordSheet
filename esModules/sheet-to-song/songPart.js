@@ -2,7 +2,6 @@ import { Song } from "../song-sheet/song.js";
 import { makeSimpleQng } from "../song-sheet/quantizedNoteGp.js";
 import { clefType, Voice } from "../song-sheet/voice.js";
 import { intervals } from "../chord/interval.js";
-import { shuffle } from "../array-util/arrayUtil.js";
 
 const num8nPerBeat = 2;
 
@@ -11,12 +10,14 @@ const num8nPerBeat = 2;
 export class SongPart {
   constructor({
     song = {}, // Song, which can have a melody or rest. Comping will be added in SongForm.
+    turnaroundStart8n = undefined, // Frac, time after which chord changes should be discarded when used as the final part.
     compingStyle = CompingStyle.default,
     syncopationPct = 20,
     densityPct = 20,
     transpose = 0,
   }) {
     this.song = new Song(song);
+    this.turnaroundStart8n = turnaroundStart8n;
     this.compingStyle = compingStyle;
     this.syncopationFactor = syncopationPct / 100;
     this.densityFactor = densityPct / 100;

@@ -6,9 +6,9 @@ Generate a backing track from data in a spreadsheet of chords.
 
 ## WIP
 
-- Melody
-  - Do slots; - _ means -.
-  - Currently, melody once (in the future, more options).
+- Non-final turn-around via parens. E.g. (Dm7 G7).
+- pickup measure for chords.
+- Display k (Melody & Comping), k-1 (Comping), ....
 - Record backing track.
 
 ## P1
@@ -50,6 +50,9 @@ Generate a backing track from data in a spreadsheet of chords.
 
 ## Done
 
+- Melody
+  - Do slots; - _ means -.
+  - Currently, melody once (in the future, more options).
 - Rendering only the chords.
 - A play button to resume/pause the backing track.
   - Shortcut: space.

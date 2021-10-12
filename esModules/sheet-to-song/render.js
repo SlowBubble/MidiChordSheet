@@ -47,6 +47,7 @@ export class RenderMgr {
 
   clear() {
     this._canvasDiv.innerHTML = '';
+    this._canvasDiv.removeAttribute("style");
   }
   
 }

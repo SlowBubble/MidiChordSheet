@@ -18,23 +18,21 @@ export class SongForm {
     this.outro = outro;
   }
 
-  // Note that this is unused.
-  toSong(numRepeats) {
-    const parts = this.getParts(numRepeats);
-    if (parts.length === 0) {
-      return new Song({title: this.title});
-    }
-    parts[0].updateComping(); // TODO remove
-    const res = new Song(parts[0].song);
-    res.title = this.title;
+  // // Note that this is unused.
+  // toSong(numRepeats) {
+  //   const parts = this.getParts(numRepeats);
+  //   if (parts.length === 0) {
+  //     return new Song({title: this.title});
+  //   }
+  //   parts[0].updateComping(); // TODO remove
+  //   const res = new Song(parts[0].song);
+  //   res.title = this.title;
 
-    parts.slice(1).forEach(part => {
-      appendToSong(res, part);
-    });
-    // addComping(res, parts);
-
-    return res;
-  }
+  //   parts.slice(1).forEach(part => {
+  //     appendToSong(res, part);
+  //   });
+  //   // addComping(res, parts);
+  // }
 
   getParts(numRepeats) {
     numRepeats = numRepeats || 0;
@@ -53,7 +51,7 @@ export class SongForm {
       sequence.push(this.outro);
     }
     if (sequence.length === 0) {
-      throw 'Handle zero parts gracefully.'
+      throw 'TODO: Handle zero parts gracefully.'
     }
     return sequence.map(name => new SongPart(nameToPart[name]));
   }
@@ -61,16 +59,17 @@ export class SongForm {
 
 export function joinSongParts(parts, title) {
   if (parts.length === 0) {
-    return new Song({title: title});
+    throw 'TODO: Handle no parts gracefully';
   }
-  parts[0].updateComping(); // TODO remove
-  const res = new Song(parts[0].song);
-  res.title = title;
 
-  parts.slice(1).forEach(part => {
-    appendToSong(res, part);
+  let res;
+  parts.forEach((part, idx) => {
+    if (idx === parts.length - 1 && part.turnaroundStart8n) {
+      part.song.chordChanges.removeWithinInterval(part.turnaroundStart8n);
+    }
+    part.updateComping();
+    res = appendToSong(res, part);
   });
-  // addComping(res, parts);
 
   return res;
 }
@@ -83,21 +82,24 @@ function addComping(song, parts) {
   ];
 }
 
-function appendToSong(song, part) {
-  const shift8n = song.getEnd8n();
+function appendToSong(song, part, title) {
+  if (!song) {
+    song = new Song(part.song);
+    song.title = title;
+    return song;
+  }
 
-  part.updateComping(); // TODO remove
+  const shift8n = song.getEnd8n();
   song.voices.forEach((voice, idx) => {
     // Currently a later part can have fewer voices than an earlier part.
     if (idx < part.song.voices.length) {
-      voice.upsert(part.song.voices[idx].noteGps.filter(ng => ng.start8n.geq(0)), shift8n);
+      // If the note gp is a rest and it's a pickup, don't upsert it.
+      voice.upsert(part.song.voices[idx].noteGps.filter(ng => ng.midiNotes.length > 0 || ng.start8n.geq(0)), shift8n);
     }
   });
-
   part.song.chordChanges.getChanges().forEach(change => {
-    if (change.start8n.geq(0)) {
-      song.chordChanges.upsert(change.start8n.plus(shift8n), change.val);
-    }
+    song.chordChanges.upsert(change.start8n.plus(shift8n), change.val);
   });
+  return song;
 }
 

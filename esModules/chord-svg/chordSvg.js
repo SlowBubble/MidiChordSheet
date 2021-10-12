@@ -76,7 +76,7 @@ function genPartNameSvg(name, {bottomMargin = 10, xPadding = 6, yPadding = 2}) {
 }
 // TODO figure of how to handle overlapping text.
 function genChordSvg(part, currTime8n, time8nInSong, {
-  fontSize = 22, widthPerBar = 220, heightPerBar = 45,
+  fontSize = 22, widthPerBar = 250, heightPerBar = 45,
   spacingBetweenBars = 30,
   barsPerLine = 4,
 }) {

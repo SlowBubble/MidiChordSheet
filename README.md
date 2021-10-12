@@ -6,14 +6,10 @@ Generate a backing track from data in a spreadsheet of chords.
 
 ## WIP
 
-- Design how to add melody.
+- Melody
+  - Do slots; - _ means -.
+  - Currently, melody once (in the future, more options).
 - Record backing track.
-
-## Design how to add melody
-
-- Start with design in Sheets.
-  - Design a grammar and use Nearley to build a parser of it.
-  - Use autoResizeColumns and then adjust all columns to the max width.
 
 ## P1
 

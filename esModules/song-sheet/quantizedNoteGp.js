@@ -68,11 +68,11 @@ export class DecoratedNoteGp {
   }
 }
 
-export function makeSimpleQng(start8n, end8n, noteNums, channelNum, velocity) {
+export function makeSimpleQng(start8n, end8n, noteNums, velocity, channelNum) {
   return new QuantizedNoteGp({
     start8n: start8n, end8n: end8n, realEnd8n: end8n,
     midiNotes: noteNums.map(noteNum => new MidiNote({
-      noteNum: noteNum, velocity: velocity || 35, channelNum: channelNum || 0,
+      noteNum: noteNum, velocity: velocity || 40, channelNum: channelNum || 0,
     })),
   });
 }

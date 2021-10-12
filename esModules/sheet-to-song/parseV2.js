@@ -5,7 +5,8 @@ import { Voice } from "../song-sheet/voice.js";
 import { VoiceSettings } from "../song-sheet/voiceSettings.js";
 import { instruments } from "../musical-sound/musicalSound.js";
 import { makeFrac } from "../fraction/fraction.js";
-import { makeSimpleQng } from "../song-sheet/quantizedNoteGp.js";
+import { makeSimpleQng, QuantizedNoteGp } from "../song-sheet/quantizedNoteGp.js";
+import { fromNoteNumWithFlat } from "../chord/spell.js";
 
 export function parseKeyValsToSongInfo2(keyVals) {
   const gridData = JSON.parse(keyVals.data);
@@ -24,8 +25,40 @@ export function parseKeyValsToSongInfo2(keyVals) {
   voiceParts.forEach(voicePart => {
     // TODO handle multiple voiceParts that use the same (chord) part.
     const songPart = songInfo.songParts.find(songPart => songPart.song.title === voicePart.name);
-    addVoiceToSong(voicePart, songPart);
+    let baseSongPart;
+    if (voicePart.cells.length) {
+      const partToCopy = voicePart.cells[0].headerValByType.get(HeaderType.Copy);
+      if (partToCopy) {
+        baseSongPart = songInfo.songParts.find(songPart => songPart.song.title === partToCopy);
+      }
+    }
+    songInfo.songParts.find(songPart => songPart.song.title === voicePart.cells[0]);
+    if (songPart) {
+      addVoiceToSong(voicePart, songPart, baseSongPart);
+    }
   });
+  songInfo.songParts.forEach(part => {
+    const song = part.song;
+    const oldKey = song.keySigChanges.defaultVal;
+    const newKey = fromNoteNumWithFlat(oldKey.toNoteNum() + part.transpose);
+    // 1. Chords
+    song.chordChanges.getChanges().forEach(change => {
+      change.val.shift(oldKey, newKey);
+    });
+    
+    // 2. Voices
+    song.voices.forEach(voice => {
+      voice.noteGps.forEach(noteGp => {
+        noteGp.midiNotes.forEach(note => {
+          note.noteNum = note.noteNum + part.transpose;
+        });
+      });
+    });
+
+    // 3. Key Sig
+    song.keySigChanges.defaultVal = newKey;
+  })
+  
   return songInfo;
 
   // 4b. Migrate chords over.
@@ -38,7 +71,7 @@ export function parseKeyValsToSongInfo2(keyVals) {
 }
 
 // TODO add baseVoicePart, which is needed for looking up a slot in the voicePart
-function addVoiceToSong(voicePart, songPart) {
+function addVoiceToSong(voicePart, songPart, baseSongPart) {
   const durPerMeasure8n = songPart.song.timeSigChanges.defaultVal.getDurPerMeasure8n();
   let seenNonblankToken = false;
   const tokenInfos = voicePart.pickupCells.concat(voicePart.cells).flatMap((cell, idx) => {
@@ -61,18 +94,48 @@ function addVoiceToSong(voicePart, songPart) {
       return res;
     }).filter(info => info);
   });
-  const chunksStartingWithNonblank = chunkArray(tokenInfos, tokenInfo => tokenInfo.token.type !== TokenType.Blank);
-  const noteGps = chunksStartingWithNonblank.map(chunk => {
+  if (tokenInfos.length && tokenInfos[0]) {
+    songPart.song.pickup8n = tokenInfos[0].start8n;
+  }
+  const isContinuation = (tokenInfo, firstInChunk) => {
+    if (tokenInfo.token.type === TokenType.Blank) {
+      return true;
+    }
+    if (firstInChunk &&
+      firstInChunk.token.type === TokenType.Slot &&
+      tokenInfo.token.type === TokenType.Slot) {
+      return true;
+    }
+  }
+  const chunksStartingWithNonblank = chunkArray(
+    tokenInfos, (tokenInfo, firstInChunk) => !isContinuation(tokenInfo, firstInChunk));
+  const noteGps = chunksStartingWithNonblank.flatMap(chunk => {
     const tokenInfo = chunk[0];
     const start8n = tokenInfo.start8n;
     const end8n = chunk[chunk.length - 1].end8n;
     const token = tokenInfo.token;
     if (token.type === TokenType.Note) {
-      return makeSimpleQng(start8n, end8n, [token.noteInfo.toNoteNum()], 0 , 99);
+      return [makeSimpleQng(start8n, end8n, [token.noteInfo.toNoteNum()], 128)];
     }
-    if (token.type === TokenType.Rest) {
-      return makeSimpleQng(start8n, end8n, []);
+    if (token.type === TokenType.Slot) {
+      const baseMelody = baseSongPart.song.voices[0];
+      const relevantBaseNoteGps = baseMelody.noteGps.filter(
+        noteGp => noteGp.start8n.geq(start8n) && noteGp.start8n.lessThan(end8n));
+      const res = [];
+      const baseStart8n = relevantBaseNoteGps.length ? relevantBaseNoteGps[0].start8n : end8n;
+      if (start8n.geq(0) && start8n.lessThan(baseStart8n)) {
+        res.push(makeSimpleQng(start8n, baseStart8n));
+      }
+      if (start8n.lessThan(0) && makeFrac(0).lessThan(baseStart8n)) {
+        res.push(makeSimpleQng(makeFrac(0), baseStart8n));
+      }
+      res.push(...relevantBaseNoteGps.map(noteGp => new QuantizedNoteGp(noteGp)));
+      const finalNoteGp = res[res.length - 1];
+      finalNoteGp.end8n = end8n;
+      return res;
     }
+    // Catch-all: Handle rest type.
+    return [makeSimpleQng(start8n, end8n, [])];
   });
   const voice = new Voice({
     noteGps: noteGps,

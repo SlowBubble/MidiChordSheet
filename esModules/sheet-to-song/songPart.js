@@ -14,11 +14,13 @@ export class SongPart {
     compingStyle = CompingStyle.default,
     syncopationPct = 20,
     densityPct = 20,
+    transpose = 0,
   }) {
     this.song = new Song(song);
     this.compingStyle = compingStyle;
     this.syncopationFactor = syncopationPct / 100;
     this.densityFactor = densityPct / 100;
+    this.transpose = transpose;
   }
 
   // TODO remove

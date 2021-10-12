@@ -11,7 +11,7 @@ export function chunkArray(arr, isNextChunkFunc) {
   const res = [];
   let currChunk = [];
   arr.forEach(item => {
-    if (isNextChunkFunc(item)) {
+    if (isNextChunkFunc(item, currChunk.length ? currChunk[0] : undefined)) {
       if (currChunk.length > 0) {
         res.push(currChunk);
       }

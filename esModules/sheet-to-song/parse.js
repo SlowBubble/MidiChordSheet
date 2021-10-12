@@ -165,25 +165,13 @@ function toSongParts(chunkedLocsWithPickup, initialHeader) {
     // Even though we will not use this voice later. We need it now for
     // getEnd8n to work correctly.
     song.getVoice(0).noteGps = [new QuantizedNoteGp({
-      start8n: song.pickup8n.negative(),
+      start8n: song.pickup8n,
       end8n: end8n,
       realEnd8n: end8n,
     })];
 
-    // Get hold of the original song before transposing.
-    // TODO see if it's better to move this transposing out of this function to an ensuing function
-    // to avoid the copying?
-    const untransposedSong = new Song(song);
-    const transposedKeySig = fromNoteNumWithFlat(currKeySig.toNoteNum() + currTranspose);
-    song.chordChanges.getChanges().forEach(change => {
-      change.val.shift(currKeySig, transposedKeySig);
-    });
-    song.keySigChanges.defaultVal = transposedKeySig;
-    const part = new SongPart({song: song, syncopationPct: currSyncopation, densityPct: currDensity});
-    const untransposedPart = new SongPart(part);
-    untransposedPart.song = untransposedSong;
-
-    partNameToPart[song.title] = untransposedPart;
+    const part = new SongPart({song: song, syncopationPct: currSyncopation, densityPct: currDensity, transpose: currTranspose});
+    partNameToPart[song.title] = part;
     return part;
   });
 }

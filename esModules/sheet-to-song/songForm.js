@@ -53,9 +53,9 @@ export class SongForm {
       sequence.push(this.outro);
     }
     if (sequence.length === 0) {
-      return new Song({title: this.title});
+      throw 'Handle zero parts gracefully.'
     }
-    return sequence.map(name => nameToPart[name]);
+    return sequence.map(name => new SongPart(nameToPart[name]));
   }
 }
 

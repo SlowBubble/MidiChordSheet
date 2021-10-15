@@ -32,12 +32,13 @@ export function parseKeyValsToSongInfo(keyVals) {
     intro: possIntro ? possIntro.song.title : '',
     outro: possOutro ? possOutro.song.title : '',
     body: body,
+    numRepeats: initialHeaders[HeaderType.Repeat],
   });
   return {
-    // TODO: song and songParts are kind of redundant. May be get rid of song?
-    // song: songForm.toSong(initialHeaders[HeaderType.Repeat]),
-    title: songForm.title,
-    songParts: songForm.getParts(initialHeaders[HeaderType.Repeat]),
+    // TODO get rid of title and songParts
+    // TODO add voiceParts to songForm in the future.
+    // songParts: songForm.getParts(),
+    songForm: songForm,
     initialHeaders: initialHeaders,
   };
 }

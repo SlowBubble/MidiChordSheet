@@ -46,3 +46,13 @@ export function arrayToObject(arr) {
   });
   return obj;
 }
+
+export function findLast(arr, predicate) {
+  let selected;
+  arr.forEach((item, idx) => {
+    if (predicate(item, idx)) {
+      selected = item;
+    }
+  });
+  return selected;
+}

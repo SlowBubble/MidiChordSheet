@@ -1,35 +1,44 @@
-import { makeFrac } from "../fraction/fraction.js";
-import { SongPart } from "../sheet-to-song/songPart.js";
+import { makeFrac, Frac } from "../fraction/fraction.js";
 import { makeSvgElt, getBoundingBox } from "./svgUtil.js";
-import { range } from "../array-util/arrayUtil.js";
+import { range, findLast } from "../array-util/arrayUtil.js";
 import { mod } from "../math-util/mathUtil.js";
+import { SongForm } from "../sheet-to-song/songForm.js";
 
 export class ChordSvgMgr {
-  constructor(songParts, currTime8n) {
-    songParts = songParts || [];
-    currTime8n = currTime8n || makeFrac(0);
-    this.songParts = songParts.map(part => new SongPart(part));
-    this.currTime8n = currTime8n;
+  constructor({songForm = {}, currTime8n = {}}) {
+    this.songForm = new SongForm(songForm)
+    this.currTime8n = new Frac(currTime8n);
   }
 
-  getSvgs() {
+  getSvgsInfo() {
     let time8nInSong = makeFrac(0);
-    const svgs = this.songParts.map(part => {
-      const chordSvg = genChordSvg(part, this.currTime8n, time8nInSong, {});
+    const svgInfos = this.songForm.getParts().map(part => {
+      const chordSvgInfo = genChordSvg(part, this.currTime8n, time8nInSong, {});
       time8nInSong = time8nInSong.plus(part.song.getEnd8n());
       if (part.song.title === '::Unnamed::') {
-        return chordSvg;
+        return chordSvgInfo;
       }
       const partNameSvg = genPartNameSvg(part.song.title, {});  
-      return stackSvgs(partNameSvg, chordSvg);
+      chordSvgInfo.svg = stackSvgs(partNameSvg, chordSvgInfo.svg);
+      return chordSvgInfo;
     });
+    const svgs = svgInfos.map(svgInfo => svgInfo.svg);
     // TODO normalize all svgs to have the same x-coord for the first bar.
-    return svgs;
+    const maxWidth = Math.max(...svgs.map(svg => parseInt(svg.getAttribute('width'))));
+    const titleText = makeSvgElt('text', {
+      x: maxWidth / 2, y: 0, 'text-anchor': "middle", 'dominant-baseline': 'hanging',
+      'font-size': 28,
+    }, this.songForm.title);
+    const titleSvg = makeSvgElt('svg', {width: maxWidth, height: 28 + 4});
+    titleSvg.append(titleText);
+    const passingSvgInfo = findLast(svgInfos, info => info.hasPassed);
+    return {svgs: [titleSvg, ...svgs], currentSvg: passingSvgInfo ? passingSvgInfo.svg : titleSvg};
   }
-  getSvg() {
-    const svg = stackSvgs(...this.getSvgs());
+  getSvgInfo() {
+    const svgsInfo = this.getSvgsInfo();
+    const svg = stackSvgs(...svgsInfo.svgs);
     svg.style['padding-top'] = '20px';
-    return svg;
+    return {svg: svg, currentSvg: svgsInfo.currentSvg};
   }
 
   // Returns whether or a new set of SVGs need to be generated.
@@ -124,11 +133,13 @@ function genChordSvg(part, currTime8n, time8nInSong, {
   }
 
   // TODO deal with pickup chords.
+  let hasPassed = false;
   const textElts = song.chordChanges.getChanges().filter(change => {
     return change.start8n.geq(0);
   }).map(change => {
     const {x, y} = time8nToPos(change.start8n);
     const passed = time8nInSong.plus(change.start8n).leq(currTime8n);
+    hasPassed = hasPassed || passed;
     return makeSvgElt('text', {
       x: x, y: y, 'dominant-baseline': 'central',
       'font-size': fontSize,
@@ -144,5 +155,8 @@ function genChordSvg(part, currTime8n, time8nInSong, {
   svg.append(...textElts);
   svg.append(...barElts);
 
-  return svg;
+  return {
+    svg: svg,
+    hasPassed: hasPassed,
+  };
 }

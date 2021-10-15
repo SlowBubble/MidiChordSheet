@@ -6,13 +6,16 @@ Generate a backing track from data in a spreadsheet of chords.
 
 ## WIP
 
-- Non-final turn-around via parens. E.g. (Dm7 G7).
-- pickup measure for chords.
-- Display k (Melody & Comping), k-1 (Comping), ....
+- Display k, k-1, ....
+- Design auto-playing playlist
+  - Use ajax to fetch csv data from a server without page refresh (because MIDI.js must be user triggered).
+  - Customize # of repeats, randomize transpose (take min-max melody into account), randomize instrument, tempo multiplier.
 - Record backing track.
 
 ## P1
 
+- pickup measure for chords.
+  - Need to use v2 for chord parsing.
 - Display a chord at the start of a measure even if it did not change from the last measure.
 - Fix color notes clustering
   - need a way to identify what needs to not be on the bottom.
@@ -50,6 +53,7 @@ Generate a backing track from data in a spreadsheet of chords.
 
 ## Done
 
+- Non-final turn-around via parens. E.g. (Dm7 G7).
 - Melody
   - Do slots; - _ means -.
   - Currently, melody once (in the future, more options).

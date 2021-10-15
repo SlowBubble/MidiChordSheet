@@ -10,12 +10,14 @@ export class SongForm {
     intro = '',
     body = [], // [String]
     outro = '',
+    numRepeats = 0,
   }) {
     this.title = title;
     this.parts = parts.map(part => new SongPart(part));
     this.intro = intro;
     this.body = body;
     this.outro = outro;
+    this.numRepeats = numRepeats;
   }
 
   // // Note that this is unused.
@@ -34,8 +36,7 @@ export class SongForm {
   //   // addComping(res, parts);
   // }
 
-  getParts(numRepeats) {
-    numRepeats = numRepeats || 0;
+  getParts() {
     const nameToPart = {};
     this.parts.forEach(part => {
       nameToPart[part.song.title] = part;
@@ -44,14 +45,11 @@ export class SongForm {
     if (this.intro) {
       sequence.push(this.intro);
     }
-    for (let idx = 0; idx < numRepeats + 1; idx++) {
+    for (let idx = 0; idx < this.numRepeats + 1; idx++) {
       sequence.push(...this.body);
     }
     if (this.outro) {
       sequence.push(this.outro);
-    }
-    if (sequence.length === 0) {
-      throw 'TODO: Handle zero parts gracefully.'
     }
     return sequence.map(name => new SongPart(nameToPart[name]));
   }
@@ -68,7 +66,7 @@ export function joinSongParts(parts, title) {
       part.song.chordChanges.removeWithinInterval(part.turnaroundStart8n);
     }
     part.updateComping();
-    res = appendToSong(res, part);
+    res = appendToSong(res, part, title);
   });
 
   return res;

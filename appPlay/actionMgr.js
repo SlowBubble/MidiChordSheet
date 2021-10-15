@@ -19,7 +19,7 @@ export class ActionMgr {
     this.menuDiv = menuDiv;
     this.song = null;
     this.initialHeaders = {};
-    this.chordSvgMgr = new ChordSvgMgr();
+    this.chordSvgMgr = new ChordSvgMgr({});
     this.displayChordsOnly = true;
     this.chordsCanvas = document.getElementById('chords-canvas');
     // null means play from the start.
@@ -50,7 +50,9 @@ export class ActionMgr {
   renderChordsCanvas() {
     this.chordsCanvas.innerHTML = '';
     // this.chordsCanvas.append(...this.chordSvgMgr.getSvgs());
-    this.chordsCanvas.append(this.chordSvgMgr.getSvg());
+    const svgInfo = this.chordSvgMgr.getSvgInfo();
+    this.chordsCanvas.append(svgInfo.svg);
+    svgInfo.currentSvg.scrollIntoView({behavior: "smooth", block: "center"});
   }
   clearChordsCanvas() {
     this.chordsCanvas.innerHTML = '';
@@ -60,7 +62,7 @@ export class ActionMgr {
     const urlKeyVals = getUrlKeyVals();
     // const songInfo = parseKeyValsToSongInfo(urlKeyVals);
     const songInfo = parseKeyValsToSongInfo2(urlKeyVals);
-    this.song = joinSongParts(songInfo.songParts, songInfo.title);
+    this.song = joinSongParts(songInfo.songPartsWithVoice, songInfo.songForm.title);
     console.log(this.song);
     this.initialHeaders = songInfo.initialHeaders;
 
@@ -76,8 +78,8 @@ export class ActionMgr {
       this.initialHeaders[HeaderType.Key].toNoteNum() + this.initialHeaders[HeaderType.Transpose]);
     document.getElementById('repeat-display').textContent = this.initialHeaders[HeaderType.Repeat];
     document.getElementById('upper-numeral-display').textContent = this.initialHeaders[HeaderType.Meter].upperNumeral;
-
-    this.chordSvgMgr = new ChordSvgMgr(songInfo.songParts, this.currTime8n);
+    
+    this.chordSvgMgr = new ChordSvgMgr({songForm: songInfo.songForm, currTime8n: this.currTime8n || {}});
     this.render();
   }
 

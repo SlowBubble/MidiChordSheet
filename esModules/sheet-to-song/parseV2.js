@@ -22,22 +22,23 @@ export function parseKeyValsToSongInfo2(keyVals) {
   // 4a. Make it work for voice first.
   const voiceParts = parts.filter(part => part.type === CellType.Voice);
   const songInfo = parseKeyValsToSongInfo(keyVals);
+  const songParts = songInfo.songForm.getParts();
   voiceParts.forEach(voicePart => {
     // TODO handle multiple voiceParts that use the same (chord) part.
-    const songPart = songInfo.songParts.find(songPart => songPart.song.title === voicePart.name);
+    const songPart = songParts.find(songPart => songPart.song.title === voicePart.name);
     let baseSongPart;
     if (voicePart.cells.length) {
       const partToCopy = voicePart.cells[0].headerValByType.get(HeaderType.Copy);
       if (partToCopy) {
-        baseSongPart = songInfo.songParts.find(songPart => songPart.song.title === partToCopy);
+        baseSongPart = songParts.find(songPart => songPart.song.title === partToCopy);
       }
     }
-    songInfo.songParts.find(songPart => songPart.song.title === voicePart.cells[0]);
+    songParts.find(songPart => songPart.song.title === voicePart.cells[0]);
     if (songPart) {
       addVoiceToSong(voicePart, songPart, baseSongPart);
     }
   });
-  songInfo.songParts.forEach(part => {
+  songParts.forEach(part => {
     const song = part.song;
     const oldKey = song.keySigChanges.defaultVal;
     const newKey = fromNoteNumWithFlat(oldKey.toNoteNum() + part.transpose);
@@ -58,7 +59,7 @@ export function parseKeyValsToSongInfo2(keyVals) {
     // 3. Key Sig
     song.keySigChanges.defaultVal = newKey;
   })
-  
+  songInfo.songPartsWithVoice = songParts;
   return songInfo;
 
   // 4b. Migrate chords over.

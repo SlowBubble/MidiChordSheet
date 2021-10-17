@@ -94,8 +94,8 @@ export class ActionMgr {
       urlKeyVals.title = fileData.title;
       urlKeyVals[HeaderType.Transpose] = `${Math.floor(Math.random() * 12)}`;
       urlKeyVals[HeaderType.Repeat] = `${Math.floor(Math.random() * 2) + 1}`;
-      urlKeyVals[HeaderType.Syncopation] = `${Math.floor(Math.random() * 20) + 10}`;
-      urlKeyVals[HeaderType.Density] = `${Math.floor(Math.random() * 20) + 10}`;
+      urlKeyVals[HeaderType.Syncopation] = `${Math.floor(Math.random() * 30) + 5}`;
+      urlKeyVals[HeaderType.Density] = `${Math.floor(Math.random() * 30) + 5}`;
     }
 
     const songInfo = parseKeyValsToSongInfo2(gridData, urlKeyVals);

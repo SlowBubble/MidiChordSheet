@@ -88,15 +88,29 @@ export class ActionMgr {
       if (!this.filePaths) {
         this.filePaths = await fetchFilePaths(urlKeyVals);
       }
+      // TODO compute the first k songs (shuffled) and fetch them all at once to avoid offline issues.
       const fileData = await fetchFile(this.filePaths, urlKeyVals, goToNextTune);
       gridData = fileData.gridData;
       urlKeyVals.title = fileData.title;
+      urlKeyVals[HeaderType.Transpose] = `${Math.floor(Math.random() * 12)}`;
+      urlKeyVals[HeaderType.Repeat] = `${Math.floor(Math.random() * 2) + 1}`;
+      urlKeyVals[HeaderType.Syncopation] = `${Math.floor(Math.random() * 20) + 10}`;
+      urlKeyVals[HeaderType.Density] = `${Math.floor(Math.random() * 20) + 10}`;
     }
 
     const songInfo = parseKeyValsToSongInfo2(gridData, urlKeyVals);
     this.song = joinSongParts(songInfo.songPartsWithVoice, songInfo.songForm.title);
     this.initialHeaders = songInfo.initialHeaders;
-    console.log(this.song);
+
+    if (this.filePaths) {
+      if (Math.random() < 0.75) {
+        this.song.tempo8nPerMinChanges.defaultVal += Math.floor(Math.random() * 40);
+      } else {
+        this.song.tempo8nPerMinChanges.defaultVal -= Math.floor(Math.random() * 20);
+      }
+      this.initialHeaders[HeaderType.Tempo] = `${this.song.tempo8nPerMinChanges.defaultVal}`; 
+    }
+    console.log(songInfo);
 
     const subdivisions = this.initialHeaders[HeaderType.Subdivision];
     let swing = urlKeyVals[HeaderType.Swing] || 'Straight';

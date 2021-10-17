@@ -144,6 +144,7 @@ export class ActionMgr {
       this.songReplayer.stop();
     }
     action();
+    this.reloadSong();
     if (shouldStopAndResume) {
       this.play();
     }

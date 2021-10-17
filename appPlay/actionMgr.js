@@ -179,27 +179,30 @@ export class ActionMgr {
   }
 
   toggleSwing() {
-    const swing = this.initialHeaders[HeaderType.Swing];
-    if (swing.ratio.greaterThan(1)) {
-      setUrlParam(HeaderType.Swing);
-    } else {
-      setUrlParam(HeaderType.Swing, 'Medium');
-    }
-    this.reloadSong();
+    this.actAndResume(_ => {
+      const swing = this.initialHeaders[HeaderType.Swing];
+      if (swing.ratio.greaterThan(1)) {
+        setUrlParam(HeaderType.Swing);
+      } else {
+        setUrlParam(HeaderType.Swing, 'Medium');
+      }
+    });
   }
 
   decreaseTempo() {
-    const tempo = this.initialHeaders[HeaderType.Tempo];
-    if (tempo - 10 <= 0) {
-      return;
-    }
-    setUrlParam(HeaderType.Tempo, tempo - 10);
-    this.reloadSong();
+    this.actAndResume(_ => {
+      const tempo = this.initialHeaders[HeaderType.Tempo];
+      if (tempo - 10 <= 0) {
+        return;
+      }
+      setUrlParam(HeaderType.Tempo, tempo - 10);
+    });
   }
   increaseTempo() {
-    const tempo = this.initialHeaders[HeaderType.Tempo];
-    setUrlParam(HeaderType.Tempo, tempo + 10);
-    this.reloadSong();
+    this.actAndResume(_ => {
+      const tempo = this.initialHeaders[HeaderType.Tempo];
+      setUrlParam(HeaderType.Tempo, tempo + 10);
+    });
   }
 
   transposeKeyDown() {
@@ -212,79 +215,88 @@ export class ActionMgr {
     this.actAndResume(_ => {
       const transpose = this.initialHeaders[HeaderType.Transpose];
       setUrlParam(HeaderType.Transpose, (transpose + 1) % 12);
-      this.reloadSong();
     });
 }
 
   decreaseOffbeatSyncopation() {
-    const syncopationPct = this.initialHeaders[HeaderType.Syncopation];
-    setUrlParam(HeaderType.Syncopation, syncopationPct - 3);
-    this.reloadSong();
+    this.actAndResume(_ => {
+      const syncopationPct = this.initialHeaders[HeaderType.Syncopation];
+      setUrlParam(HeaderType.Syncopation, syncopationPct - 3);
+    });
   }
   increaseOffbeatSyncopation() {
-    const syncopationPct = this.initialHeaders[HeaderType.Syncopation];
-    setUrlParam(HeaderType.Syncopation, syncopationPct + 3);
-    this.reloadSong();
+    this.actAndResume(_ => {
+      const syncopationPct = this.initialHeaders[HeaderType.Syncopation];
+      (HeaderType.Syncopation, syncopationPct + 3);
+    });
   }
 
   decreaseDensity() {
-    const densityPct = this.initialHeaders[HeaderType.Density];
-    setUrlParam(HeaderType.Density, densityPct - 3);
-    this.reloadSong();
+    this.actAndResume(_ => {
+      const densityPct = this.initialHeaders[HeaderType.Density];
+      setUrlParam(HeaderType.Density, densityPct - 3);
+    });
   }
   increaseDensity() {
-    const densityPct = this.initialHeaders[HeaderType.Density];
-    setUrlParam(HeaderType.Density, densityPct + 3);
-    this.reloadSong();
+    this.actAndResume(_ => {
+      const densityPct = this.initialHeaders[HeaderType.Density];
+      setUrlParam(HeaderType.Density, densityPct + 3);
+    });
   }
 
   decrTimeSigUpperNumeral() {
-    const timeSig = this.initialHeaders[HeaderType.Meter];
-    if (timeSig.upperNumeral <= 2) {
-      return;
-    }
-    timeSig.upperNumeral -= 1;
-    setUrlParam(HeaderType.Meter, timeSig.toString());
-    this.reloadSong();
+    this.actAndResume(_ => {
+      const timeSig = this.initialHeaders[HeaderType.Meter];
+      if (timeSig.upperNumeral <= 2) {
+        return;
+      }
+      timeSig.upperNumeral -= 1;
+      setUrlParam(HeaderType.Meter, timeSig.toString());
+    });
   }
 
   incrTimeSigUpperNumeral() {
-    const timeSig = this.initialHeaders[HeaderType.Meter];
-    timeSig.upperNumeral += 1;
-    setUrlParam(HeaderType.Meter, timeSig.toString());
-    this.reloadSong();
+    this.actAndResume(_ => {
+      const timeSig = this.initialHeaders[HeaderType.Meter];
+      timeSig.upperNumeral += 1;
+      setUrlParam(HeaderType.Meter, timeSig.toString());
+    });
   }
 
   incrementRepeat() {
-    let repeat = this.initialHeaders[HeaderType.Repeat];
-    repeat += 1;
-    setUrlParam(HeaderType.Repeat, repeat);
-    this.reloadSong();
+    this.actAndResume(_ => {
+      let repeat = this.initialHeaders[HeaderType.Repeat];
+      repeat += 1;
+      setUrlParam(HeaderType.Repeat, repeat);
+    });
   }
   decrementRepeat() {
-    let repeat = this.initialHeaders[HeaderType.Repeat];
-    if (repeat <= 0) {
-      return;
-    }
-    repeat -= 1;
-    setUrlParam(HeaderType.Repeat, repeat);
-    this.reloadSong();
+    this.actAndResume(_ => {
+      let repeat = this.initialHeaders[HeaderType.Repeat];
+      if (repeat <= 0) {
+        return;
+      }
+      repeat -= 1;
+      setUrlParam(HeaderType.Repeat, repeat);
+    });
   }
 
   incrementBeatSubdivision() {
-    let subdivision = this.initialHeaders[HeaderType.Subdivision];
-    subdivision += 1;
-    setUrlParam(HeaderType.Subdivision, subdivision);
-    this.reloadSong();
+    this.actAndResume(_ => {
+      let subdivision = this.initialHeaders[HeaderType.Subdivision];
+      subdivision += 1;
+      setUrlParam(HeaderType.Subdivision, subdivision);
+    });
   }
   decrementBeatSubdivision() {
-    let subdivision = this.initialHeaders[HeaderType.Subdivision];
-    if (subdivision <= 1) {
-      return;
-    }
-    subdivision -= 1;
-    setUrlParam(HeaderType.Subdivision, subdivision);
-    this.reloadSong();
+    this.actAndResume(_ => {
+      let subdivision = this.initialHeaders[HeaderType.Subdivision];
+      if (subdivision <= 1) {
+        return;
+      }
+      subdivision -= 1;
+      setUrlParam(HeaderType.Subdivision, subdivision);
+    });
   }
 }
 

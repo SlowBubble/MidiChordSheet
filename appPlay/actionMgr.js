@@ -1,4 +1,4 @@
-import { parseKeyValsToSongInfo, HeaderType } from "../esModules/sheet-to-song/parse.js";
+import { HeaderType } from "../esModules/sheet-to-song/parse.js";
 import { fromNoteNumWithFlat } from "../esModules/chord/spell.js";
 import { joinSongParts } from "../esModules/sheet-to-song/songForm.js";
 import { ChordSvgMgr } from "../esModules/chord-svg/chordSvg.js";
@@ -34,6 +34,7 @@ export class ActionMgr {
 
   // Note that this may be more wasteful than needed.
   render() {
+    console.log(this.song);
     if (this.displayChordsOnly) {
       this.renderMgr.clear();
       this.renderChordsCanvas();
@@ -63,7 +64,6 @@ export class ActionMgr {
     // const songInfo = parseKeyValsToSongInfo(urlKeyVals);
     const songInfo = parseKeyValsToSongInfo2(urlKeyVals);
     this.song = joinSongParts(songInfo.songPartsWithVoice, songInfo.songForm.title);
-    console.log(this.song);
     this.initialHeaders = songInfo.initialHeaders;
 
     const subdivisions = this.initialHeaders[HeaderType.Subdivision];
@@ -79,7 +79,11 @@ export class ActionMgr {
     document.getElementById('repeat-display').textContent = this.initialHeaders[HeaderType.Repeat];
     document.getElementById('upper-numeral-display').textContent = this.initialHeaders[HeaderType.Meter].upperNumeral;
     
-    this.chordSvgMgr = new ChordSvgMgr({songForm: songInfo.songForm, currTime8n: this.currTime8n || {}});
+    this.chordSvgMgr = new ChordSvgMgr({
+      songForm: songInfo.songForm,
+      songParts: songInfo.songPartsWithVoice,
+      currTime8n: this.currTime8n || {}
+    });
     this.render();
   }
 
@@ -199,15 +203,18 @@ export class ActionMgr {
   }
 
   transposeKeyDown() {
-    const transpose = this.initialHeaders[HeaderType.Transpose];
-    setUrlParam(HeaderType.Transpose, (transpose - 1) % 12);
-    this.reloadSong();
+    this.actAndResume(_ => {
+      const transpose = this.initialHeaders[HeaderType.Transpose];
+      setUrlParam(HeaderType.Transpose, (transpose - 1) % 12);
+    });
   }
   transposeKeyUp() {
-    const transpose = this.initialHeaders[HeaderType.Transpose];
-    setUrlParam(HeaderType.Transpose, (transpose + 1) % 12);
-    this.reloadSong();
-  }
+    this.actAndResume(_ => {
+      const transpose = this.initialHeaders[HeaderType.Transpose];
+      setUrlParam(HeaderType.Transpose, (transpose + 1) % 12);
+      this.reloadSong();
+    });
+}
 
   decreaseOffbeatSyncopation() {
     const syncopationPct = this.initialHeaders[HeaderType.Syncopation];

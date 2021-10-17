@@ -5,14 +5,15 @@ import { mod } from "../math-util/mathUtil.js";
 import { SongForm } from "../sheet-to-song/songForm.js";
 
 export class ChordSvgMgr {
-  constructor({songForm = {}, currTime8n = {}}) {
-    this.songForm = new SongForm(songForm)
+  constructor({songForm = {}, songParts = [], currTime8n = {}}) {
+    this.songForm = new SongForm(songForm);
+    this.songParts = songParts
     this.currTime8n = new Frac(currTime8n);
   }
 
   getSvgsInfo() {
     let time8nInSong = makeFrac(0);
-    const svgInfos = this.songForm.getParts().map(part => {
+    const svgInfos = this.songParts.map(part => {
       const chordSvgInfo = genChordSvg(part, this.currTime8n, time8nInSong, {});
       time8nInSong = time8nInSong.plus(part.song.getEnd8n());
       if (part.song.title === '::Unnamed::') {

@@ -6,7 +6,6 @@ Generate a backing track from data in a spreadsheet of chords.
 
 ## WIP
 
-- Display k, k-1, ....
 - Design auto-playing playlist
   - Use ajax to fetch csv data from a server without page refresh (because MIDI.js must be user triggered).
   - Customize # of repeats, randomize transpose (take min-max melody into account), randomize instrument, tempo multiplier.
@@ -14,6 +13,8 @@ Generate a backing track from data in a spreadsheet of chords.
 
 ## P1
 
+- Display k, k-1, ....
+  - Need more design for what info is needed and how to convert.
 - pickup measure for chords.
   - Need to use v2 for chord parsing.
 - Display a chord at the start of a measure even if it did not change from the last measure.

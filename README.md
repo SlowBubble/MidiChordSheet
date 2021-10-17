@@ -7,12 +7,12 @@ Generate a backing track from data in a spreadsheet of chords.
 ## WIP
 
 - Design auto-playing playlist
-  - Use ajax to fetch csv data from a server without page refresh (because MIDI.js must be user triggered).
+  - Use ajax to fetch tsv data from a server without page refresh (because MIDI.js must be user triggered).
   - Customize # of repeats, randomize transpose (take min-max melody into account), randomize instrument, tempo multiplier.
-- Record backing track.
 
 ## P1
 
+- Comping same chord across measures.
 - Display k, k-1, ....
   - Need more design for what info is needed and how to convert.
 - pickup measure for chords.
@@ -22,9 +22,11 @@ Generate a backing track from data in a spreadsheet of chords.
   - need a way to identify what needs to not be on the bottom.
 - Deal with 3/4 comping separately
   - Current bandaid is to do 1 long chord.
+- Comping for 2/4 is too monotonous.
 
 ## P2
 
+- Record backing track for youtube?
 - Think about song form e.g. (a-b)-a-b'
   - Should nonrepeating final parts, a-b', be inferred from a, b, outro using the header, "Replace: b"?
   - Should we allow parenthens in last chords to denote turn-around variation e.g. "C (_ _ G7)"

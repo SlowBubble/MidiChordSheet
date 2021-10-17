@@ -4,6 +4,7 @@ import { joinSongParts } from "../esModules/sheet-to-song/songForm.js";
 import { ChordSvgMgr } from "../esModules/chord-svg/chordSvg.js";
 import { makeFrac } from "../esModules/fraction/fraction.js";
 import { parseKeyValsToSongInfo2 } from "../esModules/sheet-to-song/parseV2.js";
+import { shuffle, range } from "../esModules/array-util/arrayUtil.js";
 
 export class ActionMgr {
   constructor({
@@ -12,6 +13,7 @@ export class ActionMgr {
     renderMgr,
     menuDiv,
     metronomeBeatSub,
+    playEndedSub,
   }) {
     this.songReplayer = songReplayer;
     this.eBanner = eBanner;
@@ -24,17 +26,32 @@ export class ActionMgr {
     this.chordsCanvas = document.getElementById('chords-canvas');
     // null means play from the start.
     this.currTime8n = null;
+    // Initialize these lazily.
+    this.filePaths = null;
+
     metronomeBeatSub(beat => {
       this.setCurrTime8n(beat.time8n);
       if (this.displayChordsOnly) {
         this.renderChordsCanvas();
       }
     });
+
+    playEndedSub(_ => {
+      if (!this.filePaths) {
+        return;
+      }
+      const waitMs = 2500;
+      this.eBanner.success('Starting next song in 3 seconds.')
+      window.setTimeout(async _ => {
+        this.currTime8n = null;
+        await this.reloadSong(/*goToNextTune=*/true);
+        this.play();
+      }, waitMs);
+    });
   }
 
   // Note that this may be more wasteful than needed.
   render() {
-    console.log(this.song);
     if (this.displayChordsOnly) {
       this.renderMgr.clear();
       this.renderChordsCanvas();
@@ -50,21 +67,36 @@ export class ActionMgr {
 
   renderChordsCanvas() {
     this.chordsCanvas.innerHTML = '';
-    // this.chordsCanvas.append(...this.chordSvgMgr.getSvgs());
     const svgInfo = this.chordSvgMgr.getSvgInfo();
     this.chordsCanvas.append(svgInfo.svg);
-    svgInfo.currentSvg.scrollIntoView({behavior: "smooth", block: "center"});
+    svgInfo.currentSvg.scrollIntoView({
+      // This causes jerking motion for narrow screens when moving.
+      // behavior: "smooth",
+      block: "center",
+    });
   }
   clearChordsCanvas() {
     this.chordsCanvas.innerHTML = '';
   }
 
-  reloadSong() {
-    const urlKeyVals = getUrlKeyVals();
-    // const songInfo = parseKeyValsToSongInfo(urlKeyVals);
-    const songInfo = parseKeyValsToSongInfo2(urlKeyVals);
+  async reloadSong(goToNextTune) {
+    const urlKeyVals = await getUrlKeyVals();
+    let gridData;
+    if (urlKeyVals.data) {
+      gridData = JSON.parse(urlKeyVals.data);
+    } else {
+      if (!this.filePaths) {
+        this.filePaths = await fetchFilePaths(urlKeyVals);
+      }
+      const fileData = await fetchFile(this.filePaths, urlKeyVals, goToNextTune);
+      gridData = fileData.gridData;
+      urlKeyVals.title = fileData.title;
+    }
+
+    const songInfo = parseKeyValsToSongInfo2(gridData, urlKeyVals);
     this.song = joinSongParts(songInfo.songPartsWithVoice, songInfo.songForm.title);
     this.initialHeaders = songInfo.initialHeaders;
+    console.log(this.song);
 
     const subdivisions = this.initialHeaders[HeaderType.Subdivision];
     let swing = urlKeyVals[HeaderType.Swing] || 'Straight';
@@ -138,13 +170,15 @@ export class ActionMgr {
     this.move(-4);
   }
 
-  actAndResume(action) {
+  actAndResume(action, skipReloading) {
     const shouldStopAndResume = this.songReplayer.isPlaying();
     if (shouldStopAndResume) {
       this.songReplayer.stop();
     }
     action();
-    this.reloadSong();
+    if (!skipReloading) {
+      this.reloadSong();
+    }
     if (shouldStopAndResume) {
       this.play();
     }
@@ -168,7 +202,7 @@ export class ActionMgr {
       }
       this.setCurrTime8n(newTime8n);
       this.render();
-    });
+    }, /*skipReloading=*/true);
   }
 
   toggleMenu() {
@@ -303,7 +337,7 @@ export class ActionMgr {
 
 function setUrlParam(key, val) {
   const url = toInternalUrl(document.URL);
-  if (val) {
+  if (val !== undefined) {
     url.searchParams.set(key, val);
   } else {
     url.searchParams.delete(key);
@@ -328,10 +362,55 @@ function getUrlKeyVals() {
   url.searchParams.forEach(function(value, key) {
     keyVals[key] = value;
   });
-  if (!keyVals.data) {
-    keyVals.title = 'Uncle Sun';
-    keyVals.data = '[["","Tempo: 180","","",""],["","Key: C","","",""],["","Cmaj7","C6","Em","Em A7"],["","","","",""],["","Em7b5","Fmaj7","Bb7","C6"]]';
-  }
   return keyVals;
+}
 
+async function fetchFilePaths(keyVals) {
+  let files;
+  if (keyVals.files) {
+    files = JSON.parse(keyVals.files);
+  }
+  if (!files) {
+    // Production (TODO use index.json instead but need to know how to handle json)
+    files = ['https://unpkg.com/@clubfest/tunes/index.json'];
+    // Testing locally
+    // files = ['examples/Ten%20Little%20Fingers%20-%20Reharm.tsv'];
+  }
+  const jsonFiles = files.filter(name => name.endsWith('.json'));
+  let resps;
+  if (jsonFiles.length) {
+    resps = await Promise.all(jsonFiles.map(jsonFile => fetch(jsonFile)));
+  }
+  const tsvFiles = files.filter(name => name.endsWith('.tsv'));
+  const jsons = await Promise.all(resps.map(resp => resp.json()));
+  const filesFromJsons = jsons.flatMap((fileNames, idx) => fileNames.map(fileName => {
+    const jsonPathComps = jsonFiles[idx].split('/');
+    const dirPath = jsonPathComps.slice(0, jsonPathComps.length - 1).join('/');
+    return `${dirPath}/${fileName}`;
+  }));
+  files = tsvFiles.concat(filesFromJsons);
+  return files;
+}
+
+async function fetchFile(files, keyVals, goToNextTune) {
+  let idx = keyVals.fileIdx;
+  if (goToNextTune || keyVals.fileIdx === undefined) {
+    const ordering = range(0, files.length);
+    if (keyVals.fileIdx !== undefined && files.length > 1) {
+      ordering.splice(keyVals.fileIdx, 1);
+    }
+    idx = shuffle(ordering)[0];
+    setUrlParam('fileIdx', idx);
+  }
+  const filePath = files[idx];
+  const pathComps = filePath.split('/');
+  const fileName = decodeURI(pathComps[pathComps.length - 1]);
+  const fileNameWithoutExt = fileName.split('.')[0];
+  const title = fileNameWithoutExt.split(' - ')[0];
+  const response = await fetch(filePath);
+  const tsv = await response.text();
+  return {
+    gridData: tsv.split(/\r?\n/g).map(line => line.split('\t')),
+    title: title,
+  };
 }

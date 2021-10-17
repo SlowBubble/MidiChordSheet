@@ -8,9 +8,7 @@ import { makeFrac } from "../fraction/fraction.js";
 import { makeSimpleQng, QuantizedNoteGp } from "../song-sheet/quantizedNoteGp.js";
 import { fromNoteNumWithFlat } from "../chord/spell.js";
 
-export function parseKeyValsToSongInfo2(keyVals) {
-  const gridData = JSON.parse(keyVals.data);
-
+export function parseKeyValsToSongInfo2(gridData, keyVals) {
   // 1. Group the cells into header, chord and voice.
   const groupedCells = groupCells(gridData);
   // 2. Attach the headers to the appropriate cell.
@@ -21,7 +19,7 @@ export function parseKeyValsToSongInfo2(keyVals) {
   
   // 4a. Make it work for voice first.
   const voiceParts = parts.filter(part => part.type === CellType.Voice);
-  const songInfo = parseKeyValsToSongInfo(keyVals);
+  const songInfo = parseKeyValsToSongInfo(gridData, keyVals);
   const songParts = songInfo.songForm.getParts();
   voiceParts.forEach(voicePart => {
     // TODO handle multiple voiceParts that use the same (chord) part.
@@ -234,9 +232,11 @@ function combineHeadersWithCells(cells, maxRows) {
         continue;
       }
       const [key, valStr] = header.val.split(':');
-      const {type, value} = processKeyVal(key.trim().toLowerCase(), valStr.trim());
-      nonHeaderCell.headerValByType.set(type, value);
-      break;
+      const typeVal = processKeyVal(key.trim().toLowerCase(), valStr.trim());
+      if (typeVal) {
+        nonHeaderCell.headerValByType.set(typeVal.type, typeVal.value);
+        break;
+      }
     }
   });
   return nonheaders;

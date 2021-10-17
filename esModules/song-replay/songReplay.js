@@ -5,11 +5,12 @@ import { mod } from "../math-util/mathUtil.js";
 import { makeFrac } from '../fraction/fraction.js';
 
 export class SongReplayer {
-  constructor({musicalSound, metronomeBeatPub}) {
+  constructor({musicalSound, metronomeBeatPub, playEndedPub}) {
     this._musicalSound = musicalSound;
     this._midiEvtsExecCountDown = null;
     this._currTime8n = null;
     this._metronomeBeatPub = metronomeBeatPub;
+    this._playEndedPub = playEndedPub;
   }
 
   // opts:
@@ -60,6 +61,9 @@ export class SongReplayer {
 
   _execCurrMidiEvtsAndWait(opts, timeMsToBeat8n, timesWithMidiEvts, timeIdx) {
     if (timeIdx >= timesWithMidiEvts.length) {
+      if (this._playEndedPub) {
+        this._playEndedPub();
+      }
       this.stop();
       return;
     }
@@ -77,6 +81,9 @@ export class SongReplayer {
       }));
     }
     if (timeIdx >= timesWithMidiEvts.length - 1) {
+      if (this._playEndedPub) {
+        this._playEndedPub();
+      }
       this.stop();
       return;
     }

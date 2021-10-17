@@ -10,13 +10,14 @@ import { hotkeysDoc } from "../esModules/hotkeys-doc/hotkeysDoc.js";
 
 setup()
 
-function setup() {
+async function setup() {
   const canvasDiv = document.getElementById("canvas-div");
   const renderMgr = new RenderMgr(canvasDiv);
 
   const [soundPub, soundSub] = pubSub.make();
   const [metronomeBeatPub, metronomeBeatSub] = pubSub.make();
   const [readyPub, readySub] = pubSub.make();
+  const [playEndedPub, playEndedSub] = pubSub.make();
 
   const eBanner = banner.setup();
   const musicalSound = new sound.MusicalSound({
@@ -26,6 +27,7 @@ function setup() {
   const songReplayer = new SongReplayer({
     musicalSound: musicalSound, 
     metronomeBeatPub: metronomeBeatPub,
+    playEndedPub: playEndedPub,
   });
   const actionMgr = new ActionMgr({
     songReplayer: songReplayer,
@@ -33,11 +35,10 @@ function setup() {
     renderMgr: renderMgr,
     menuDiv: document.getElementById("menu"),
     metronomeBeatSub: metronomeBeatSub,
+    playEndedSub: playEndedSub,
   });
-  actionMgr.reloadSong();
-
+  await actionMgr.reloadSong();
   setupInteraction(actionMgr);
-
   actionMgr.toggleMenu();
 }
 

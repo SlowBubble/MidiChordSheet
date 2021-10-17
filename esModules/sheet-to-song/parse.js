@@ -12,8 +12,7 @@ import { CompingStyle, SongPart } from "./songPart.js";
 import { computeBeatInfo } from "../musical-beat/pattern.js";
 
 
-export function parseKeyValsToSongInfo(keyVals) {
-  const gridData = JSON.parse(keyVals.data);
+export function parseKeyValsToSongInfo(gridData, keyVals) {
   const chordLocs = parseChordLocations(gridData);
   const headerLocs = parseHeaderLocations(gridData);
   const chordHeaderLocs = combineChordAndHeader(chordLocs, headerLocs, gridData.length);
@@ -62,6 +61,9 @@ function createInitialHeaders(chunkedLocsWithPickup, keyVals) {
     });
   }
   Object.entries(keyVals).forEach(([key, val]) => {
+    if (!HeaderType[key]) {
+      return;
+    }
     const res = processKeyVal(
       key.trim().toLowerCase(),
       val.trim());
@@ -449,7 +451,7 @@ function parseChordLocations(gridData) {
         return;
       }
       cell = cell.trim();
-      if (!cell) {
+      if (!cell || cell.toLowerCase() === 'backing track') {
         return;
       }
       // Header.

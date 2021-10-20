@@ -112,14 +112,21 @@ function toSongParts(chunkedLocsWithPickup, initialHeader) {
     }
     song.tempo8nPerMinChanges.defaultVal = currTempo;
 
-    if (headers[HeaderType.Transpose] !== undefined) {
-      currTranspose = headers[HeaderType.Transpose];
-    }
-
     if (headers[HeaderType.Key] !== undefined) {
       currKeySig = headers[HeaderType.Key];
     }
     song.keySigChanges.defaultVal = currKeySig;
+
+    if (headers[HeaderType.Transpose] !== undefined) {
+      currTranspose = headers[HeaderType.Transpose];
+    }
+    if (headers[HeaderType.TransposedKey] !== undefined) {
+      const newKey = headers[HeaderType.TransposedKey];
+      currTranspose = newKey.toNoteNum() - currKeySig.toNoteNum();
+      if (currTranspose >= 6) {
+        currTranspose -= 12;
+      }
+    }
 
     if (headers[HeaderType.Swing] !== undefined) {
       currSwing = headers[HeaderType.Swing];
@@ -308,6 +315,7 @@ export const HeaderType = Object.freeze({
   Syncopation: 'Syncopation',
   Density: 'Density',
   Transpose: 'Transpose',
+  TransposedKey: 'TransposedKey',
   Repeat: 'Repeat',
   Subdivision: 'Subdivision',
 });
@@ -385,20 +393,26 @@ export function processKeyVal(key, valStr, warnError) {
         value: CompingStyle[valStr] || CompingStyle.default,
       };
     case 'transpose':
-    return {
-      type: HeaderType.Transpose,
-      value: parseInt(valStr),
-    };
+      return {
+        type: HeaderType.Transpose,
+        value: parseInt(valStr),
+      };
+    case 'transposedkey':
+      const chord = new Chord(Parser.parse(valStr));
+      return {
+        type: HeaderType.TransposedKey,
+        value: chord.root,
+      };
     case 'syncopation':
-    return {
-      type: HeaderType.Syncopation,
-      value: parseInt(valStr),
-    };
+      return {
+        type: HeaderType.Syncopation,
+        value: parseInt(valStr),
+      };
     case 'density':
-    return {
-      type: HeaderType.Density,
-      value: parseInt(valStr),
-    };
+      return {
+        type: HeaderType.Density,
+        value: parseInt(valStr),
+      };
     // case 'form':
     //   // E.g. (a-b)-c Makes it possible to extend the song as (a-b)-(a-b)-c
     default:

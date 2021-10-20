@@ -1,12 +1,13 @@
 import * as midiEvent from './midiEvent.js';
 
 export class MidiNote {
-  constructor({noteNum, startTime, endTime, velocity, channelNum}) {
+  constructor({noteNum, startTime, endTime, velocity, channelNum, spelling}) {
     this.noteNum = noteNum;
     this.startTime = startTime;
     this.endTime = endTime;
     this.velocity = velocity;
     this.channelNum = channelNum;
+    this.spelling = spelling;
   }
 }
 

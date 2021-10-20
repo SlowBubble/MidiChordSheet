@@ -14,6 +14,7 @@ export class ActionMgr {
     menuDiv,
     metronomeBeatSub,
     playEndedSub,
+    lyricsDisplayer,
   }) {
     this.songReplayer = songReplayer;
     this.eBanner = eBanner;
@@ -21,6 +22,7 @@ export class ActionMgr {
     this.menuDiv = menuDiv;
     this.song = null;
     this.initialHeaders = {};
+    this.lyricsDisplayer = lyricsDisplayer;
     this.chordSvgMgr = new ChordSvgMgr({});
     this.displayChordsOnly = true;
     this.chordsCanvas = document.getElementById('chords-canvas');
@@ -41,13 +43,16 @@ export class ActionMgr {
         return;
       }
       const waitMs = 2500;
-      this.eBanner.success('Starting next song in 3 seconds.')
-      window.setTimeout(async _ => {
-        this.currTime8n = null;
-        await this.reloadSong(/*goToNextTune=*/true);
-        this.play();
-      }, waitMs);
+      this.eBanner.success('Starting next song soon.')
+      window.setTimeout( _ => this.startNextSong(), waitMs);
     });
+  }
+
+  async startNextSong() {
+    this.songReplayer.stop();
+    this.currTime8n = null;
+    await this.reloadSong(/*goToNextTune=*/true);
+    this.play();
   }
 
   // Note that this may be more wasteful than needed.
@@ -92,25 +97,35 @@ export class ActionMgr {
       const fileData = await fetchFile(this.filePaths, urlKeyVals, goToNextTune);
       gridData = fileData.gridData;
       urlKeyVals.title = fileData.title;
-      urlKeyVals[HeaderType.Transpose] = `${Math.floor(Math.random() * 12)}`;
-      urlKeyVals[HeaderType.Repeat] = `${Math.floor(Math.random() * 2) + 1}`;
-      urlKeyVals[HeaderType.Syncopation] = `${Math.floor(Math.random() * 30) + 5}`;
-      urlKeyVals[HeaderType.Density] = `${Math.floor(Math.random() * 30) + 5}`;
+      if (urlKeyVals[HeaderType.Transpose] === undefined) {
+        urlKeyVals[HeaderType.Transpose] = `-${Math.floor(Math.random() * 12)}`;
+      }
+      if (urlKeyVals[HeaderType.Repeat] === undefined) {
+        urlKeyVals[HeaderType.Repeat] = `${Math.floor(Math.random() * 2) + 1}`;
+      }
+      if (urlKeyVals[HeaderType.Syncopation] === undefined) {
+        urlKeyVals[HeaderType.Syncopation] = `${Math.floor(Math.random() * 30) + 5}`;
+      }
+      if (urlKeyVals[HeaderType.Density] === undefined) {
+        urlKeyVals[HeaderType.Density] = `${Math.floor(Math.random() * 30) + 5}`;
+      }
     }
 
     const songInfo = parseKeyValsToSongInfo2(gridData, urlKeyVals);
     this.song = joinSongParts(songInfo.songPartsWithVoice, songInfo.songForm.title);
+    const songForLyrics = joinSongParts(songInfo.songPartsWithRepeatedVoice, songInfo.songForm.title);
     this.initialHeaders = songInfo.initialHeaders;
 
     if (this.filePaths) {
-      if (Math.random() < 0.75) {
-        this.song.tempo8nPerMinChanges.defaultVal += Math.floor(Math.random() * 40);
-      } else {
-        this.song.tempo8nPerMinChanges.defaultVal -= Math.floor(Math.random() * 20);
+      if (urlKeyVals[HeaderType.Tempo] === undefined) {
+        if (Math.random() < 0.75) {
+          this.song.tempo8nPerMinChanges.defaultVal += Math.floor(Math.random() * 40);
+        } else {
+          this.song.tempo8nPerMinChanges.defaultVal -= Math.floor(Math.random() * 20);
+        }
+        this.initialHeaders[HeaderType.Tempo] = `${this.song.tempo8nPerMinChanges.defaultVal}`; 
       }
-      this.initialHeaders[HeaderType.Tempo] = `${this.song.tempo8nPerMinChanges.defaultVal}`; 
     }
-    console.log(songInfo);
 
     const subdivisions = this.initialHeaders[HeaderType.Subdivision];
     let swing = urlKeyVals[HeaderType.Swing] || 'Straight';
@@ -125,6 +140,7 @@ export class ActionMgr {
     document.getElementById('repeat-display').textContent = this.initialHeaders[HeaderType.Repeat];
     document.getElementById('upper-numeral-display').textContent = this.initialHeaders[HeaderType.Meter].upperNumeral;
     
+    this.lyricsDisplayer.setVoice(songForLyrics.getVoice(0));
     this.chordSvgMgr = new ChordSvgMgr({
       songForm: songInfo.songForm,
       songParts: songInfo.songPartsWithVoice,
@@ -168,7 +184,7 @@ export class ActionMgr {
     this.actAndResume(_ => {
       this.setCurrTime8n(null)
       this.render();
-    });
+    }, true);
   }
 
   moveLeft() {

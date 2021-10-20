@@ -5,12 +5,13 @@ import { mod } from "../math-util/mathUtil.js";
 import { makeFrac } from '../fraction/fraction.js';
 
 export class SongReplayer {
-  constructor({musicalSound, metronomeBeatPub, playEndedPub}) {
+  constructor({musicalSound, metronomeBeatPub, playEndedPub, currTimePub}) {
     this._musicalSound = musicalSound;
     this._midiEvtsExecCountDown = null;
     this._currTime8n = null;
     this._metronomeBeatPub = metronomeBeatPub;
     this._playEndedPub = playEndedPub;
+    this._currTimePub = currTimePub;
   }
 
   // opts:
@@ -45,7 +46,7 @@ export class SongReplayer {
     }, {});
     const opts2 = {...opts};
     opts2.start8n = opts2.start8n || song.getStart8n();
-    this._execCurrMidiEvtsAndWait(opts2, timeMsToBeat8n, timesWithMidiEvts, 0);
+    this._execCurrMidiEvtsAndWait(opts2, timeMsToBeat8n, timesWithMidiEvts, timeMsToMidiEvts._timeMsToTime8n, 0);
   }
   stop() {
     window.clearTimeout(this._midiEvtsExecCountDown);
@@ -59,7 +60,7 @@ export class SongReplayer {
     return this._currTime8n;
   }
 
-  _execCurrMidiEvtsAndWait(opts, timeMsToBeat8n, timesWithMidiEvts, timeIdx) {
+  _execCurrMidiEvtsAndWait(opts, timeMsToBeat8n, timesWithMidiEvts, timeMsToTime8n, timeIdx) {
     if (timeIdx >= timesWithMidiEvts.length) {
       if (this._playEndedPub) {
         this._playEndedPub();
@@ -71,6 +72,9 @@ export class SongReplayer {
     curr.midiEvts.forEach(midiEvt => {
       this._musicalSound.execute(midiEvt);
     });
+    if (this._currTimePub && timeMsToTime8n[curr.timeMs]) {
+      this._currTimePub(timeMsToTime8n[curr.timeMs]);
+    }
     const beat8n = timeMsToBeat8n[curr.timeMs];
     if (beat8n) {
       this._currTime8n = beat8n;
@@ -89,7 +93,7 @@ export class SongReplayer {
     }
     const waitTime = timesWithMidiEvts[timeIdx + 1].timeMs - curr.timeMs;
     this._midiEvtsExecCountDown = window.setTimeout(_ => {
-      this._execCurrMidiEvtsAndWait(opts, timeMsToBeat8n, timesWithMidiEvts, timeIdx + 1);
+      this._execCurrMidiEvtsAndWait(opts, timeMsToBeat8n, timesWithMidiEvts, timeMsToTime8n, timeIdx + 1);
     }, waitTime);
   }
 }
@@ -130,7 +134,7 @@ function _computeTimeMsToMidiEvts(song, voices, channelInfos, opts) {
           noteNum: midiNote.noteNum,
           velocity: midiNote.velocity * voice.settings.volumePercent / 100,
           channelNum: channelNum,
-        }));
+        }), qng.start8n);
         timeToMidiEvts.add(startAndEnd.endMs, new NoteOffEvt({
           noteNum: midiNote.noteNum,
           channelNum: channelNum,
@@ -235,11 +239,15 @@ function time8nToMs(time8n, tempo8nPerMin) {
 class TimeMsToMidiEvts {
   constructor() {
     this._mapping = {};
+    this._timeMsToTime8n = {};
   }
 
-  add(timeMs, midiEvt) {
+  add(timeMs, midiEvt, time8n) {
     this._mapping[timeMs] = this._mapping[timeMs] || [];
     this._mapping[timeMs].push(midiEvt);
+    if (time8n) {
+      this._timeMsToTime8n[timeMs] = time8n;
+    }
   }
 
   getSortedTimesWithMidiEvts() {

@@ -15,13 +15,12 @@ const html = `
 <style>
 #banner {
   position: fixed;
-  top: 0;
   left: 50%;
 
   border-style: solid;
   border-width: 1px;
   padding: 6px;
-  font-size: 20px;
+  font-size: 30px;
 
   visibility: hidden;
 }
@@ -43,13 +42,21 @@ export class EphemeralBanner extends HTMLElement {
     this.root.innerHTML = html;
   }
 
-  _display(message) {
+  _display(message, bottom) {
     if (!this.banner) {
       this.banner = this.root.querySelector('#banner');
       if (!this.banner) {
         return;
       }
     }
+    if (bottom) {
+      this.banner.style.bottom = 0;
+      this.banner.style.top = '';
+    } else {
+      this.banner.style.top = 0;
+      this.banner.style.bottom = '';
+    }
+
     const numWords = message.split(' ').length;
     const wordsPerSec = 1.5;
     const baseSec = 2;
@@ -62,26 +69,26 @@ export class EphemeralBanner extends HTMLElement {
     }, (baseSec + numWords / wordsPerSec) * milliSecPerSec);
   }
 
-  failure(message) {
-    this._display(message);
+  failure(message,bottom) {
+    this._display(message,bottom);
     this.banner.style.backgroundColor = 'hsl(0,100%,90%)';
     this.banner.style.borderColor = 'hsl(0,80%,70%)';
   }
 
-  inProgress(message) {
-    this._display(message);
+  inProgress(message, bottom) {
+    this._display(message,bottom);
     this.banner.style.backgroundColor = 'hsl(49.2,100%,90%)';
     this.banner.style.borderColor = 'hsl(39.39,80%,70%)';
   }
 
-  success(message) {
-    this._display(message);
+  success(message,bottom) {
+    this._display(message,bottom);
     this.banner.style.backgroundColor = 'hsl(100,100%,90%)';
     this.banner.style.borderColor = 'hsl(120,80%,70%)';
   }
 
-  hint(message) {
-    this._display(message);
+  hint(message,bottom) {
+    this._display(message,bottom);
     this.banner.style.backgroundColor = 'white';
     this.banner.style.borderColor = '#888888';
   }

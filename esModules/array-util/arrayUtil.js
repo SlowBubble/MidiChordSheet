@@ -10,8 +10,8 @@ export function range(start, end, step) {
 export function chunkArray(arr, isNextChunkFunc) {
   const res = [];
   let currChunk = [];
-  arr.forEach(item => {
-    if (isNextChunkFunc(item, currChunk.length ? currChunk[0] : undefined)) {
+  arr.forEach((item, idx) => {
+    if (isNextChunkFunc(item, currChunk, idx)) {
       if (currChunk.length > 0) {
         res.push(currChunk);
       }

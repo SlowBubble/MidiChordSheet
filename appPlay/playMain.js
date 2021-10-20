@@ -6,6 +6,7 @@ import * as sound from '../esModules/musical-sound/musicalSound.js';
 import * as pubSub from '../esModules/pub-sub/pubSub.js';
 import { ActionMgr } from "./actionMgr.js";
 import { hotkeysDoc } from "../esModules/hotkeys-doc/hotkeysDoc.js";
+import { LyricsDisplayer } from "../esModules/lyrics-display/lyricsDisplayer.js";
 
 
 setup()
@@ -18,16 +19,22 @@ async function setup() {
   const [metronomeBeatPub, metronomeBeatSub] = pubSub.make();
   const [readyPub, readySub] = pubSub.make();
   const [playEndedPub, playEndedSub] = pubSub.make();
+  const [currTimePub, currTimeSub] = pubSub.make();
 
   const eBanner = banner.setup();
   const musicalSound = new sound.MusicalSound({
     midiJs: window.MIDI, soundSub: soundSub, 
     eBanner: eBanner, readyPub: readyPub
   });
+  const lyricsDisplayer = new LyricsDisplayer({
+    currTimeSub: currTimeSub,
+    eBanner: eBanner,
+  });
   const songReplayer = new SongReplayer({
     musicalSound: musicalSound, 
     metronomeBeatPub: metronomeBeatPub,
     playEndedPub: playEndedPub,
+    currTimePub: currTimePub,
   });
   const actionMgr = new ActionMgr({
     songReplayer: songReplayer,
@@ -36,6 +43,7 @@ async function setup() {
     menuDiv: document.getElementById("menu"),
     metronomeBeatSub: metronomeBeatSub,
     playEndedSub: playEndedSub,
+    lyricsDisplayer: lyricsDisplayer,
   });
   await actionMgr.reloadSong();
   setupInteraction(actionMgr);
@@ -80,6 +88,8 @@ function setupInteraction(actionMgr) {
 
   hotkeysDoc('d', _ => actionMgr.increaseDensity());
   hotkeysDoc('shift+d', _ => actionMgr.decreaseDensity());
+
+  hotkeysDoc('n', _ => actionMgr.startNextSong());
 
   hotkeysDoc('b', _ => actionMgr.incrementBeatSubdivision());
   hotkeysDoc('shift+b', _ => actionMgr.decreaseOffbeatSyncopation());

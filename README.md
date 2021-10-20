@@ -6,13 +6,22 @@ Generate a backing track from data in a spreadsheet of chords.
 
 ## WIP
 
-- Design auto-playing playlist
-  - Use ajax to fetch tsv data from a server without page refresh (because MIDI.js must be user triggered).
-  - Customize # of repeats, randomize transpose (take min-max melody into account), randomize instrument, tempo multiplier.
+- Playlist
+  - Use a group of checkboxes to indicate what's being randomized and not (e.g. when a user initiates a key change)
+  - X: # of repeats
+  - randomize transpose (must take min-max melody into account because high pitch is really annoying.)
+  - randomize instrument
+  - tempo multiplier
+- v2 Lyrics
+  - Will need punctuation (, . ! ?) in the lyrics to help split into lines.
 
 ## P1
 
 - Comping same chord across measures.
+- Comping for 2/4 is too monotonous.
+  - May be use some 4/4 comping style, except that the bass notes follow 2/4 comping.
+- Syncopate into 4n of the previous bar if syncopationPct > something.
+- Show 1 voice for the lead sheet view (add another view or debug view).
 - Display k, k-1, ....
   - Need more design for what info is needed and how to convert.
 - pickup measure for chords.
@@ -22,7 +31,8 @@ Generate a backing track from data in a spreadsheet of chords.
   - need a way to identify what needs to not be on the bottom.
 - Deal with 3/4 comping separately
   - Current bandaid is to do 1 long chord.
-- Comping for 2/4 is too monotonous.
+  - x | _ x | x is nice too.
+
 
 ## P2
 
@@ -48,33 +58,24 @@ Generate a backing track from data in a spreadsheet of chords.
     - For block, we will need to specify voice: melody (and for named chord part, part: ${matching_chord_part}).
     - Block may be easier to copy-paste data back into a spreadsheet.
     - https://stackoverflow.com/a/60698329
-- A stop button.
-  - Shortcut: 0.
+
 - Rewind/Fast-forward (1 measure) button.
   - Shortcut: left, right
 - Comping for subdivision 3 (and 1?).
 
 ## Done
 
+- Design LyricsDisplayer.
+  - SongReplayer needs to publish the curr time whenever a new note with a new time is played.
+- v1 LyricsDisplayer: Show solfege for sing-along.
 - Non-final turn-around via parens. E.g. (Dm7 G7).
 - Melody
   - Do slots; - _ means -.
   - Currently, melody once (in the future, more options).
-- Rendering only the chords.
-- A play button to resume/pause the backing track.
-  - Shortcut: space.
-- Tempo.
-  - Shortcut
 - Key change
   - Does that mean we should deprecate this in ChordSheet?
   - ChordSheet should still do formatting though.
 - 3-note comping generator
-- Customize how many times to repeat the song.
-- data param in the url will go at the end.
-- Shortcut to control off-beat.
-- drum start a bar early, stop a bar early.
-- Menu
-  - Have actionMgr update the values.
 - Drum beat sub-division
   - Customize for 1, 2, 3, 4
   - Should we be controlling this via lower numeral instead, since it will affect comping?
@@ -92,13 +93,6 @@ Generate a backing track from data in a spreadsheet of chords.
   - If zeroTimeRowIdx - 1 < 0 || (zeroTimeRowIdx - 1, 1) is non-empty, prepend a row.
 - If no meter header, insert (meter: 4/4).
 
-## Non-features (i.e. ChordSheet features)
+## midi-sheet non-features (i.e. ChordSheet features)
 
 - Data won't be saved, but customization will be stored in the URL params.
-- Using non-default scale when composing the comping.
-
-# Design
-
-- The spreadsheet data will be transmited in the URL params.
-  - 8kb limit should be plenty for a song.
-  - Compress this via a dict?

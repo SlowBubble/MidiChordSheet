@@ -69,10 +69,12 @@ export class DecoratedNoteGp {
 }
 
 export function makeSimpleQng(start8n, end8n, noteNums, velocity, spellings, channelNum) {
+  noteNums = noteNums || [];
+  velocity = velocity === undefined ? 40 : velocity;
   return new QuantizedNoteGp({
     start8n: start8n, end8n: end8n, realEnd8n: end8n,
     midiNotes: noteNums.map((noteNum, idx) => new MidiNote({
-      noteNum: noteNum, velocity: velocity || 40, channelNum: channelNum || 0,
+      noteNum: noteNum, velocity: velocity, channelNum: channelNum || 0,
       spelling: spellings ? spellings[idx] : undefined,
     })),
   });
@@ -86,6 +88,7 @@ export class QuantizedNoteGp extends DecoratedNoteGp {
     // This is needed for replay to be faithful to recording.
     // It can also be used for end8n after rounding up to the nearest beat.
     this.realEnd8n = obj.realEnd8n ? new Frac(obj.realEnd8n) : null;
+    this.lyrics = obj.lyrics || '';
   }
 
   // isGraceNote should only be used before quantizing.

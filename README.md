@@ -6,17 +6,21 @@ Generate a backing track from data in a spreadsheet of chords.
 
 ## WIP
 
+- Think about how to restore the nice switch of instruments.
+  - Chosen: Assume channel instrument are fixed
+    - Assign multiple channels per voice (may be 3?).
+    - Switch channel when part changes.
+  - Discarded: Change channel instrument for a voice halfway thru?
 - Playlist
   - Use a group of checkboxes to indicate what's being randomized and not (e.g. when a user initiates a key change)
   - X: # of repeats
   - randomize transpose (must take min-max melody into account because high pitch is really annoying.)
   - randomize instrument
   - tempo multiplier
-- v2 Lyrics
-  - Will need punctuation (, . ! ?) in the lyrics to help split into lines.
 
 ## P1
 
+- Is this still an issue? Fix beat subdivision 1 delay in playing
 - Comping same chord across measures.
 - Comping for 2/4 is too monotonous.
   - May be use some 4/4 comping style, except that the bass notes follow 2/4 comping.

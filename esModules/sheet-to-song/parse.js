@@ -310,6 +310,7 @@ export const HeaderType = Object.freeze({
   Tempo: 'Tempo',
   Part: 'Part',
   VoicePart: 'VoicePart',
+  LyricsPart: 'LyricsPart',
   Copy: 'Copy',
   CompingStyle: 'CompingStyle',
   Syncopation: 'Syncopation',
@@ -325,9 +326,10 @@ export function processKeyVal(key, valStr, warnError) {
     case 'key':
     case 'k':
       // TODO handle error.
+      const keyChord = new Chord(Parser.parse(valStr));
       return {
         type: HeaderType.Key,
-        value: makeSpelling(valStr),
+        value: keyChord.root,
       };
     case 'time':
     case 'meter':
@@ -372,9 +374,17 @@ export function processKeyVal(key, valStr, warnError) {
       };
     // TODO make the string before part be the voice id;
     // in this case the voice id is "Voice" (need to remove toLowerCase).
+    case 'melody':
+    case 'voice':
     case 'voicepart':
       return {
         type: HeaderType.VoicePart,
+        value: valStr || defaultPartName,
+      };
+    case 'lyrics':
+    case 'lyricspart':
+      return {
+        type: HeaderType.LyricsPart,
         value: valStr,
       };
     case 'repeat':
@@ -476,7 +486,7 @@ function parseChordLocations(gridData) {
         const key = cell.toLowerCase().split(':')[0];
         if (key === 'part') {
           isChordMode = true;
-        } else if (key.endsWith('part')) {
+        } else if (key.endsWith('part') || key.toLowerCase().startsWith('voice') || key.toLowerCase().startsWith('melody')|| key.toLowerCase().startsWith('lyrics')) {
           isChordMode = false;
         }
         return;

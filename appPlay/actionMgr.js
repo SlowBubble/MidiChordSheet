@@ -26,7 +26,7 @@ export class ActionMgr {
     this.chordSvgMgr = new ChordSvgMgr({});
     this.displayChordsOnly = true;
     this.chordsCanvas = document.getElementById('chords-canvas');
-    // null means play from the start.
+    // null means play from the start with a bar of just beats.
     this.currTime8n = null;
     // Initialize these lazily.
     this.filePaths = null;
@@ -46,6 +46,9 @@ export class ActionMgr {
       this.eBanner.success('Starting next song soon.')
       window.setTimeout( _ => this.startNextSong(), waitMs);
     });
+    window.onhashchange = _ => {
+      this.actAndResume(_ => this.reloadSong());
+    };
   }
 
   async startNextSong() {
@@ -144,7 +147,7 @@ export class ActionMgr {
     this.chordSvgMgr = new ChordSvgMgr({
       songForm: songInfo.songForm,
       songParts: songInfo.songPartsWithVoice,
-      currTime8n: this.currTime8n || {}
+      currTime8n: this.currTime8n,
     });
     this.render();
   }
@@ -184,7 +187,7 @@ export class ActionMgr {
     this.actAndResume(_ => {
       this.setCurrTime8n(null)
       this.render();
-    }, true);
+    });
   }
 
   moveLeft() {
@@ -200,15 +203,12 @@ export class ActionMgr {
     this.move(-4);
   }
 
-  actAndResume(action, skipReloading) {
+  actAndResume(action) {
     const shouldStopAndResume = this.songReplayer.isPlaying();
     if (shouldStopAndResume) {
       this.songReplayer.stop();
     }
     action();
-    if (!skipReloading) {
-      this.reloadSong();
-    }
     if (shouldStopAndResume) {
       this.play();
     }
@@ -224,7 +224,7 @@ export class ActionMgr {
       barNum += numBars;
   
       let newTime8n = null;
-      if (barNum > 0) {
+      if (barNum >= 0) {
         newTime8n = durPerMeasure8n.times(barNum);
         if (newTime8n.geq(this.song.getEnd8n())) {
           newTime8n = this.song.getEnd8n();
@@ -232,7 +232,7 @@ export class ActionMgr {
       }
       this.setCurrTime8n(newTime8n);
       this.render();
-    }, /*skipReloading=*/true);
+    });
   }
 
   toggleMenu() {
@@ -244,30 +244,24 @@ export class ActionMgr {
   }
 
   toggleSwing() {
-    this.actAndResume(_ => {
       const swing = this.initialHeaders[HeaderType.Swing];
       if (swing.ratio.greaterThan(1)) {
         setUrlParam(HeaderType.Swing);
       } else {
         setUrlParam(HeaderType.Swing, 'Medium');
       }
-    });
   }
 
   decreaseTempo() {
-    this.actAndResume(_ => {
       const tempo = this.initialHeaders[HeaderType.Tempo];
       if (tempo - 10 <= 0) {
         return;
       }
       setUrlParam(HeaderType.Tempo, tempo - 10);
-    });
   }
   increaseTempo() {
-    this.actAndResume(_ => {
       const tempo = this.initialHeaders[HeaderType.Tempo];
       setUrlParam(HeaderType.Tempo, tempo + 10);
-    });
   }
 
   transposeKeyDown() {
@@ -277,94 +271,73 @@ export class ActionMgr {
     });
   }
   transposeKeyUp() {
-    this.actAndResume(_ => {
-      const transpose = this.initialHeaders[HeaderType.Transpose];
-      setUrlParam(HeaderType.Transpose, (transpose + 1) % 12);
-    });
-}
+    const transpose = this.initialHeaders[HeaderType.Transpose];
+    setUrlParam(HeaderType.Transpose, (transpose + 1) % 12);
+  }
 
   decreaseOffbeatSyncopation() {
-    this.actAndResume(_ => {
-      const syncopationPct = this.initialHeaders[HeaderType.Syncopation];
-      setUrlParam(HeaderType.Syncopation, syncopationPct - 3);
-    });
+    const syncopationPct = this.initialHeaders[HeaderType.Syncopation];
+    setUrlParam(HeaderType.Syncopation, syncopationPct - 3);
   }
   increaseOffbeatSyncopation() {
-    this.actAndResume(_ => {
-      const syncopationPct = this.initialHeaders[HeaderType.Syncopation];
-      (HeaderType.Syncopation, syncopationPct + 3);
-    });
+    const syncopationPct = this.initialHeaders[HeaderType.Syncopation];
+    (HeaderType.Syncopation, syncopationPct + 3);
   }
 
   decreaseDensity() {
-    this.actAndResume(_ => {
-      const densityPct = this.initialHeaders[HeaderType.Density];
-      setUrlParam(HeaderType.Density, densityPct - 3);
-    });
+    const densityPct = this.initialHeaders[HeaderType.Density];
+    setUrlParam(HeaderType.Density, densityPct - 3);
   }
   increaseDensity() {
-    this.actAndResume(_ => {
-      const densityPct = this.initialHeaders[HeaderType.Density];
-      setUrlParam(HeaderType.Density, densityPct + 3);
-    });
+    const densityPct = this.initialHeaders[HeaderType.Density];
+    setUrlParam(HeaderType.Density, densityPct + 3);
   }
 
   decrTimeSigUpperNumeral() {
-    this.actAndResume(_ => {
-      const timeSig = this.initialHeaders[HeaderType.Meter];
-      if (timeSig.upperNumeral <= 2) {
-        return;
-      }
-      timeSig.upperNumeral -= 1;
-      setUrlParam(HeaderType.Meter, timeSig.toString());
-    });
+    const timeSig = this.initialHeaders[HeaderType.Meter];
+    if (timeSig.upperNumeral <= 2) {
+      return;
+    }
+    timeSig.upperNumeral -= 1;
+    setUrlParam(HeaderType.Meter, timeSig.toString());
   }
 
   incrTimeSigUpperNumeral() {
-    this.actAndResume(_ => {
-      const timeSig = this.initialHeaders[HeaderType.Meter];
-      timeSig.upperNumeral += 1;
-      setUrlParam(HeaderType.Meter, timeSig.toString());
-    });
+    const timeSig = this.initialHeaders[HeaderType.Meter];
+    timeSig.upperNumeral += 1;
+    setUrlParam(HeaderType.Meter, timeSig.toString());
   }
 
   incrementRepeat() {
-    this.actAndResume(_ => {
-      let repeat = this.initialHeaders[HeaderType.Repeat];
-      repeat += 1;
-      setUrlParam(HeaderType.Repeat, repeat);
-    });
+    let repeat = this.initialHeaders[HeaderType.Repeat];
+    repeat += 1;
+    setUrlParam(HeaderType.Repeat, repeat);
   }
   decrementRepeat() {
-    this.actAndResume(_ => {
-      let repeat = this.initialHeaders[HeaderType.Repeat];
-      if (repeat <= 0) {
-        return;
-      }
-      repeat -= 1;
-      setUrlParam(HeaderType.Repeat, repeat);
-    });
+    let repeat = this.initialHeaders[HeaderType.Repeat];
+    if (repeat <= 0) {
+      return;
+    }
+    repeat -= 1;
+    setUrlParam(HeaderType.Repeat, repeat);
   }
 
   incrementBeatSubdivision() {
-    this.actAndResume(_ => {
-      let subdivision = this.initialHeaders[HeaderType.Subdivision];
-      subdivision += 1;
-      setUrlParam(HeaderType.Subdivision, subdivision);
-    });
+    let subdivision = this.initialHeaders[HeaderType.Subdivision];
+    subdivision += 1;
+    setUrlParam(HeaderType.Subdivision, subdivision);
   }
   decrementBeatSubdivision() {
-    this.actAndResume(_ => {
-      let subdivision = this.initialHeaders[HeaderType.Subdivision];
-      if (subdivision <= 1) {
-        return;
-      }
-      subdivision -= 1;
-      setUrlParam(HeaderType.Subdivision, subdivision);
-    });
+    let subdivision = this.initialHeaders[HeaderType.Subdivision];
+    if (subdivision <= 1) {
+      return;
+    }
+    subdivision -= 1;
+    setUrlParam(HeaderType.Subdivision, subdivision);
   }
 }
 
+// Note that this will trigger a song reload.
 function setUrlParam(key, val) {
   const url = toInternalUrl(document.URL);
   if (val !== undefined) {

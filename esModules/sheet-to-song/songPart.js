@@ -159,6 +159,8 @@ export class SongPart {
     if (this.song.voices[0].noteGps.length === 1 && this.song.voices[0].noteGps[0].midiNotes.length === 0 ) {
       this.song.voices = [trebleVoice, bassVoice];
     } else {
+      trebleVoice.settings.hide = true;
+      bassVoice.settings.hide = true;
       this.song.addVoice(trebleVoice);
       this.song.addVoice(bassVoice);
     }

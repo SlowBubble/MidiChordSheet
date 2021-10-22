@@ -35,38 +35,59 @@ export function parseKeyValsToSongInfo2(gridData, keyVals) {
 function genSongPartsWithVoice(parts, songInfo, addVoiceOneTimeOnly) {
   const voiceParts = parts.filter(part => part.type === CellType.Voice);
   const songParts = songInfo.songForm.getParts();
-  if (addVoiceOneTimeOnly) {
-    voiceParts.forEach(voicePart => {
-      // TODO handle multiple voiceParts that use the same (chord) part.
-      const songPart = songParts.find(songPart => songPart.song.title === voicePart.name);
-      if (!songPart) {
-        return;
+
+  addVoicePartsToSongParts(voiceParts, songParts, addVoiceOneTimeOnly);
+
+  const lyricsParts = parts.filter(part => part.type === CellType.Lyrics);
+  addLyricsPartsToSongParts(lyricsParts, songParts);
+
+  transposeSongParts(songParts);
+  return songParts;
+}
+
+function addVoicePartsToSongParts(voiceParts, songParts, addVoiceOneTimeOnly) {
+  const usedPartNames = new Set();
+  songParts.forEach(songPart => {
+    const partName = songPart.song.title;
+    const suppress = addVoiceOneTimeOnly && usedPartNames.has(partName);
+    // if (suppress) {
+    //   return;
+    // }
+    usedPartNames.add(partName);
+    const voicePart = voiceParts.find(voicePart => partName === voicePart.name);
+    if (!voicePart) {
+      return;
+    }
+    let baseSongPart;
+    if (voicePart.cells.length) {
+      const partToCopy = voicePart.cells[0].headerValByType.get(HeaderType.Copy);
+      if (partToCopy) {
+        baseSongPart = songParts.find(songPart => songPart.song.title === partToCopy);
       }
-      let baseSongPart;
-      if (voicePart.cells.length) {
-        const partToCopy = voicePart.cells[0].headerValByType.get(HeaderType.Copy);
-        if (partToCopy) {
-          baseSongPart = songParts.find(songPart => songPart.song.title === partToCopy);
-        }
+    }
+    addVoiceToSong(voicePart, songPart, baseSongPart, suppress);
+  });
+}
+
+function addLyricsPartsToSongParts(lyricsParts, songParts) {
+  songParts.forEach(songPart => {
+    const partName = songPart.song.title;
+    const lyricsPart = lyricsParts.find(lyricsPart => partName === lyricsPart.name);
+    if (!lyricsPart) {
+      return;
+    }
+    let baseLyricsPart;
+    if (lyricsPart.cells.length) {
+      const partToCopy = lyricsPart.cells[0].headerValByType.get(HeaderType.Copy);
+      if (partToCopy) {
+        baseLyricsPart = lyricsParts.find(lp => lp.name === partToCopy);
       }
-      addVoiceToSong(voicePart, songPart, baseSongPart);
-    });
-  } else {
-    songParts.forEach(songPart => {
-      const voicePart = voiceParts.find(voicePart => songPart.song.title === voicePart.name);
-      if (!voicePart) {
-        return;
-      }
-      let baseSongPart;
-      if (voicePart.cells.length) {
-        const partToCopy = voicePart.cells[0].headerValByType.get(HeaderType.Copy);
-        if (partToCopy) {
-          baseSongPart = songParts.find(songPart => songPart.song.title === partToCopy);
-        }
-      }
-      addVoiceToSong(voicePart, songPart, baseSongPart);
-    });
-  }
+    }
+    addLyricsToSong(lyricsPart, songPart, baseLyricsPart);
+  });
+}
+
+function transposeSongParts(songParts) {
   songParts.forEach(part => {
     const song = part.song;
     const oldKey = song.keySigChanges.defaultVal;
@@ -91,11 +112,56 @@ function genSongPartsWithVoice(parts, songInfo, addVoiceOneTimeOnly) {
     // 3. Key Sig
     song.keySigChanges.defaultVal = newKey;
   });
-  return songParts;
 }
 
-// TODO add baseVoicePart, which is needed for looking up a slot in the voicePart
-function addVoiceToSong(voicePart, songPart, baseSongPart) {
+function addLyricsToSong(lyricsPart, songPart, baseLyricsPart) {
+  const qngs = songPart.song.getVoice(0).noteGps;
+  const durPerMeasure8n = songPart.song.timeSigChanges.defaultVal.getDurPerMeasure8n();
+  let baseCells = [];
+  if (baseLyricsPart) {
+    baseCells = baseLyricsPart.pickupCells.concat(baseLyricsPart.cells);
+  }
+  lyricsPart.pickupCells.concat(lyricsPart.cells).forEach((cell, idxRelPickupCell) => {
+    const idx = idxRelPickupCell - lyricsPart.pickupCells.length;
+    const barStart8n = durPerMeasure8n.times(idx);
+    const barEnd8n = durPerMeasure8n.times(idx + 1);
+    const relevantQngs = qngs.filter(
+      qng => !qng.isRest && qng.start8n.geq(barStart8n) && qng.start8n.lessThan(barEnd8n));
+    if (cell.val === '_') {
+      return;
+    }
+
+    let lyricsStr = cell.val;
+    if (cell.val === '-') {
+      if (idxRelPickupCell < baseCells.length) {
+        lyricsStr = baseCells[idxRelPickupCell].val;
+      }
+    }
+    const tokens = parseLyricsCell(lyricsStr);
+    tokens.forEach((token, tokenIdx) => {
+      if (tokenIdx >= relevantQngs.length) {
+        return;
+      }
+      let word = token;
+      // Handle the case of '- - - blah blah'.
+      if (token === '-') {
+        if (idxRelPickupCell < baseCells.length) {
+          const baseTokens = parseLyricsCell(baseCells[idxRelPickupCell].val);
+          if (tokenIdx < baseTokens.length) {
+            word = baseTokens[tokenIdx];
+          }
+        }
+      }
+      relevantQngs[tokenIdx].lyrics = word;
+    });
+  });
+}
+
+function parseLyricsCell(str) {
+  return str.split(' ');
+}
+
+function addVoiceToSong(voicePart, songPart, baseSongPart, suppress) {
   const durPerMeasure8n = songPart.song.timeSigChanges.defaultVal.getDurPerMeasure8n();
   let seenNonblankToken = false;
   const tokenInfos = voicePart.pickupCells.concat(voicePart.cells).flatMap((cell, idx) => {
@@ -121,46 +187,62 @@ function addVoiceToSong(voicePart, songPart, baseSongPart) {
   if (tokenInfos.length && tokenInfos[0]) {
     songPart.song.pickup8n = tokenInfos[0].start8n;
   }
-  const isContinuation = (tokenInfo, currChunk) => {
-    if (tokenInfo.token.type === TokenType.Blank) {
-      return true;
-    }
-    if (currChunk.length > 0 &&
-      currChunk[0].token.type === TokenType.Slot &&
-      tokenInfo.token.type === TokenType.Slot) {
-      return true;
-    }
-  }
-  const chunksStartingWithNonblank = chunkArray(
-    tokenInfos, (tokenInfo, currChunk) => !isContinuation(tokenInfo, currChunk));
-  const noteGps = chunksStartingWithNonblank.flatMap(chunk => {
-    const tokenInfo = chunk[0];
+  const qngInfos = tokenInfos.flatMap(tokenInfo => {
     const start8n = tokenInfo.start8n;
-    const end8n = chunk[chunk.length - 1].end8n;
+    const end8n = tokenInfo.end8n;
     const token = tokenInfo.token;
     if (token.type === TokenType.Note) {
-      return [makeSimpleQng(start8n, end8n, [token.noteInfo.toNoteNum()], 128, [token.noteInfo.spelling])];
+      return [{
+        qng: makeSimpleQng(start8n, end8n, [token.noteInfo.toNoteNum()], suppress ? 0 : 128, [token.noteInfo.spelling]),
+      }];
     }
     if (token.type === TokenType.Slot) {
       const baseMelody = baseSongPart.song.voices[0];
-      const relevantBaseNoteGps = baseMelody.noteGps.filter(
+      const relevantBaseNoteGps = baseMelody.noteGps.map(qng => {
+        const res = new QuantizedNoteGp(qng);
+        if (suppress) {
+          res.midiNotes.forEach(note => note.velocity = 0);
+        }
+        return res;
+      }).filter(
         noteGp => noteGp.start8n.geq(start8n) && noteGp.start8n.lessThan(end8n));
       const res = [];
       const baseStart8n = relevantBaseNoteGps.length ? relevantBaseNoteGps[0].start8n : end8n;
       if (start8n.geq(0) && start8n.lessThan(baseStart8n)) {
-        res.push(makeSimpleQng(start8n, baseStart8n));
+        res.push({qng: makeSimpleQng(start8n, baseStart8n), extendFromPrev: true});
       }
+      // Else if:
       if (start8n.lessThan(0) && makeFrac(0).lessThan(baseStart8n)) {
-        res.push(makeSimpleQng(makeFrac(0), baseStart8n));
+        res.push({qng: makeSimpleQng(makeFrac(0), baseStart8n), extendFromPrev: true});
       }
-      res.push(...relevantBaseNoteGps.map(noteGp => new QuantizedNoteGp(noteGp)));
-      const finalNoteGp = res[res.length - 1];
-      finalNoteGp.end8n = end8n;
+      res.push(...relevantBaseNoteGps.map(noteGp => {
+        return {qng: new QuantizedNoteGp(noteGp)};
+      }));
+      const finalInfo = res[res.length - 1];
+      finalInfo.qng.end8n = end8n;
       return res;
     }
-    // Catch-all: Handle rest type.
-    return [makeSimpleQng(start8n, end8n, [])];
+    // Handle blank or rest tokens.
+    return [{qng: makeSimpleQng(start8n, end8n), extendFromPrev: token.type === TokenType.Blank}];
   });
+  let latestBaseIdx = 0;
+  qngInfos.forEach((info, idx) => {
+    if (info.extendFromPrev && idx > 0) {
+      qngInfos[latestBaseIdx].qng.end8n = info.qng.end8n;
+    } else {
+      latestBaseIdx = idx;
+    }
+  });
+  const noteGps = qngInfos
+    .filter((info, idx) => !(info.extendFromPrev && idx > 0))
+    .map(info => info.qng);
+  const end8n = songPart.song.getEnd8n();
+  if (noteGps.length) {
+    const finalNoteGp = noteGps[noteGps.length - 1]
+    if (finalNoteGp.end8n.lessThan(end8n)) {
+      noteGps.push(makeSimpleQng(finalNoteGp.end8n, end8n));
+    }
+  }
   const voice = new Voice({
     noteGps: noteGps,
     settings: new VoiceSettings({instrument: instruments.electric_piano_1}),
@@ -200,6 +282,7 @@ function chunkCellsToParts(cells) {
   const zeroTimeColIdx = firstCellWithHeaders ? firstCellWithHeaders.colIdx : 0;
   const chunks = chunkArray(cells, cell => cell.colIdx < zeroTimeColIdx ||
     cell.headerValByType.has(HeaderType.Part) ||
+    cell.headerValByType.has(HeaderType.LyricsPart) ||
     cell.headerValByType.has(HeaderType.VoicePart));
   let pickupBuffer = [];
   let partsOrNull = chunks.map(chunk => {
@@ -214,6 +297,8 @@ function chunkCellsToParts(cells) {
       partName = firstCell.headerValByType.get(HeaderType.Part);
     } else if (firstCell.headerValByType.has(HeaderType.VoicePart)) {
       partName = firstCell.headerValByType.get(HeaderType.VoicePart);
+    } else if (firstCell.headerValByType.has(HeaderType.LyricsPart)) {
+      partName = firstCell.headerValByType.get(HeaderType.LyricsPart);
     }
     const res = new Part({cells: chunk, pickupCells: pickupBuffer, type: type, name: partName});
     pickupBuffer = [];
@@ -221,10 +306,12 @@ function chunkCellsToParts(cells) {
   });
   return partsOrNull.filter(x => x);
 }
+
 function groupCells(gridData) {
-  let isChordMode = true;
+  let mode = CellType.Chord;
   const groupedCellsOrNull = gridData.flatMap((row, rowIdx) => {
     return row.map((val, colIdx) => {
+      val = val.trim();
       if (val === '') {
         return;
       }
@@ -232,17 +319,19 @@ function groupCells(gridData) {
       if (val.split(':').length === 2) {
         const [key, valStr] = val.split(':');
         if (key.toLowerCase() === 'part') {
-          isChordMode = true;
-        } else if (key.toLowerCase().endsWith('part')) {
-          isChordMode = false;
+          mode = CellType.Chord;
+        } else if (key.toLowerCase().startsWith('voice') || key.toLowerCase().startsWith('melody')) {
+          mode = CellType.Voice;
+        } else if (key.toLowerCase().startsWith('lyrics')) {
+          mode = CellType.Lyrics;
         }
         cell.type = CellType.Header;
         return cell;
       }
-      cell.type = isChordMode ? CellType.Chord : CellType.Voice;
+      cell.type = mode;
       return cell;
     });
-  })
+  });
   return groupedCellsOrNull.filter(cell => cell);
 }
 
@@ -276,6 +365,7 @@ const CellType = {
   Header: "Header",
   Chord: "Chord",
   Voice: "Voice",
+  Lyrics: "Lyrics",
 }
 
 class Cell {

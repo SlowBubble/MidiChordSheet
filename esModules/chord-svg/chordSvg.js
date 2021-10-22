@@ -1,14 +1,17 @@
-import { makeFrac, Frac } from "../fraction/fraction.js";
+import { makeFrac } from "../fraction/fraction.js";
 import { makeSvgElt, getBoundingBox } from "./svgUtil.js";
 import { range, findLast } from "../array-util/arrayUtil.js";
 import { mod } from "../math-util/mathUtil.js";
 import { SongForm } from "../sheet-to-song/songForm.js";
 
+// TODO don't hard code this.
+const pickupStart8n = makeFrac(-99);
+
 export class ChordSvgMgr {
-  constructor({songForm = {}, songParts = [], currTime8n = {}}) {
+  constructor({songForm = {}, songParts = [], currTime8n = pickupStart8n}) {
     this.songForm = new SongForm(songForm);
     this.songParts = songParts
-    this.currTime8n = new Frac(currTime8n);
+    this.currTime8n = currTime8n || pickupStart8n;
   }
 
   getSvgsInfo() {
@@ -44,7 +47,7 @@ export class ChordSvgMgr {
 
   // Returns whether or a new set of SVGs need to be generated.
   setCurrTime8n(currTime8n) {
-    this.currTime8n = currTime8n ? currTime8n : makeFrac(0);
+    this.currTime8n = currTime8n ? currTime8n : pickupStart8n;
     return true;
   }
 }

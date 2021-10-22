@@ -7,7 +7,7 @@ export class LyricsDisplayer {
     this._lines = [];
     this._eBanner = eBanner;
     this._enabled = true;
-    this._displaySolfege = true;
+    this._displaySolfege = false;
 
     // TODO make this more efficient.
     currTimeSub(time8n => {
@@ -36,21 +36,54 @@ export class LyricsDisplayer {
       }
 
       const msg = twoLines.map(line => {
-        const leftPart = line.filter(info => info.time8n.leq(time8n)).map(info => info.word).join(' ');
-        const rightPart = line.filter(info => !info.time8n.leq(time8n)).map(info => info.word).join(' ');
-        return `<span style='color:red;'>${leftPart}</span> <span>${rightPart}</span>`;
+        const leftPart = joinWordInfos(line.filter(info => info.time8n.leq(time8n)));
+        const rightPart = joinWordInfos(line.filter(info => !info.time8n.leq(time8n)));
+        const leftStr = `<span style='color:red;'>${leftPart}</span>`;
+        if (rightPart) {
+          const space = leftPart.endsWith('-') ? '&nbsp;' : '&nbsp;&nbsp;';
+          return `${leftStr}${space}<span>${rightPart}</span>`;
+        }
+        return leftStr;
       }).join('<hr/>');
       this._eBanner.inProgress(msg, true);
     });
   }
+
   setVoice(voice) {
     this._voice = voice;
-    const wordsWithTime8n = genSolfegeWordsWithTime8n(voice);
-    this._lines = genLines(wordsWithTime8n).filter(line => line.length > 0);
+    const hasLyrics = voice.noteGps.some(ng => ng.lyrics);
+    const lyricsWithTime8n = hasLyrics ? genLyricsWordsWithTime8n(voice) : [];
+    const wordsWithTime8n = hasLyrics && !this._displaySolfege ? lyricsWithTime8n : genSolfegeWordsWithTime8n(voice);
+    const lines = genLines(wordsWithTime8n, lyricsWithTime8n);
+    this._lines = lines.filter(line => line.length > 0);
   }
 }
 
-function genLines(wordsWithTime8n) {
+function joinWordInfos(infos) {
+  return infos.map(info => info.word).filter(word => word !== '_').join(' ').replaceAll('- ', '-');
+}
+
+const punctuations = [',', '.', '!', '?', '"'];
+function genLines(wordsWithTime8n, lyricsWithTime8n) {
+  let normalRange = wordsWithTime8n;
+  let beyondRangeChunks = [];
+  if (wordsWithTime8n.length > lyricsWithTime8n.length) {
+    normalRange = wordsWithTime8n.slice(0, lyricsWithTime8n.length);
+    const beyondRange = wordsWithTime8n.slice(lyricsWithTime8n.length);
+    beyondRangeChunks = inferLines(beyondRange);
+  }
+  const normalRangeChunks = chunkArray(normalRange, (item, currChunk, idx) => {
+    if (idx == 0) {
+      return false;
+    }
+    const prevLyrics = lyricsWithTime8n[idx - 1].word;
+    if (prevLyrics && punctuations.indexOf(prevLyrics[prevLyrics.length - 1]) >= 0) {
+      return true;
+    }
+  });
+  return normalRangeChunks.concat(beyondRangeChunks);
+}
+function inferLines(wordsWithTime8n) {
   const chunks = chunkArray(wordsWithTime8n, (item, currChunk, idx) => {
     if (currChunk.length < 3) {
       return false;
@@ -90,9 +123,19 @@ function genSolfegeWordsWithTime8n(voice) {
       return;
     }
     const topNote = ng.midiNotes[ng.midiNotes.length - 1];
+    // TODO infer the spelling.
     if (!topNote.spelling) {
       return;
     }
     return {word: toSolfege(topNote.spelling.toString()), time8n: ng.start8n, dur8n: ng.end8n.minus(ng.start8n)};
-  });
+  }).filter(obj => obj);
+}
+
+function genLyricsWordsWithTime8n(voice) {
+  return voice.noteGps.map(ng => {
+    if (ng.isRest) {
+      return;
+    }
+    return {word: ng.lyrics, time8n: ng.start8n, dur8n: ng.end8n.minus(ng.start8n)};
+  }).filter(obj => obj);
 }

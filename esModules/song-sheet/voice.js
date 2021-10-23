@@ -1,5 +1,5 @@
 import { makeRest, QuantizedNoteGp } from "./quantizedNoteGp.js";
-import { VoiceSettings } from "./voiceSettings.js";
+import { VoiceSettings, SettingsChanges } from "./voiceSettings.js";
 
 export const clefType = Object.freeze({
   Treble: 'Treble',
@@ -11,12 +11,21 @@ export class Voice {
     noteGps = [],
     lyricsTokens = [],
     clef = clefType.Treble,
-    settings = {},
+    // settings = {},
+    settingsChanges = {},
   }) {
     this.noteGps = noteGps.map(ng => new QuantizedNoteGp(ng));
     this.lyricsTokens = lyricsTokens;
     this.clef = clef;
-    this.settings = new VoiceSettings(settings);
+    this.settingsChanges = new SettingsChanges(settingsChanges);
+    // TODO: migrate away from the settings argument so we don't need to process it.
+    // if (Object.keys(settings).length) {
+    //   this.settingsChanges.defaultVal = new VoiceSettings(settings);
+    // }
+  }
+
+  get settings() {
+    return this.settingsChanges.defaultVal;
   }
 
   sanitizeNoteGps(pickup8n) {

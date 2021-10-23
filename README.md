@@ -16,21 +16,20 @@ Generate a backing track from data in a spreadsheet of chords.
   - X: # of repeats
   - randomize transpose (must take min-max melody into account because high pitch is really annoying.)
   - randomize instrument
-  - tempo multiplier
+    - design do it in the voice.
+  - randomize presence of drumBeat for the first and last parts of a song form.
+  - tempo multiplier (max is 1.25).
 
-## P1
+## P1: Comping
 
-- Is this still an issue? Fix beat subdivision 1 delay in playing
-- Comping same chord across measures.
-- Comping for 2/4 is too monotonous.
+- Comping for 2/4 is too monotonous and dense (especially when I reharmonize to a dense change)
   - May be use some 4/4 comping style, except that the bass notes follow 2/4 comping.
 - Syncopate into 4n of the previous bar if syncopationPct > something.
-- Show 1 voice for the lead sheet view (add another view or debug view).
-- Display k, k-1, ....
-  - Need more design for what info is needed and how to convert.
-- pickup measure for chords.
-  - Need to use v2 for chord parsing.
+- Comping same chord across measures.
+  - Allow duplicate chords across changes.
+  - Do we need to distinguish | C7 | C7 | and | C7 | _ | ???
 - Display a chord at the start of a measure even if it did not change from the last measure.
+  - Allow duplicate chords across changes.
 - Fix color notes clustering
   - need a way to identify what needs to not be on the bottom.
 - Deal with 3/4 comping separately
@@ -40,6 +39,12 @@ Generate a backing track from data in a spreadsheet of chords.
 
 ## P2
 
+- Is this still an issue? Fix beat subdivision 1 delay in playing
+- Show 1 voice for the lead sheet view (add another view or debug view).
+- Display k, k-1, ....
+  - Need more design for what info is needed and how to convert.
+- pickup measure for chords.
+  - Need to use v2 for chord parsing.
 - Record backing track for youtube?
 - Think about song form e.g. (a-b)-a-b'
   - Should nonrepeating final parts, a-b', be inferred from a, b, outro using the header, "Replace: b"?

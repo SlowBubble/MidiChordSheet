@@ -19,8 +19,8 @@ export function parseKeyValsToSongInfo2(gridData, keyVals) {
   
   // 4a. Make it work for voice first.
   const songInfo = parseKeyValsToSongInfo(gridData, keyVals);
-  songInfo.songPartsWithVoice = genSongPartsWithVoice(parts, songInfo, true);
-  songInfo.songPartsWithRepeatedVoice = genSongPartsWithVoice(parts, songInfo, false);
+  songInfo.songParts = genSongPartsWithVoice(parts, songInfo, false);
+
   return songInfo;
 
   // 4b. Migrate chords over.
@@ -32,11 +32,11 @@ export function parseKeyValsToSongInfo2(gridData, keyVals) {
   // const songParts = convertToSongParts(parts, contextHeaders);
 }
 
-function genSongPartsWithVoice(parts, songInfo, addVoiceOneTimeOnly) {
+function genSongPartsWithVoice(parts, songInfo) {
   const voiceParts = parts.filter(part => part.type === CellType.Voice);
   const songParts = songInfo.songForm.getParts();
 
-  addVoicePartsToSongParts(voiceParts, songParts, addVoiceOneTimeOnly);
+  addVoicePartsToSongParts(voiceParts, songParts);
 
   const lyricsParts = parts.filter(part => part.type === CellType.Lyrics);
   addLyricsPartsToSongParts(lyricsParts, songParts);
@@ -45,14 +45,10 @@ function genSongPartsWithVoice(parts, songInfo, addVoiceOneTimeOnly) {
   return songParts;
 }
 
-function addVoicePartsToSongParts(voiceParts, songParts, addVoiceOneTimeOnly) {
+function addVoicePartsToSongParts(voiceParts, songParts) {
   const usedPartNames = new Set();
   songParts.forEach(songPart => {
     const partName = songPart.song.title;
-    const suppress = addVoiceOneTimeOnly && usedPartNames.has(partName);
-    // if (suppress) {
-    //   return;
-    // }
     usedPartNames.add(partName);
     const voicePart = voiceParts.find(voicePart => partName === voicePart.name);
     if (!voicePart) {
@@ -65,7 +61,7 @@ function addVoicePartsToSongParts(voiceParts, songParts, addVoiceOneTimeOnly) {
         baseSongPart = songParts.find(songPart => songPart.song.title === partToCopy);
       }
     }
-    addVoiceToSong(voicePart, songPart, baseSongPart, suppress);
+    addVoiceToSong(voicePart, songPart, baseSongPart);
   });
 }
 
@@ -161,7 +157,7 @@ function parseLyricsCell(str) {
   return str.split(' ');
 }
 
-function addVoiceToSong(voicePart, songPart, baseSongPart, suppress) {
+function addVoiceToSong(voicePart, songPart, baseSongPart) {
   const durPerMeasure8n = songPart.song.timeSigChanges.defaultVal.getDurPerMeasure8n();
   let seenNonblankToken = false;
   const tokenInfos = voicePart.pickupCells.concat(voicePart.cells).flatMap((cell, idx) => {
@@ -193,18 +189,12 @@ function addVoiceToSong(voicePart, songPart, baseSongPart, suppress) {
     const token = tokenInfo.token;
     if (token.type === TokenType.Note) {
       return [{
-        qng: makeSimpleQng(start8n, end8n, [token.noteInfo.toNoteNum()], suppress ? 0 : 128, [token.noteInfo.spelling]),
+        qng: makeSimpleQng(start8n, end8n, [token.noteInfo.toNoteNum()], 120, [token.noteInfo.spelling]),
       }];
     }
     if (token.type === TokenType.Slot) {
       const baseMelody = baseSongPart.song.voices[0];
-      const relevantBaseNoteGps = baseMelody.noteGps.map(qng => {
-        const res = new QuantizedNoteGp(qng);
-        if (suppress) {
-          res.midiNotes.forEach(note => note.velocity = 0);
-        }
-        return res;
-      }).filter(
+      const relevantBaseNoteGps = baseMelody.noteGps.map(qng => new QuantizedNoteGp(qng)).filter(
         noteGp => noteGp.start8n.geq(start8n) && noteGp.start8n.lessThan(end8n));
       const res = [];
       const baseStart8n = relevantBaseNoteGps.length ? relevantBaseNoteGps[0].start8n : end8n;
@@ -245,8 +235,9 @@ function addVoiceToSong(voicePart, songPart, baseSongPart, suppress) {
   }
   const voice = new Voice({
     noteGps: noteGps,
-    settings: new VoiceSettings({instrument: instruments.electric_piano_1}),
   });
+  // TODO remove this and do it when joining.
+  voice.settingsChanges.defaultVal = new VoiceSettings({instrument: instruments.electric_piano_2});
   songPart.song.voices = [voice];
 }
 

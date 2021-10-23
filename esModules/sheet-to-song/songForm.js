@@ -2,6 +2,7 @@ import { Song } from "../song-sheet/song.js";
 import { SongPart } from "./songPart.js";
 import { Voice, clefType } from "../song-sheet/voice.js";
 import { genComping } from "../music-comping/comping.js";
+import { orchestrate } from "./orchestrate.js";
 
 export class SongForm {
   constructor({
@@ -53,23 +54,43 @@ export class SongForm {
     }
     return sequence.map(name => new SongPart(nameToPart[name]));
   }
+
+  getRepeatPartIndices() {
+    const res = [0];
+    const sequence = [];
+    if (this.intro) {
+      sequence.push(this.intro);
+    }
+    for (let idx = 0; idx < this.numRepeats; idx++) {
+      sequence.push(...this.body);
+      res.push(sequence.length);
+    }
+    return new Set(res);
+  }
 }
 
-export function joinSongParts(parts, title) {
+// TODO disable addDrumBeat in songReplay.js and do it here so that we can mute it when we want
+//   (add volumePercent = 0 at time 0 to end of first part)
+export function joinSongParts(parts, songForm) {
   if (parts.length === 0) {
     throw 'TODO: Handle no parts gracefully';
   }
 
-  let res;
   parts.forEach((part, idx) => {
     if (idx === parts.length - 1 && part.turnaroundStart8n) {
       part.song.chordChanges.removeWithinInterval(part.turnaroundStart8n);
     }
     part.updateComping();
-    res = appendToSong(res, part, title);
   });
+  
+  // Must be done after comping is done.
+  orchestrate(parts, songForm);
 
-  return res;
+  let songRes;
+  parts.forEach(part => {
+    songRes = appendToSong(songRes, part, songForm.title);
+  });
+  return songRes;
 }
 
 function addComping(song, parts) {
@@ -90,10 +111,18 @@ function appendToSong(song, part, title) {
   const shift8n = song.getEnd8n();
   song.voices.forEach((voice, idx) => {
     // Currently a later part can have fewer voices than an earlier part.
-    if (idx < part.song.voices.length) {
-      // If the note gp is a rest and it's a pickup, don't upsert it.
-      voice.upsert(part.song.voices[idx].noteGps.filter(ng => ng.midiNotes.length > 0 || ng.start8n.geq(0)), shift8n);
+    if (idx >= part.song.voices.length) {
+      return;
     }
+    // If the note gp is a rest and it's a pickup, don't upsert it.
+    voice.upsert(part.song.voices[idx].noteGps.filter(ng => ng.midiNotes.length > 0 || ng.start8n.geq(0)), shift8n);
+    // Take pickup notes, i.e. start8n of a non-rest noteGp, into account.
+    let start8n = shift8n;
+    const firstNoteGp = voice.noteGps.find(noteGp => !noteGp.isRest);
+    if (firstNoteGp && firstNoteGp.start8n.lessThan(0)) {
+      start8n = shift8n.plus(firstNoteGp.start8n);
+    }
+    voice.settingsChanges.upsert(start8n, part.song.voices[idx].settings);
   });
   part.song.chordChanges.getChanges().forEach(change => {
     song.chordChanges.upsert(change.start8n.plus(shift8n), change.val);

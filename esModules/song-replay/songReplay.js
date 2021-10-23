@@ -29,16 +29,11 @@ export class SongReplayer {
       }
       voices.push(createDrumVoice(song, opts));
     }
-    const channelInfos = voices.map((voice, idx) => {
-      return {
-        // idx 0 is used for midi input, not for replay
-        channelNum: idx + 1,
-        instrumentName: voice.settings.instrument,
-      };
-    });
-    this._musicalSound.configure(channelInfos);
+    // TODO move volume info out of here to free up channels that were for muting purposes.
+    const voiceIdxToChannelInfos = genVoiceIdxToChannelInfos(voices);
+    this._musicalSound.configure([...voiceIdxToChannelInfos.values()].flatMap(infos => infos));
 
-    const timeMsToMidiEvts = _computeTimeMsToMidiEvts(song, voices, channelInfos, opts);
+    const timeMsToMidiEvts = _computeTimeMsToMidiEvts(song, voices, voiceIdxToChannelInfos, opts);
     const timesWithMidiEvts = timeMsToMidiEvts.getSortedTimesWithMidiEvts();
     const timeMsToBeat8n = createBeat8nArr(song).reduce((accum, beat8n) => {
       accum[time8nToMs(beat8n, song.tempo8nPerMinChanges.defaultVal)] = beat8n;
@@ -98,7 +93,37 @@ export class SongReplayer {
   }
 }
 
-function _computeTimeMsToMidiEvts(song, voices, channelInfos, opts) {
+function genVoiceIdxToChannelInfos(voices, disableChanges) {
+  let freeIdx = 0;
+  const res = new Map(voices.map((voice, idx) => {
+    const baseChannelInfo = {
+      channelNum: freeIdx++,
+      instrumentName: voice.settings.instrument,
+      volumePercent: voice.settings.volumePercent,
+    };
+    if (disableChanges) {
+      return [idx, [baseChannelInfo]];
+    }
+    return [
+      idx,
+      [baseChannelInfo].concat(voice.settingsChanges.getChanges().map(change => {
+        return {
+          channelNum: freeIdx++,
+          instrumentName: change.val.instrument,
+          volumePercent: change.val.volumePercent,
+          start8n: change.start8n,
+        };
+      })),
+    ];
+  }));
+  if (!disableChanges && freeIdx > 16) {
+    console.warn('Not allowed to use > 16 channels.');
+    return genVoiceIdxToChannelInfos(voices, true);
+  }
+  return res;
+}
+
+function _computeTimeMsToMidiEvts(song, voices, voiceIdxToChannelInfos, opts) {
   const timeToRollingInfo = {};
   voices.forEach(voice => {
     voice.noteGps.forEach(qng => {
@@ -120,7 +145,7 @@ function _computeTimeMsToMidiEvts(song, voices, channelInfos, opts) {
   // TODO for NoteOn1 NoteOn2 NoteOff1 NoteOff2, make time of NoteOff1 the time of NoteOn2 - 1.
   const timeToMidiEvts = new TimeMsToMidiEvts();
   voices.forEach((voice, voiceIdx) => {
-    const channelNum = channelInfos[voiceIdx].channelNum;
+    const channelInfos = voiceIdxToChannelInfos.get(voiceIdx);
     voice.noteGps.forEach((qng, idx) => {
       // TODO adjust for multi-grace notes and 2-handed rolled chords (i.e. spanning 2 voices).
       const startAndEnd = _computeStartAndEnd(
@@ -128,11 +153,19 @@ function _computeTimeMsToMidiEvts(song, voices, channelInfos, opts) {
       if (!startAndEnd) {
         return;
       }
+      let channelNum = 0;
+      let volumePercent = 100;
+      channelInfos.forEach(info => {
+        if (!info.start8n || info.start8n.leq(qng.start8n)) {
+          channelNum = info.channelNum;
+          volumePercent = info.volumePercent;
+        }
+      });
       qng.midiNotes.forEach(midiNote => {
         const startMs = _accountForRollingInStartMs(startAndEnd.startMs, qng, midiNote.noteNum, timeToRollingInfo);
         timeToMidiEvts.add(startMs, new NoteOnEvt({
           noteNum: midiNote.noteNum,
-          velocity: midiNote.velocity * voice.settings.volumePercent / 100,
+          velocity: midiNote.velocity * volumePercent / 100,
           channelNum: channelNum,
         }), qng.start8n);
         timeToMidiEvts.add(startAndEnd.endMs, new NoteOffEvt({

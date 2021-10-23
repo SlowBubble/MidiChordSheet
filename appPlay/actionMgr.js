@@ -115,38 +115,42 @@ export class ActionMgr {
     }
 
     const songInfo = parseKeyValsToSongInfo2(gridData, urlKeyVals);
-    this.song = joinSongParts(songInfo.songPartsWithVoice, songInfo.songForm.title);
-    const songForLyrics = joinSongParts(songInfo.songPartsWithRepeatedVoice, songInfo.songForm.title);
+    this.song = joinSongParts(songInfo.songParts, songInfo.songForm);
     this.initialHeaders = songInfo.initialHeaders;
 
     if (this.filePaths) {
       if (urlKeyVals[HeaderType.Tempo] === undefined) {
-        if (Math.random() < 0.75) {
-          this.song.tempo8nPerMinChanges.defaultVal += Math.floor(Math.random() * 40);
-        } else {
-          this.song.tempo8nPerMinChanges.defaultVal -= Math.floor(Math.random() * 20);
-        }
+        this.song.tempo8nPerMinChanges.defaultVal *= (0.8 + Math.random() * 0.3);
+        this.song.tempo8nPerMinChanges.defaultVal = Math.floor(this.song.tempo8nPerMinChanges.defaultVal);
         this.initialHeaders[HeaderType.Tempo] = `${this.song.tempo8nPerMinChanges.defaultVal}`; 
       }
     }
 
     const subdivisions = this.initialHeaders[HeaderType.Subdivision];
-    let swing = urlKeyVals[HeaderType.Swing] || 'Straight';
-    if (subdivisions > 2 && swing !== 'Straight') {
-      swing += '*';
+    const swingRatio = this.initialHeaders[HeaderType.Swing].ratio.toFloat();
+    let swingStr = 'No';
+    if (swingRatio >= 5/2) {
+      swingStr = 'Hard';
+    } else if (swingRatio >= 2) {
+      swingStr = 'Medium';
+    } else if (swingRatio > 1) {
+      swingStr = 'Light';
+    }
+    if (subdivisions > 2 && swingRatio > 1) {
+      swingStr += '*';
     }
     document.getElementById('subdivision-display').textContent = subdivisions;
     document.getElementById('tempo-display').textContent = this.initialHeaders[HeaderType.Tempo];
-    document.getElementById('swing-display').textContent = swing;
+    document.getElementById('swing-display').textContent = swingStr;
     document.getElementById('key-display').textContent = fromNoteNumWithFlat(
       this.initialHeaders[HeaderType.Key].toNoteNum() + this.initialHeaders[HeaderType.Transpose]);
     document.getElementById('repeat-display').textContent = this.initialHeaders[HeaderType.Repeat];
     document.getElementById('upper-numeral-display').textContent = this.initialHeaders[HeaderType.Meter].upperNumeral;
     
-    this.lyricsDisplayer.setVoice(songForLyrics.getVoice(0));
+    this.lyricsDisplayer.setVoice(this.song.getVoice(0));
     this.chordSvgMgr = new ChordSvgMgr({
       songForm: songInfo.songForm,
-      songParts: songInfo.songPartsWithVoice,
+      songParts: songInfo.songParts,
       currTime8n: this.currTime8n,
     });
     this.render();
@@ -208,14 +212,15 @@ export class ActionMgr {
     if (shouldStopAndResume) {
       this.songReplayer.stop();
     }
-    action();
-    if (shouldStopAndResume) {
+    const disableResume = action();
+    if (shouldStopAndResume && !disableResume) {
       this.play();
     }
   }
 
   move(numBars) {
     this.actAndResume(_ => {
+      let disableResume = false;
       numBars = numBars || 1;
       const durPerMeasure8n = this.song.timeSigChanges.defaultVal.getDurPerMeasure8n();
       const currTime = this.currTime8n || makeFrac(0);
@@ -226,12 +231,14 @@ export class ActionMgr {
       let newTime8n = null;
       if (barNum >= 0) {
         newTime8n = durPerMeasure8n.times(barNum);
-        if (newTime8n.geq(this.song.getEnd8n())) {
-          newTime8n = this.song.getEnd8n();
+        if (newTime8n.geq(this.song.getFinalChordTime8n())) {
+          newTime8n = this.song.getFinalChordTime8n();
+          disableResume = true;
         }
       }
       this.setCurrTime8n(newTime8n);
       this.render();
+      return disableResume;
     });
   }
 

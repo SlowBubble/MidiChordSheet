@@ -1,4 +1,5 @@
 import { instruments } from "../musical-sound/musicalSound.js";
+import { ChangesOverTime } from "./changesOverTime.js";
 
 export class VoiceSettings {
   constructor({
@@ -11,5 +12,28 @@ export class VoiceSettings {
     this.hide = hide;
     this.instrument = instrument;
     this.name = name;
+  }
+  equals(other) {
+    return (
+      this.volumePercent === other.volumePercent &&
+      this.hide === other.hide &&
+      this.instrument === other.instrument);
+  }
+}
+
+export class SettingsChanges extends ChangesOverTime {
+  constructor({
+    defaultVal = new VoiceSettings({}),
+    ...rest
+  }) {
+    super({defaultVal: defaultVal, ...rest});
+  }
+
+  _deserialize(val) {
+    return new VoiceSettings(val);
+  }
+
+  _equal(a, b) {
+    return a.equals(b);
   }
 }

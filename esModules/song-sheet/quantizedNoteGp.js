@@ -70,7 +70,7 @@ export class DecoratedNoteGp {
 
 export function makeSimpleQng(start8n, end8n, noteNums, velocity, spellings, channelNum) {
   noteNums = noteNums || [];
-  velocity = velocity === undefined ? 40 : velocity;
+  velocity = velocity === undefined ? 120 : velocity;
   return new QuantizedNoteGp({
     start8n: start8n, end8n: end8n, realEnd8n: end8n,
     midiNotes: noteNums.map((noteNum, idx) => new MidiNote({

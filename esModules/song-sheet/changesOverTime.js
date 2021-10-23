@@ -64,7 +64,7 @@ export class ChangesOverTime {
     }, []);
   }
   _dedupFirstChangeWithDefaultVal() {
-    if (this.defaultVal !== undefined && this._equal(this.defaultVal, this.changes[0])) {
+    if (this.defaultVal !== undefined && this.changes.length > 0 && this._equal(this.defaultVal, this.changes[0].val)) {
       this.changes.splice(0, 1);
     }
   }

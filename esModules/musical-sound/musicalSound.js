@@ -2,22 +2,27 @@ import * as midiEvent from '../midi-data/midiEvent.js';
 
 export const instruments = Object.freeze({
   acoustic_grand_piano: 'acoustic_grand_piano',
+  electric_grand_piano: 'electric_grand_piano',
+  electric_guitar_clean: 'electric_guitar_clean',
   // A softer but more sustained sound
   electric_piano_1: 'electric_piano_1',
   // A more electric and sustained sound
-  // electric_piano_2: 'electric_piano_2',
-  // // A mellow sound
-  // music_box: 'music_box',
+  electric_piano_2: 'electric_piano_2',
   // A percussive sound used to set the tempo
   synth_drum: 'synth_drum',
+  // // Borderline okay.
+  // acoustic_guitar_steel: 'acoustic_guitar_steel',
+  // // A mellow sound
+  // music_box: 'music_box',
 });
 
-// TODO reduce this list to 3 instruments
 // Load more if needed later.
 const basicInstrumentsArr = [
   instruments.acoustic_grand_piano,
   instruments.electric_piano_1,
-  // instruments.electric_piano_2,
+  instruments.electric_piano_2,
+  instruments.electric_grand_piano,
+  instruments.electric_guitar_clean,
   instruments.synth_drum,
 ];
 

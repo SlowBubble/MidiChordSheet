@@ -30,6 +30,7 @@ export class ActionMgr {
     this.currTime8n = null;
     // Initialize these lazily.
     this.filePaths = null;
+    this.reloadOnHashChange = true;
 
     metronomeBeatSub(beat => {
       this.setCurrTime8n(beat.time8n);
@@ -47,7 +48,11 @@ export class ActionMgr {
       window.setTimeout( _ => this.startNextSong(), waitMs);
     });
     window.onhashchange = _ => {
-      this.actAndResume(_ => this.reloadSong());
+      if (this.reloadOnHashChange) {
+        this.actAndResume(async _ => {
+          await this.reloadSong();
+        });
+      }
     };
   }
 
@@ -109,7 +114,13 @@ export class ActionMgr {
         this.filePaths = await fetchFilePaths(urlKeyVals);
       }
       // TODO compute the first k songs (shuffled) and fetch them all at once to avoid offline issues.
+      // This lock is needed because setting fileIdx causes a reload such that the song is not playing
+      // but then it starts playing while awaiting for the reload to complete, so the new song is
+      // set but the replayer is not restarted.
+      // TODO add a method to setUrlParam without triggering reload.
+      this.reloadOnHashChange = false;
       const fileData = await fetchFile(this.filePaths, urlKeyVals, goToNextTune);
+      this.reloadOnHashChange = true;
       gridData = fileData.gridData;
       urlKeyVals.title = fileData.title;
       if (urlKeyVals[HeaderType.Transpose] === undefined) {
@@ -152,12 +163,14 @@ export class ActionMgr {
       swingStr += '*';
     }
     // Debug corrupted state.
-    console.log(this.song, this.initialHeaders);
+    const key = (
+      this.initialHeaders[HeaderType.TransposedKey] ?
+      this.initialHeaders[HeaderType.TransposedKey] :
+      fromNoteNumWithFlat(this.initialHeaders[HeaderType.Key].toNoteNum() + this.initialHeaders[HeaderType.Transpose]));
     document.getElementById('subdivision-display').textContent = subdivisions;
     document.getElementById('tempo-display').textContent = this.initialHeaders[HeaderType.Tempo];
     document.getElementById('swing-display').textContent = swingStr;
-    document.getElementById('key-display').textContent = fromNoteNumWithFlat(
-      this.initialHeaders[HeaderType.Key].toNoteNum() + this.initialHeaders[HeaderType.Transpose]);
+    document.getElementById('key-display').textContent = key;
     document.getElementById('repeat-display').textContent = this.initialHeaders[HeaderType.Repeat];
     document.getElementById('upper-numeral-display').textContent = this.initialHeaders[HeaderType.Meter].upperNumeral;
 
@@ -221,12 +234,12 @@ export class ActionMgr {
     this.move(-4);
   }
 
-  actAndResume(action) {
+  async actAndResume(action) {
     const shouldStopAndResume = this.songReplayer.isPlaying();
     if (shouldStopAndResume) {
       this.songReplayer.stop();
     }
-    const disableResume = action();
+    const disableResume = await action();
     if (shouldStopAndResume && !disableResume) {
       this.play();
     }

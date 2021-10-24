@@ -137,6 +137,6 @@ export class Frac {
   }
 
   wholePart() {
-    return build(Math.floor(this.toFloat()));
+    return Math.floor(this.toFloat());
   }
 }

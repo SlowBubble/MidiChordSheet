@@ -16,7 +16,6 @@ export class VoiceSettings {
   equals(other) {
     return (
       this.volumePercent === other.volumePercent &&
-      this.hide === other.hide &&
       this.instrument === other.instrument);
   }
 }

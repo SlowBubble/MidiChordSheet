@@ -7,7 +7,8 @@ export class ChordChanges extends ChangesOverTime {
     return new Chord(chord);
   }
   _equal(a, b) {
-    return a.toString() === b.toString();
+    return false;
+    // return a.toString() === b.toString();
   }
 }
 

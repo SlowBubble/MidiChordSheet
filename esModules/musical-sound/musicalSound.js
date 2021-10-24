@@ -2,6 +2,7 @@ import * as midiEvent from '../midi-data/midiEvent.js';
 
 export const instruments = Object.freeze({
   acoustic_grand_piano: 'acoustic_grand_piano',
+  honkytonk_piano: 'honkytonk_piano',
   electric_grand_piano: 'electric_grand_piano',
   electric_guitar_clean: 'electric_guitar_clean',
   // A softer but more sustained sound
@@ -19,6 +20,7 @@ export const instruments = Object.freeze({
 // Load more if needed later.
 const basicInstrumentsArr = [
   instruments.acoustic_grand_piano,
+  instruments.honkytonk_piano,
   instruments.electric_piano_1,
   instruments.electric_piano_2,
   instruments.electric_grand_piano,

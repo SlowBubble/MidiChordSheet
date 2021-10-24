@@ -6,12 +6,12 @@ export class LyricsDisplayer {
     this._voice = null;
     this._lines = [];
     this._eBanner = eBanner;
-    this._enabled = true;
-    this._displaySolfege = false;
+    this.enabled = true;
+    this.displaySolfege = false;
 
     // TODO make this more efficient.
     currTimeSub(time8n => {
-      if (!this._enabled || this._lines.length === 0) {
+      if (!this.enabled || this._lines.length === 0) {
         return;
       }
       let lastLineIdx;
@@ -53,7 +53,7 @@ export class LyricsDisplayer {
     this._voice = voice;
     const hasLyrics = voice.noteGps.some(ng => ng.lyrics);
     const lyricsWithTime8n = hasLyrics ? genLyricsWordsWithTime8n(voice) : [];
-    const wordsWithTime8n = hasLyrics && !this._displaySolfege ? lyricsWithTime8n : genSolfegeWordsWithTime8n(voice);
+    const wordsWithTime8n = hasLyrics && !this.displaySolfege ? lyricsWithTime8n : genSolfegeWordsWithTime8n(voice);
     const lines = genLines(wordsWithTime8n, lyricsWithTime8n);
     this._lines = lines.filter(line => line.length > 0);
   }

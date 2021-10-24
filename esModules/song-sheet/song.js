@@ -64,22 +64,48 @@ export class Song {
     const lastChange = changes.slice(changes.length - 1)[0];
     return lastChange.start8n;
   }
-  // [Frac].
-  _getBarsInTime8n() {
-    const res = [];
-    let currTime8n = makeFrac(0);
-    let currBarDur8n = this.timeSigChanges.defaultVal.getDurPerMeasure8n();
-    const end8n = this.getStart8n();
-    while (currTime8n.lessThan(end8n)) {
-      res.push(currTime8n);
-      currTime8n = currTime8n.plus(currBarDur8n);
-    }
-    res.push(end8n);
-    return res;
-  }
-  // Not sure if this is actually good, since for endings, we don't the chord to be repeated.
-  getChordChangesAcrossBars() {
-
+  // // [Frac].
+  // _getBarsInTime8n() {
+  //   const res = [];
+  //   let currTime8n = makeFrac(0);
+  //   let currBarDur8n = this.timeSigChanges.defaultVal.getDurPerMeasure8n();
+  //   const end8n = this.getStart8n();
+  //   while (currTime8n.lessThan(end8n)) {
+  //     res.push(currTime8n);
+  //     currTime8n = currTime8n.plus(currBarDur8n);
+  //   }
+  //   res.push(end8n);
+  //   return res;
+  // }
+  getChordChangesAcrossBars(skipProbability) {
+    skipProbability = skipProbability || 0;
+    const durPerMeasure8n = this.timeSigChanges.defaultVal.getDurPerMeasure8n();
+    const changes = this.chordChanges.changes;
+    return changes.flatMap((change, idx) => {
+      // For endings, we don't the chord to be repeated.
+      if (idx + 1 === changes.length) {
+        return [change];
+      }
+      const nextChange = changes[idx + 1];
+      const changeDur8n = nextChange.start8n.minus(change.start8n);
+      if (changeDur8n.leq(durPerMeasure8n)) {
+        return [change];
+      }
+      const measureNum = change.start8n.over(durPerMeasure8n).wholePart();
+      const nextMeasureNum = nextChange.start8n.over(durPerMeasure8n).wholePart();
+      const res = [change];
+      // Don't skip 2 in a row.
+      let skipped = false;
+      for (let idx = measureNum + 1; idx < nextMeasureNum; idx++) {
+        if (skipped || Math.random() >= skipProbability) {
+          res.push({val: change.val, start8n: durPerMeasure8n.times(idx)});
+          skipped = false;
+        } else {
+          skipped = true;
+        }
+      }
+      return res;
+    });
   }
 }
 

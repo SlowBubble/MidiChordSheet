@@ -65,7 +65,7 @@ export class SongForm {
       sequence.push(...this.body);
       res.push(sequence.length);
     }
-    return new Set(res);
+    return res;
   }
 }
 

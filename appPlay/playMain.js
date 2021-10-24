@@ -96,6 +96,8 @@ function setupInteraction(actionMgr) {
   document.getElementById("incr-subdivision-btn").onclick = _ => actionMgr.incrementBeatSubdivision();
   document.getElementById("decr-subdivision-btn").onclick = _ => actionMgr.decrementBeatSubdivision();
 
+  hotkeysDoc('l', _ => actionMgr.toggleLyrics());
+  hotkeysDoc('shift+l', _ => actionMgr.toggleSolfegeLyrics());
   hotkeysDoc('c', _ => actionMgr.toggleChordView());
   hotkeysDoc('0', _ => actionMgr.moveToStart());
   hotkeysDoc('up', _ => actionMgr.moveUp());

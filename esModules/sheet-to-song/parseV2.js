@@ -19,7 +19,7 @@ export function parseKeyValsToSongInfo2(gridData, keyVals) {
   
   // 4a. Make it work for voice first.
   const songInfo = parseKeyValsToSongInfo(gridData, keyVals);
-  songInfo.songParts = genSongPartsWithVoice(parts, songInfo, false);
+  songInfo.songParts = genSongPartsWithVoice(parts, songInfo);
 
   return songInfo;
 
@@ -45,6 +45,8 @@ function genSongPartsWithVoice(parts, songInfo) {
   return songParts;
 }
 
+// TODO in the future, if there are multiple voiceParts, do it here;
+// will need to implement muting of repeated voicePart here (i.e. revert the "supress" changes).
 function addVoicePartsToSongParts(voiceParts, songParts) {
   const usedPartNames = new Set();
   songParts.forEach(songPart => {

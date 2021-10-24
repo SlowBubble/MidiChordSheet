@@ -26,7 +26,7 @@ export class SongPart {
 
   // TODO remove
   updateComping() {
-    const changes = this.song.chordChanges.changes;
+    const changes = this.song.getChordChangesAcrossBars(/*skipProbability=*/0.25);
     const bassQngs = [];
     const trebleQngs = [];
 
@@ -60,7 +60,10 @@ export class SongPart {
           isDenseBass = Math.random() < this.densityFactor * 1.5;
         }
       }
-      const isDenseBaseForLongDur =  (dur8n.greaterThan(durFor3Beats) && Math.random() < this.densityFactor * 3);
+      let isDenseBaseForLongDur =  (dur8n.greaterThan(durFor3Beats) && Math.random() < this.densityFactor * 3);
+      if (dur8n.greaterThan(durFor4Beats)) {
+        isDenseBaseForLongDur = true;
+      }
       // Make this higher than bassNoteNum unless it's higher than maxBass
       let bassNoteNum2 = chord.root.toNoteNum(4);
       if ((isDenseBaseForLongDur || isDenseBass) && !isFinalNote) {
@@ -93,7 +96,9 @@ export class SongPart {
       const trebleNoteNums = genNearestNums(specifiedColorNoteNums, prevTrebleNoteNums, minTreble, maxTreble);
       // Tuned for the 3/4 meter song, "Someday My Prince Will Come"
       let isDenseTreble = false;
-      if (dur8n.geq(durFor4Beats)) {
+      if (dur8n.greaterThan(durFor4Beats)) {
+        isDenseTreble = true;
+      } else if (dur8n.geq(durFor4Beats)) {
         isDenseTreble = (isDenseBaseForLongDur ?
           Math.random() < this.densityFactor * 3 :
           Math.random() < this.densityFactor * 4);
@@ -155,15 +160,15 @@ export class SongPart {
       noteGps: trebleQngs, clef: clefType.Treble,
     });
     const bassVoice = new Voice({noteGps: bassQngs, clef: clefType.Bass});
-    // Having just one rest note means we should replace the voices entirely.
-    if (this.song.voices[0].noteGps.length === 1 && this.song.voices[0].noteGps[0].midiNotes.length === 0 ) {
-      this.song.voices = [trebleVoice, bassVoice];
-    } else {
+    // // Having just one rest note means we should replace the voices entirely.
+    // if (this.song.voices[0].noteGps.length === 1 && this.song.voices[0].noteGps[0].midiNotes.length === 0 ) {
+    //   this.song.voices = [trebleVoice, bassVoice];
+    // } else {
       trebleVoice.settings.hide = true;
       bassVoice.settings.hide = true;
       this.song.addVoice(trebleVoice);
       this.song.addVoice(bassVoice);
-    }
+    // }
   }
 }
 

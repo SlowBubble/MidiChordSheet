@@ -72,6 +72,15 @@ export class ActionMgr {
     this.displayChordsOnly = !this.displayChordsOnly;
     this.render();
   }
+  toggleSolfegeLyrics() {
+    this.lyricsDisplayer.displaySolfege = !this.lyricsDisplayer.displaySolfege;
+    this.eBanner.success(this.lyricsDisplayer.displaySolfege ? 'Showing solfege' : 'Disabling solfege');
+  }
+
+  toggleLyrics() {
+    this.lyricsDisplayer.enabled = ! this.lyricsDisplayer.enabled;
+    this.eBanner.success(this.lyricsDisplayer.enabled ? 'Showing lyrics' : 'Disabling lyrics');
+  }
 
   renderChordsCanvas() {
     this.chordsCanvas.innerHTML = '';
@@ -120,7 +129,7 @@ export class ActionMgr {
 
     if (this.filePaths) {
       if (urlKeyVals[HeaderType.Tempo] === undefined) {
-        this.song.tempo8nPerMinChanges.defaultVal *= (0.8 + Math.random() * 0.3);
+        this.song.tempo8nPerMinChanges.defaultVal *= (0.9 + Math.random() * 0.2);
         this.song.tempo8nPerMinChanges.defaultVal = Math.floor(this.song.tempo8nPerMinChanges.defaultVal);
         this.initialHeaders[HeaderType.Tempo] = `${this.song.tempo8nPerMinChanges.defaultVal}`; 
       }

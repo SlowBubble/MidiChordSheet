@@ -54,6 +54,9 @@ export class ActionMgr {
   async startNextSong() {
     this.songReplayer.stop();
     this.currTime8n = null;
+    // Unset these.
+    setUrlParam(HeaderType.Tempo);
+    setUrlParam(HeaderType.Transpose);
     await this.reloadSong(/*goToNextTune=*/true);
     this.play();
   }
@@ -74,12 +77,12 @@ export class ActionMgr {
   }
   toggleSolfegeLyrics() {
     this.lyricsDisplayer.displaySolfege = !this.lyricsDisplayer.displaySolfege;
-    this.eBanner.success(this.lyricsDisplayer.displaySolfege ? 'Showing solfege' : 'Disabling solfege');
+    this.eBanner.success(this.lyricsDisplayer.displaySolfege ? 'Solfege' : 'Disabling solfege');
   }
 
   toggleLyrics() {
     this.lyricsDisplayer.enabled = ! this.lyricsDisplayer.enabled;
-    this.eBanner.success(this.lyricsDisplayer.enabled ? 'Showing lyrics' : 'Disabling lyrics');
+    this.eBanner.success(this.lyricsDisplayer.enabled ? 'Lyrics' : 'Disabling lyrics');
   }
 
   renderChordsCanvas() {
@@ -131,7 +134,7 @@ export class ActionMgr {
       if (urlKeyVals[HeaderType.Tempo] === undefined) {
         this.song.tempo8nPerMinChanges.defaultVal *= (0.9 + Math.random() * 0.2);
         this.song.tempo8nPerMinChanges.defaultVal = Math.floor(this.song.tempo8nPerMinChanges.defaultVal);
-        this.initialHeaders[HeaderType.Tempo] = `${this.song.tempo8nPerMinChanges.defaultVal}`; 
+        this.initialHeaders[HeaderType.Tempo] = this.song.tempo8nPerMinChanges.defaultVal; 
       }
     }
 
@@ -148,6 +151,8 @@ export class ActionMgr {
     if (subdivisions > 2 && swingRatio > 1) {
       swingStr += '*';
     }
+    // Debug corrupted state.
+    console.log(this.song, this.initialHeaders);
     document.getElementById('subdivision-display').textContent = subdivisions;
     document.getElementById('tempo-display').textContent = this.initialHeaders[HeaderType.Tempo];
     document.getElementById('swing-display').textContent = swingStr;
@@ -155,7 +160,7 @@ export class ActionMgr {
       this.initialHeaders[HeaderType.Key].toNoteNum() + this.initialHeaders[HeaderType.Transpose]);
     document.getElementById('repeat-display').textContent = this.initialHeaders[HeaderType.Repeat];
     document.getElementById('upper-numeral-display').textContent = this.initialHeaders[HeaderType.Meter].upperNumeral;
-    
+
     this.lyricsDisplayer.setVoice(this.song.getVoice(0));
     this.chordSvgMgr = new ChordSvgMgr({
       songForm: songInfo.songForm,

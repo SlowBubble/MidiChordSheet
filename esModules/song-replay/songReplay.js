@@ -95,7 +95,7 @@ export class SongReplayer {
 }
 
 function genVoiceIdxToChannelInfos(voices, disableChanges) {
-  let freeIdx = 0;
+  let freeIdx = 1;
   const res = new Map(voices.map((voice, idx) => {
     const baseChannelInfo = {
       channelNum: freeIdx++,

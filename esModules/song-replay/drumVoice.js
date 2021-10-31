@@ -9,7 +9,7 @@ import { Voice } from "../song-sheet/voice.js";
 export function createDrumVoice(song, {
   drumVolume, padLeft, numBeatDivisions, lastBeatStart8n,
 }) {
-  drumVolume = drumVolume === undefined ? 1.3 : drumVolume;
+  drumVolume = drumVolume === undefined ? 1.5 : drumVolume;
 
   const voice = new Voice({});
   voice.settings.instrument = instruments.synth_drum;

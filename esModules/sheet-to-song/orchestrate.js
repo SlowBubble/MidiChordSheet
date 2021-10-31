@@ -17,7 +17,7 @@ export function orchestrate(songParts, songForm) {
   voiceIdxToSettingsIdx[melodyIdx] = mod(melodyIdx, compingSettings.length);
   voiceIdxToSettingsIdx[compingIdx] = mod(compingIdx, compingSettings.length);
   voiceIdxToSettingsIdx[bassIdx] = mod(bassIdx, compingSettings.length);
-  let numChannelUsed = bassIdx + 1;
+  let numChannelUsed = bassIdx + 2;
   let muteMelody = false;
   songParts.forEach((part, partIdx) => {
     part.song.voices.forEach((voice, voiceIdx) => {
@@ -41,7 +41,7 @@ export function orchestrate(songParts, songForm) {
       voice.settings.instrument = setting.instrument;
       let relVolPct = 100;
       if (voiceIdx === compingIdx) {
-        relVolPct = 65;
+        relVolPct = 60;
       } else if (voiceIdx === bassIdx) {
         relVolPct = 80;
       }
@@ -53,20 +53,15 @@ export function orchestrate(songParts, songForm) {
 const instrumentSettings = {
   acoustic_grand_piano: {
     instrument: instruments.acoustic_grand_piano,
-    volumePercent: 45,
+    volumePercent: 65,
   },
   electric_piano_2: {
     instrument: instruments.electric_piano_2,
-    volumePercent: 75,
-  },
-  // From FatBoy, which is a bit too soft.
-  electric_grand_piano: {
-    instrument: instruments.electric_grand_piano,
-    volumePercent: 110,
+    volumePercent: 85,
   },
   electric_guitar_clean: {
     instrument: instruments.electric_guitar_clean,
-    volumePercent: 23,
+    volumePercent: 25,
   },
   electric_piano_1: {
     instrument: instruments.electric_piano_1,
@@ -75,10 +70,9 @@ const instrumentSettings = {
 }
 
 const compingSettings = [
+  instrumentSettings.electric_piano_1,
   instrumentSettings.acoustic_grand_piano,
-  instrumentSettings.electric_grand_piano,
-  // instrumentSettings.electric_piano_1,
-  // instrumentSettings.electric_piano_2,
-  // instrumentSettings.electric_guitar_clean,
+  instrumentSettings.electric_piano_2,
+  instrumentSettings.electric_guitar_clean,
 ];
 

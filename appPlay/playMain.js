@@ -7,6 +7,7 @@ import * as pubSub from '../esModules/pub-sub/pubSub.js';
 import { ActionMgr } from "./actionMgr.js";
 import { hotkeysDoc } from "../esModules/hotkeys-doc/hotkeysDoc.js";
 import { LyricsDisplayer } from "../esModules/lyrics-display/lyricsDisplayer.js";
+import { setupKeyboard } from "../esModules/keyboard-to-midi-evt/index.js";
 
 
 setup()
@@ -26,6 +27,7 @@ async function setup() {
     midiJs: window.MIDI, soundSub: soundSub, 
     eBanner: eBanner, readyPub: readyPub
   });
+  setupKeyboard(soundPub);
   const lyricsDisplayer = new LyricsDisplayer({
     currTimeSub: currTimeSub,
     eBanner: eBanner,
@@ -55,51 +57,52 @@ function setupInteraction(actionMgr) {
   hotkeysDoc('space', _ => actionMgr.playOrPause());
 
   document.getElementById("menu-btn").onclick = _ => actionMgr.toggleMenu();
-  hotkeysDoc('m', _ => actionMgr.toggleMenu());
+  hotkeysDoc('shift+m', _ => actionMgr.toggleMenu());
 
-  hotkeysDoc('s', _ => actionMgr.toggleSwing());
+  hotkeysDoc('shift+s', _ => actionMgr.toggleSwing());
   document.getElementById("incr-swing-btn").onclick = _ => actionMgr.toggleSwing();
   document.getElementById("decr-swing-btn").onclick = _ => actionMgr.toggleSwing();
 
-  hotkeysDoc('t', _ => actionMgr.increaseTempo());
-  hotkeysDoc('shift+t', _ => actionMgr.decreaseTempo());
+  hotkeysDoc('shift+t', _ => actionMgr.increaseTempo());
+  hotkeysDoc('alt+shift+t', _ => actionMgr.decreaseTempo());
   document.getElementById("incr-tempo-btn").onclick = _ => actionMgr.increaseTempo();
   document.getElementById("decr-tempo-btn").onclick = _ => actionMgr.decreaseTempo();
 
-  hotkeysDoc('r', _ => actionMgr.incrementRepeat());
-  hotkeysDoc('shift+r', _ => actionMgr.decrementRepeat());
+  hotkeysDoc('shift+r', _ => actionMgr.incrementRepeat());
+  hotkeysDoc('alt+shift+r', _ => actionMgr.decrementRepeat());
   document.getElementById("incr-repeats-btn").onclick = _ => actionMgr.incrementRepeat();
   document.getElementById("decr-repeats-btn").onclick = _ => actionMgr.decrementRepeat();
 
-  hotkeysDoc(`u`, _ => actionMgr.incrTimeSigUpperNumeral());
-  hotkeysDoc('shift+u', _ => actionMgr.decrTimeSigUpperNumeral());
+  hotkeysDoc(`shift+u`, _ => actionMgr.incrTimeSigUpperNumeral());
+  hotkeysDoc('alt+shift+u', _ => actionMgr.decrTimeSigUpperNumeral());
   document.getElementById("incr-upper-numeral-btn").onclick = _ => actionMgr.incrTimeSigUpperNumeral();
   document.getElementById("decr-upper-numeral-btn").onclick = _ => actionMgr.decrTimeSigUpperNumeral();
 
-  hotkeysDoc('k', _ => actionMgr.transposeKeyUp());
-  hotkeysDoc('shift+k', _ => actionMgr.transposeKeyDown());
+  hotkeysDoc('shift+k', _ => actionMgr.transposeKeyUp());
+  hotkeysDoc('alt+shift+k', _ => actionMgr.transposeKeyDown());
   document.getElementById("transpose-up-btn").onclick = _ => actionMgr.transposeKeyUp();
   document.getElementById("transpose-down-btn").onclick = _ => actionMgr.transposeKeyDown();
 
-  hotkeysDoc('o', _ => actionMgr.increaseOffbeatSyncopation());
-  hotkeysDoc('shift+o', _ => actionMgr.decreaseDensity());
+  hotkeysDoc('shift+o', _ => actionMgr.increaseOffbeatSyncopation());
+  hotkeysDoc('alt+shift+o', _ => actionMgr.decreaseDensity());
   document.getElementById("incr-syncopation-btn").onclick = _ => actionMgr.increaseOffbeatSyncopation();
   document.getElementById("decr-syncopation-btn").onclick = _ => actionMgr.decreaseOffbeatSyncopation();
 
-  hotkeysDoc('d', _ => actionMgr.increaseDensity());
-  hotkeysDoc('shift+d', _ => actionMgr.decreaseDensity());
+  hotkeysDoc('shift+d', _ => actionMgr.increaseDensity());
+  hotkeysDoc('alt+shift+d', _ => actionMgr.decreaseDensity());
 
-  hotkeysDoc('n', _ => actionMgr.startNextSong());
+  hotkeysDoc('shift+n', _ => actionMgr.startNextSong());
 
-  hotkeysDoc('b', _ => actionMgr.incrementBeatSubdivision());
-  hotkeysDoc('shift+b', _ => actionMgr.decreaseOffbeatSyncopation());
+  hotkeysDoc('shift+b', _ => actionMgr.incrementBeatSubdivision());
+  hotkeysDoc('alt+shift+b', _ => actionMgr.decreaseOffbeatSyncopation());
   document.getElementById("incr-subdivision-btn").onclick = _ => actionMgr.incrementBeatSubdivision();
   document.getElementById("decr-subdivision-btn").onclick = _ => actionMgr.decrementBeatSubdivision();
 
-  hotkeysDoc('l', _ => actionMgr.toggleLyrics());
-  hotkeysDoc('shift+l', _ => actionMgr.toggleSolfegeLyrics());
-  hotkeysDoc('c', _ => actionMgr.toggleChordView());
-  hotkeysDoc('0', _ => actionMgr.moveToStart());
+  hotkeysDoc('shift+l', _ => actionMgr.toggleLyrics());
+  hotkeysDoc('alt+shift+l', _ => actionMgr.toggleSolfegeLyrics());
+  hotkeysDoc('shift+c', _ => actionMgr.toggleChordView());
+  hotkeysDoc('shift+0', _ => actionMgr.moveToStart());
+  hotkeysDoc('`', _ => actionMgr.moveToStart());
   hotkeysDoc('up', _ => actionMgr.moveUp());
   hotkeysDoc('down', _ => actionMgr.moveDown());
   hotkeysDoc('left', _ => actionMgr.moveLeft());

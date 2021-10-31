@@ -4,18 +4,20 @@ import { chunkArray } from "../array-util/arrayUtil.js";
 export class LyricsDisplayer {
   constructor({currTimeSub, eBanner}) {
     this._voice = null;
-    this._lines = [];
+    this._lyricsLines = [];
+    this._solfegeLines = [];
     this._eBanner = eBanner;
     this.enabled = true;
     this.displaySolfege = false;
 
     // TODO make this more efficient.
     currTimeSub(time8n => {
-      if (!this.enabled || this._lines.length === 0) {
+      if (!this.enabled) {
         return;
       }
+      const lines = this.displaySolfege  || this._lyricsLines.length === 0 ? this._solfegeLines : this._lyricsLines;
       let lastLineIdx;
-      this._lines.forEach((line, idx) => {
+      lines.forEach((line, idx) => {
         if (line[0].time8n.leq(time8n)) {
           lastLineIdx = idx;
         }
@@ -24,12 +26,12 @@ export class LyricsDisplayer {
       let startLineIdx;
       if (lastLineIdx === undefined) {
         startLineIdx = 0;
-      } else if (lastLineIdx + 1 < this._lines.length) {
+      } else if (lastLineIdx + 1 < lines.length) {
         startLineIdx = lastLineIdx;
       } else {
         startLineIdx = lastLineIdx - 1;
       }
-      const twoLines = this._lines.slice(startLineIdx, startLineIdx + 2);
+      const twoLines = lines.slice(startLineIdx, startLineIdx + 2);
       const isEvenStartLineIdx = startLineIdx % 2 === 0;
       if (!isEvenStartLineIdx) {
         twoLines.reverse();
@@ -53,9 +55,8 @@ export class LyricsDisplayer {
     this._voice = voice;
     const hasLyrics = voice.noteGps.some(ng => ng.lyrics);
     const lyricsWithTime8n = hasLyrics ? genLyricsWordsWithTime8n(voice) : [];
-    const wordsWithTime8n = hasLyrics && !this.displaySolfege ? lyricsWithTime8n : genSolfegeWordsWithTime8n(voice);
-    const lines = genLines(wordsWithTime8n, lyricsWithTime8n);
-    this._lines = lines.filter(line => line.length > 0);
+    this._lyricsLines = genLines(lyricsWithTime8n).filter(line => line.length > 0);
+    this._solfegeLines = genLines(genSolfegeWordsWithTime8n(voice), lyricsWithTime8n).filter(line => line.length > 0);
   }
 }
 
@@ -65,6 +66,7 @@ function joinWordInfos(infos) {
 
 const punctuations = [',', '.', '!', '?', '"'];
 function genLines(wordsWithTime8n, lyricsWithTime8n) {
+  lyricsWithTime8n = lyricsWithTime8n || [];
   let normalRange = wordsWithTime8n;
   let beyondRangeChunks = [];
   if (wordsWithTime8n.length > lyricsWithTime8n.length) {

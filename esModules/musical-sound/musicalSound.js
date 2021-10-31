@@ -1,9 +1,8 @@
 import * as midiEvent from '../midi-data/midiEvent.js';
 
 export const instruments = Object.freeze({
-  acoustic_grand_piano: 'acoustic_grand_piano',
-  honkytonk_piano: 'honkytonk_piano',
   electric_grand_piano: 'electric_grand_piano',
+  acoustic_grand_piano: 'acoustic_grand_piano',
   electric_guitar_clean: 'electric_guitar_clean',
   // A softer but more sustained sound
   electric_piano_1: 'electric_piano_1',
@@ -11,6 +10,7 @@ export const instruments = Object.freeze({
   electric_piano_2: 'electric_piano_2',
   // A percussive sound used to set the tempo
   synth_drum: 'synth_drum',
+  // honkytonk_piano: 'honkytonk_piano',
   // // Borderline okay.
   // acoustic_guitar_steel: 'acoustic_guitar_steel',
   // // A mellow sound
@@ -19,11 +19,10 @@ export const instruments = Object.freeze({
 
 // Load more if needed later.
 const basicInstrumentsArr = [
+  instruments.electric_grand_piano,
   instruments.acoustic_grand_piano,
-  instruments.honkytonk_piano,
   instruments.electric_piano_1,
   instruments.electric_piano_2,
-  instruments.electric_grand_piano,
   instruments.electric_guitar_clean,
   instruments.synth_drum,
 ];
@@ -67,7 +66,7 @@ export class MusicalSound {
   configure(channelInfos) {
     channelInfos = channelInfos || [{
       channelNum: 0,
-      instrumentName: instruments.acoustic_grand_piano,
+      instrumentName: instruments.electric_grand_piano,
     },
     {
       channelNum: 1,

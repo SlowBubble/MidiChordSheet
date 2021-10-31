@@ -385,7 +385,7 @@ export function processKeyVal(key, valStr, warnError) {
     case 'lyricspart':
       return {
         type: HeaderType.LyricsPart,
-        value: valStr,
+        value: valStr || defaultPartName,
       };
     case 'repeat':
       return {

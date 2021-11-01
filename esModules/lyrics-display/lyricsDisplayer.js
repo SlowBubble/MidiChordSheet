@@ -55,7 +55,7 @@ export class LyricsDisplayer {
     this._voice = voice;
     const hasLyrics = voice.noteGps.some(ng => ng.lyrics);
     const lyricsWithTime8n = hasLyrics ? genLyricsWordsWithTime8n(voice) : [];
-    this._lyricsLines = genLines(lyricsWithTime8n).filter(line => line.length > 0);
+    this._lyricsLines = genLines(lyricsWithTime8n, lyricsWithTime8n).filter(line => line.length > 0);
     this._solfegeLines = genLines(genSolfegeWordsWithTime8n(voice), lyricsWithTime8n).filter(line => line.length > 0);
   }
 }

@@ -417,8 +417,10 @@ async function fetchFilePaths(keyVals) {
       files = ['https://unpkg.com/@clubfest/pop-tunes/index.json'];
     }  else if (keyVals.genre === 'cantopop') {
       files = ['https://unpkg.com/@clubfest/cantopop-tunes/index.json'];
-    } else {
+    }  else if (keyVals.genre === 'all') {
       files = ['https://unpkg.com/@clubfest/tunes/index.json'];
+    } else {
+      files = ['https://unpkg.com/@clubfest/jazz-tunes/index.json'];
     }
     // Testing locally
     // files = ['examples/Ten%20Little%20Fingers%20-%20Reharm.tsv'];

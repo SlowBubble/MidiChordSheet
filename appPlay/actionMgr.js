@@ -101,7 +101,7 @@ export class ActionMgr {
     this.chordsCanvas.append(svgInfo.svg);
     svgInfo.currentSvg.scrollIntoView({
       // This causes jerking motion for narrow screens when moving.
-      // behavior: "smooth",
+      behavior: "smooth",
       block: "center",
     });
   }

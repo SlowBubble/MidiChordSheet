@@ -102,8 +102,7 @@ function setupInteraction(actionMgr) {
   hotkeysDoc('alt+shift+l', _ => actionMgr.toggleSolfegeLyrics());
   hotkeysDoc('shift+c', _ => actionMgr.toggleChordView());
   hotkeysDoc('shift+i', _ => actionMgr.toggleImprovTactics());
-  hotkeysDoc('shift+0', _ => actionMgr.moveToStart());
-  hotkeysDoc('`', _ => actionMgr.moveToStart());
+  hotkeysDoc('backspace', _ => actionMgr.moveToStart());
   hotkeysDoc('up', _ => actionMgr.moveUp());
   hotkeysDoc('down', _ => actionMgr.moveDown());
   hotkeysDoc('left', _ => actionMgr.moveLeft());

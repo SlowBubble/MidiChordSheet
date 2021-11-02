@@ -1,5 +1,6 @@
 import * as crooked from './crooked.js';
 import * as bendLeft from './bendLeft.js';
+import * as bendRight from './bendRight.js';
 import * as midiEvent from '../midi-data/midiEvent.js';
 import * as pubSub from '../pub-sub/pubSub.js';
 
@@ -50,9 +51,9 @@ class KeyToDebouncedKeyFilter {
 class KeyToMidiEvtFilter {
   constructor(keyDownSub, keyUpSub, midiEvtWithSoundPub) {
     const defaultChannelNum = 0;
-    const defaultVelocity = 100;
+    const defaultVelocity = 90;
     function toNoteNum(key) {
-      return bendLeft.keyToNoteNum[key];
+      return bendRight.keyToNoteNum[key];
     }
 
     keyDownSub((evt, time) => {

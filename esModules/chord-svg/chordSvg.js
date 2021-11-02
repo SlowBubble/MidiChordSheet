@@ -173,7 +173,7 @@ function genChordSvg(part, currTime8n, time8nInSong, {
       const {x, yBottom} = time8nToPos(change.start8n);
       return makeSvgElt('text', {
         x: x, y: yBottom, 'dominant-baseline': 'hanging',
-        'font-size': fontSize * 0.75,
+        'font-size': fontSize * 0.85,
         fill: 'green'
       }, change.val.toString());
     });

@@ -12,13 +12,12 @@ body {
 #main {
   padding: 10px 40px;
   overflow: auto;
+  flex-grow: 1;
 }
 
 #menu {
   padding: 10px 5px;
   background-color: #dee;
-  min-width: 250px;
-  flex-grow: 1;
 }
 
 #menu-table td:nth-child(1) {

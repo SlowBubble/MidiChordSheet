@@ -10,9 +10,9 @@ const Scales = {
   lydian: 'lydian',
   minor: 'minor', // natural
   dorian: 'dorian',
-  diminished: 'Dim. scale',
-  half_diminished: 'Half Dim. scale',
-  diatonic: 'diatonic',
+  diminished: 'dim. scale',
+  half_diminished: 'half dim. scale',
+  diatonic: 'Diatonic', // Catch-all to describe the church mode scales.
 };
 
 export class Tactic {
@@ -23,8 +23,8 @@ export class Tactic {
   }
 
   toString() {
-    if (this.scale === Scales.chord_tones) {
-      return Scales.chord_tones;
+    if (this.scale === Scales.chord_tones || this.scale === Scales.diatonic) {
+      return this.scale;
     }
     return `${this.root} ${this.scale}`;
 

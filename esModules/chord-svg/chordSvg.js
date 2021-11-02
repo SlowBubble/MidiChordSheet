@@ -165,15 +165,16 @@ function genChordSvg(part, currTime8n, time8nInSong, {
   svg.append(...textElts);
 
   if (displayTactics) {
-
     const changes = song.tacticChanges.getChanges();
     const textElts = changes.filter(change => {
       return change.start8n.geq(0);
     }).map(change => {
       const {x, yBottom} = time8nToPos(change.start8n);
+      const passed = time8nInSong.plus(change.start8n).leq(currTime8n);
       return makeSvgElt('text', {
         x: x, y: yBottom, 'dominant-baseline': 'hanging',
         'font-size': fontSize * 0.85,
+        'font-weight': passed ? 'bold' : 'normal',
         fill: 'green'
       }, change.val.toString());
     });

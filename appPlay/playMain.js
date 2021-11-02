@@ -103,6 +103,9 @@ function setupInteraction(actionMgr) {
   hotkeysDoc('shift+c', _ => actionMgr.toggleChordView());
   hotkeysDoc('shift+i', _ => actionMgr.toggleImprovTactics());
   hotkeysDoc('shift+`', _ => actionMgr.setTransposedKey('C'));
+  hotkeysDoc('shift+-', _ => actionMgr.decreaseTempoMultiplier());
+  hotkeysDoc('shift+=', _ => actionMgr.increaseTempoMultiplier());
+  
   hotkeysDoc('shift+2', _ => actionMgr.setTransposedKey('D'));
   hotkeysDoc('shift+3', _ => actionMgr.setTransposedKey('Eb'));
   hotkeysDoc('shift+5', _ => actionMgr.setTransposedKey('F'));

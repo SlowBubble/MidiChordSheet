@@ -108,8 +108,12 @@ function toSongParts(chunkedLocsWithPickup, initialHeader) {
     song.timeSigChanges.defaultVal = currTimeSig;
 
     if (headers[HeaderType.Tempo] !== undefined) {
-      currTempo = headers[HeaderType.Tempo]
+      currTempo = headers[HeaderType.Tempo];
     }
+    if (headers[HeaderType.TempoMultiplier] !== undefined) {
+      currTempo = headers[HeaderType.TempoMultiplier] / 100 * currTempo;
+    }
+    
     song.tempo8nPerMinChanges.defaultVal = currTempo;
 
     if (headers[HeaderType.Key] !== undefined) {
@@ -303,11 +307,13 @@ function parseHeaderLocations(gridData) {
   });
 }
 
+// LINT If you add fields that are specific to a particular song, make sure to unset them in startNextSong.
 export const HeaderType = Object.freeze({
   Key: 'Key',
   Meter: 'Meter',
   Swing: 'Swing',
   Tempo: 'Tempo',
+  TempoMultiplier: 'TempoMultiplier',
   Part: 'Part',
   VoicePart: 'VoicePart',
   LyricsPart: 'LyricsPart',
@@ -413,6 +419,11 @@ export function processKeyVal(key, valStr, warnError) {
         type: HeaderType.TransposedKey,
         value: chord.root,
       };
+    case 'tempomultiplier':
+      return {
+        type: HeaderType.TempoMultiplier,
+        value: parseInt(valStr), 
+      }
     case 'syncopation':
       return {
         type: HeaderType.Syncopation,

@@ -60,7 +60,7 @@ export class ActionMgr {
   async startNextSong() {
     this.songReplayer.stop();
     this.currTime8n = null;
-    // Unset these.
+    // Unset these in the url param since they are song-specific.
     setUrlParam(HeaderType.Tempo);
     setUrlParam(HeaderType.Transpose);
     await this.reloadSong(/*goToNextTune=*/true);
@@ -147,8 +147,9 @@ export class ActionMgr {
     this.initialHeaders = songInfo.initialHeaders;
 
     if (this.filePaths) {
-      if (urlKeyVals[HeaderType.Tempo] === undefined) {
-        this.song.tempo8nPerMinChanges.defaultVal *= (0.9 + Math.random() * 0.2);
+      if (urlKeyVals[HeaderType.Tempo] === undefined && urlKeyVals[HeaderType.TempoMultiplier] === undefined) {
+        const multiplier = 0.9 + Math.random() * 0.2;
+        this.song.tempo8nPerMinChanges.defaultVal *= multiplier;
         this.song.tempo8nPerMinChanges.defaultVal = Math.floor(this.song.tempo8nPerMinChanges.defaultVal);
         this.initialHeaders[HeaderType.Tempo] = this.song.tempo8nPerMinChanges.defaultVal; 
       }
@@ -376,6 +377,22 @@ export class ActionMgr {
 
   setTransposedKey(keyStr) {
     setUrlParam(HeaderType.TransposedKey, keyStr);
+  }
+
+  decreaseTempoMultiplier() {
+    const headerMult = this.initialHeaders[HeaderType.TempoMultiplier];
+    const mult = headerMult === undefined ? 100 : headerMult;
+    const newMult = mult - 5;
+    if (newMult <= 0) {
+      return;
+    }
+    setUrlParam(HeaderType.TempoMultiplier, newMult);
+  }
+  increaseTempoMultiplier() {
+    const headerMult = this.initialHeaders[HeaderType.TempoMultiplier];
+    const mult = headerMult === undefined ? 100 : headerMult;
+    const newMult = mult + 5;
+    setUrlParam(HeaderType.TempoMultiplier, newMult);
   }
 }
 

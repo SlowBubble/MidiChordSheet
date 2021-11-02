@@ -101,7 +101,7 @@ export class ActionMgr {
     this.chordsCanvas.append(svgInfo.svg);
     svgInfo.currentSvg.scrollIntoView({
       // This causes jerking motion for narrow screens when moving.
-      behavior: "smooth",
+      // behavior: "smooth",
       block: "center",
     });
   }
@@ -167,7 +167,6 @@ export class ActionMgr {
     if (subdivisions > 2 && swingRatio > 1) {
       swingStr += '*';
     }
-    // Debug corrupted state.
     const key = (
       this.initialHeaders[HeaderType.TransposedKey] ?
       this.initialHeaders[HeaderType.TransposedKey] :
@@ -373,6 +372,10 @@ export class ActionMgr {
     }
     subdivision -= 1;
     setUrlParam(HeaderType.Subdivision, subdivision);
+  }
+
+  setTransposedKey(keyStr) {
+    setUrlParam(HeaderType.TransposedKey, keyStr);
   }
 }
 

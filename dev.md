@@ -1,6 +1,12 @@
 
 ## WIP
 
+- Generate tactics for solo-ing.
+  - P0: Start with just the tactic names
+  - P1: Show the note spelling with annotations:
+    - chord tones/good target notes?
+    - new notes?
+    - will be obsolete notes?
 - Playlist
   - Use a group of checkboxes to indicate what's being randomized and not (e.g. when a user initiates a key change)
   - randomize transpose (must take min-max melody into account because high pitch is really annoying.)

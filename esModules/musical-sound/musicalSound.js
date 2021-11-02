@@ -10,11 +10,6 @@ export const instruments = Object.freeze({
   electric_piano_2: 'electric_piano_2',
   // A percussive sound used to set the tempo
   synth_drum: 'synth_drum',
-  // honkytonk_piano: 'honkytonk_piano',
-  // // Borderline okay.
-  // acoustic_guitar_steel: 'acoustic_guitar_steel',
-  // // A mellow sound
-  // music_box: 'music_box',
 });
 
 // Load more if needed later.
@@ -70,7 +65,7 @@ export class MusicalSound {
     },
     {
       channelNum: 1,
-      instrumentName: instruments.acoustic_grand_piano,
+      instrumentName: instruments.electric_grand_piano,
     }];
     const defaultVolume = 60;
     channelInfos.forEach(channelInfo => {

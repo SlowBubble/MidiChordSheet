@@ -14,10 +14,10 @@ export class ChordSvgMgr {
     this.currTime8n = currTime8n || pickupStart8n;
   }
 
-  getSvgsInfo() {
+  getSvgsInfo(displayTactics) {
     let time8nInSong = makeFrac(0);
     const svgInfos = this.songParts.map(part => {
-      const chordSvgInfo = genChordSvg(part, this.currTime8n, time8nInSong, {});
+      const chordSvgInfo = genChordSvg(part, this.currTime8n, time8nInSong, {displayTactics: displayTactics});
       time8nInSong = time8nInSong.plus(part.song.getEnd8n());
       if (part.song.title === '::Unnamed::') {
         return chordSvgInfo;
@@ -38,8 +38,8 @@ export class ChordSvgMgr {
     const passingSvgInfo = findLast(svgInfos, info => info.hasPassed);
     return {svgs: [titleSvg, ...svgs], currentSvg: passingSvgInfo ? passingSvgInfo.svg : titleSvg};
   }
-  getSvgInfo() {
-    const svgsInfo = this.getSvgsInfo();
+  getSvgInfo(displayTactics) {
+    const svgsInfo = this.getSvgsInfo(displayTactics);
     const svg = stackSvgs(...svgsInfo.svgs);
     svg.style['padding-top'] = '20px';
     return {svg: svg, currentSvg: svgsInfo.currentSvg};
@@ -89,6 +89,7 @@ function genPartNameSvg(name, {bottomMargin = 10, xPadding = 6, yPadding = 2}) {
 }
 // TODO figure of how to handle overlapping text.
 function genChordSvg(part, currTime8n, time8nInSong, {
+  displayTactics = false,
   fontSize = 22, widthPerBar = 250, heightPerBar = 45,
   spacingBetweenBars = 30,
   barsPerLine = 4,
@@ -124,6 +125,13 @@ function genChordSvg(part, currTime8n, time8nInSong, {
     ];
   });
 
+  const margin = barWidth;
+  const svg = makeSvgElt('svg', {
+    height: fullHeight * numLines,
+    width: widthPerBar * barsPerLine + margin,
+  });
+  svg.append(...barElts);
+
   function time8nToPos(time8n) {
     const barMargin = 5;
     const fracIdx = time8n.over(durPerMeasure8n).toFloat();
@@ -133,12 +141,15 @@ function genChordSvg(part, currTime8n, time8nInSong, {
     return {
       x: idxPos.x + barMargin + (fracIdx - idx) * (widthPerBar - barMargin),
       y: idxPos.y + heightPerBar / 2,
+      yBottom: idxPos.y + heightPerBar / 2 + fontSize / 2,
     }
   }
 
+
   // TODO deal with pickup chords.
   let hasPassed = false;
-  const textElts = song.chordChanges.getChanges().filter(change => {
+  const changes = song.chordChanges.getChanges();
+  const textElts = changes.filter(change => {
     return change.start8n.geq(0);
   }).map(change => {
     const {x, y} = time8nToPos(change.start8n);
@@ -151,13 +162,23 @@ function genChordSvg(part, currTime8n, time8nInSong, {
       fill: passed ? 'red' : 'black',
     }, change.val.toPrettyString());
   });
-  const margin = barWidth;
-  const svg = makeSvgElt('svg', {
-    height: fullHeight * numLines,
-    width: widthPerBar * barsPerLine + margin,
-  });
   svg.append(...textElts);
-  svg.append(...barElts);
+
+  if (displayTactics) {
+
+    const changes = song.tacticChanges.getChanges();
+    const textElts = changes.filter(change => {
+      return change.start8n.geq(0);
+    }).map(change => {
+      const {x, yBottom} = time8nToPos(change.start8n);
+      return makeSvgElt('text', {
+        x: x, y: yBottom, 'dominant-baseline': 'hanging',
+        'font-size': fontSize * 0.75,
+        fill: 'green'
+      }, change.val.toString());
+    });
+    svg.append(...textElts);
+  }
 
   return {
     svg: svg,

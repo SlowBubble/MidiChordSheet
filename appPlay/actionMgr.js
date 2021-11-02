@@ -25,6 +25,7 @@ export class ActionMgr {
     this.lyricsDisplayer = lyricsDisplayer;
     this.chordSvgMgr = new ChordSvgMgr({});
     this.displayChordsOnly = true;
+    this.displayTactics = false;
     this.chordsCanvas = document.getElementById('chords-canvas');
     // null means play from the start with a bar of just beats.
     this.currTime8n = null;
@@ -76,6 +77,10 @@ export class ActionMgr {
       this.clearChordsCanvas();
     }
   }
+  toggleImprovTactics() {
+    this.displayTactics = !this.displayTactics;
+    this.render();
+  }
   toggleChordView() {
     this.displayChordsOnly = !this.displayChordsOnly;
     this.render();
@@ -92,7 +97,7 @@ export class ActionMgr {
 
   renderChordsCanvas() {
     this.chordsCanvas.innerHTML = '';
-    const svgInfo = this.chordSvgMgr.getSvgInfo();
+    const svgInfo = this.chordSvgMgr.getSvgInfo(this.displayTactics);
     this.chordsCanvas.append(svgInfo.svg);
     svgInfo.currentSvg.scrollIntoView({
       // This causes jerking motion for narrow screens when moving.

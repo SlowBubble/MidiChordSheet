@@ -101,6 +101,7 @@ function setupInteraction(actionMgr) {
   hotkeysDoc('shift+l', _ => actionMgr.toggleLyrics());
   hotkeysDoc('alt+shift+l', _ => actionMgr.toggleSolfegeLyrics());
   hotkeysDoc('shift+c', _ => actionMgr.toggleChordView());
+  hotkeysDoc('shift+i', _ => actionMgr.toggleImprovTactics());
   hotkeysDoc('shift+0', _ => actionMgr.moveToStart());
   hotkeysDoc('`', _ => actionMgr.moveToStart());
   hotkeysDoc('up', _ => actionMgr.moveUp());

@@ -6,6 +6,7 @@ import { TimeSigChanges } from "./timeSigChanges.js";
 import { ChangesOverTime } from "./changesOverTime.js";
 import { SwingChanges } from "./swingChanges.js";
 import { getPrettyDateStr } from "../date-util/pretty.js";
+import { TacticChanges } from "../solo-tactics/tactics.js";
 
 export class Song {
   constructor({
@@ -17,6 +18,7 @@ export class Song {
     timeSigChanges = {},
     tempo8nPerMinChanges = {defaultVal: 180},
     swingChanges = {},
+    tacticChanges = {},
   }) {
     this.title = title;
     this.voices = voices.map(voice => new Voice(voice));
@@ -26,6 +28,7 @@ export class Song {
     this.timeSigChanges = new TimeSigChanges(timeSigChanges);
     this.tempo8nPerMinChanges = new ChangesOverTime(tempo8nPerMinChanges);
     this.swingChanges = new SwingChanges(swingChanges);
+    this.tacticChanges = new TacticChanges(tacticChanges);
   }
 
   addVoice(voice, idx) {

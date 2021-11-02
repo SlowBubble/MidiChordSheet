@@ -2,8 +2,10 @@ import { Song } from "../song-sheet/song.js";
 import { makeSimpleQng } from "../song-sheet/quantizedNoteGp.js";
 import { clefType, Voice } from "../song-sheet/voice.js";
 import { intervals } from "../chord/interval.js";
+import { TacticChanges, toTactic } from "../solo-tactics/tactics.js";
 
 const num8nPerBeat = 2;
+const skipProbability = 0.25;
 
 // TODO we will need to add structural info, such as whether this part is copied from
 // another part, so that we can render a shorter version in the future.
@@ -24,9 +26,17 @@ export class SongPart {
     this.transpose = transpose;
   }
 
+  updateTacticChanges() {
+    this.song.tacticChanges = new TacticChanges({});
+    const changes = this.song.getChordChangesAcrossBars(skipProbability);
+    changes.forEach(change => {
+      this.song.tacticChanges.upsert(change.start8n, toTactic(change.val, {level: 0.3}));
+    });
+  }
+
   // TODO remove
   updateComping() {
-    const changes = this.song.getChordChangesAcrossBars(/*skipProbability=*/0.25);
+    const changes = this.song.getChordChangesAcrossBars(skipProbability);
     const bassQngs = [];
     const trebleQngs = [];
 

@@ -81,6 +81,7 @@ export function joinSongParts(parts, songForm) {
       part.song.chordChanges.removeWithinInterval(part.turnaroundStart8n);
     }
     part.updateComping();
+    part.updateTacticChanges();
   });
   
   // Must be done after comping is done.

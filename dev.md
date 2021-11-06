@@ -1,15 +1,10 @@
 
 ## WIP
 
-- Generate tactics for solo-ing.
-  - P0: Start with just the tactic names
-  - P1: Show the note spelling with annotations:
-    - chord tones/good target notes?
-    - new notes?
-    - will be obsolete notes?
-- Playlist
-  - Use a group of checkboxes to indicate what's being randomized and not (e.g. when a user initiates a key change)
-  - randomize transpose (must take min-max melody into account because high pitch is really annoying.)
+- For playlist mode,
+  - transposing will control transposedKey.
+  - changing tempo will change tempo multiplier.
+  - Auto-transpose and transposedKey should take min-max melody into account because high pitch is really annoying.
 
 ## P1: Comping
 
@@ -30,6 +25,11 @@
 
 ## P2
 
+- Generate tactics for solo-ing.
+  - Show the scale with annotations:
+    - chord tones/good target notes?
+    - new notes?
+    - will be obsolete notes?
 - Is this still an issue? Fix beat subdivision 1 delay in playing
 - Show 1 voice for the lead sheet view (add another view or debug view).
 - Display k, k-1, ....

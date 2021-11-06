@@ -1,7 +1,7 @@
 import { Song } from "../song-sheet/song.js";
 import { makeSimpleQng } from "../song-sheet/quantizedNoteGp.js";
 import { clefType, Voice } from "../song-sheet/voice.js";
-import { intervals } from "../chord/interval.js";
+import { Intervals } from "../chord/interval.js";
 import { TacticChanges, toTactic } from "../solo-tactics/tactics.js";
 
 const num8nPerBeat = 2;
@@ -61,6 +61,7 @@ export class SongPart {
       const bass = chord.bass || chord.root;
       const bassNoteNum = genNearestNums([bass.toNoteNum()], [prevBassNoteNum], minBass, maxBass);
       const dur8n = end8n.minus(change.start8n);
+      let quickBass = false;
       if (dur8n.greaterThan(durFor3Beats) || dur8n.lessThan(durFor2Beats)) {
         isDenseBass = false;
       } else {
@@ -76,17 +77,17 @@ export class SongPart {
       }
       // Make this higher than bassNoteNum unless it's higher than maxBass
       let bassNoteNum2 = chord.root.toNoteNum(4);
-      if ((isDenseBaseForLongDur || isDenseBass) && !isFinalNote) {
-        if (chord.bass) {
-          if (bassNoteNum2 > maxBass) {
-            bassNoteNum2 -= 12;
-          }
-        } else {
-          bassNoteNum2 = chord.root.toNoteNum(3) + chord.getFifthInterval();
-          if (bassNoteNum2 < bassNoteNum && bassNoteNum2 + 12 < maxBass) {
-            bassNoteNum2 += 12;
-          }
+      if (chord.bass) {
+        if (bassNoteNum2 > maxBass) {
+          bassNoteNum2 -= 12;
         }
+      } else {
+        bassNoteNum2 = chord.root.toNoteNum(3) + chord.getFifthInterval();
+        if (bassNoteNum2 < bassNoteNum && bassNoteNum2 + 12 < maxBass) {
+          bassNoteNum2 += 12;
+        }
+      }
+      if ((isDenseBaseForLongDur || isDenseBass) && !isFinalNote) {
         let syncopateBass = dur8n.geq(8) ? Math.random() < this.syncopationFactor : Math.random() < this.syncopationFactor / 1.5;
         if (dur8n.equals(durFor3Beats)) {
           syncopateBass = false;
@@ -96,8 +97,15 @@ export class SongPart {
         bassQngs.push(makeSimpleQng(end8n.minus(dur8nFromEnd), end8n, [bassNoteNum2]));
         prevBassNoteNum = bassNoteNum2;
       } else {
-        bassQngs.push(makeSimpleQng(change.start8n, end8n, [bassNoteNum]));
-        prevBassNoteNum = bassNoteNum;
+        quickBass = dur8n.leq(durFor2Beats) ? Math.random() < this.syncopationFactor * 1.5 : false;
+        if (quickBass && !isFinalNote) {
+          bassQngs.push(makeSimpleQng(change.start8n, change.start8n.plus(num8nPerBeat - 1), [bassNoteNum]));
+          bassQngs.push(makeSimpleQng(change.start8n.plus(num8nPerBeat - 1), end8n, [bassNoteNum2]));
+          prevBassNoteNum = bassNoteNum2;
+        } else {
+          bassQngs.push(makeSimpleQng(change.start8n, end8n, [bassNoteNum]));
+          prevBassNoteNum = bassNoteNum;
+        }
       }
       
       const minTreble = Math.max(bassNoteNum, bassNoteNum2, 51) + 1;
@@ -121,7 +129,7 @@ export class SongPart {
         const third = chord.root.toNoteNum() + chord.getThirdInterval();
         const seventh = chord.root.toNoteNum() + chord.getSeventhInterval();
         const fifth = chord.root.toNoteNum() + chord.getFifthInterval();
-        const interval9Or11 = chord.isMinor() || chord.isDiminished() ? intervals.P4 :  intervals.M2;
+        const interval9Or11 = chord.isMinor() || chord.isDiminished() ? Intervals.P4 :  Intervals.M2;
         const ninthOr11th = chord.root.toNoteNum() + interval9Or11;
         const useFifth = Math.random() < 0.6;
         const color = useFifth ? fifth : ninthOr11th;
@@ -162,7 +170,18 @@ export class SongPart {
         trebleQngs.push(makeSimpleQng(end8n.minus(dur8nFromEnd), end8n, trebleNoteNums2));
         prevTrebleNoteNums = trebleNoteNums2;
       } else {
-        trebleQngs.push(makeSimpleQng(change.start8n, end8n, trebleNoteNums));
+        const syncopateFirstBeat = dur8n.leq(durFor2Beats) ? Math.random() < this.syncopationFactor * 1.5 : Math.random() < this.syncopationFactor;
+        if (syncopateFirstBeat && !isFinalNote) {
+          if (Math.random() < (quickBass ? 0.2 : 0.9) || change.start8n.plus(num8nPerBeat).equals(end8n)) {
+            trebleQngs.push(makeSimpleQng(change.start8n, change.start8n.plus(num8nPerBeat - 1), []));
+            trebleQngs.push(makeSimpleQng(change.start8n.plus(num8nPerBeat - 1), end8n, trebleNoteNums));
+          } else {
+            trebleQngs.push(makeSimpleQng(change.start8n, change.start8n.plus(num8nPerBeat), []));
+            trebleQngs.push(makeSimpleQng(change.start8n.plus(num8nPerBeat), end8n, trebleNoteNums));
+          }
+        } else {
+          trebleQngs.push(makeSimpleQng(change.start8n, end8n, trebleNoteNums));
+        }
         prevTrebleNoteNums = trebleNoteNums;
       }
     });

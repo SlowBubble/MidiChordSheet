@@ -1,19 +1,8 @@
 import { ChangesOverTime } from "../song-sheet/changesOverTime.js";
-import { intervals } from "../chord/interval.js";
+import { Intervals } from "../chord/interval.js";
 import { fromNoteNumWithChord } from "../chord/spell.js";
-
-const Scales = {
-  chord_tones: 'arppeg.',
-  pentatonic: 'penta.',
-  minor_pentatonic: 'min penta.',
-  major: 'major',
-  lydian: 'lydian',
-  minor: 'minor', // natural
-  dorian: 'dorian',
-  diminished: 'dim. scale',
-  half_diminished: 'half dim. scale',
-  diatonic: 'diatonic', // Catch-all to describe the church mode scales.
-};
+import { Scales } from "./scale.js";
+import { toSolfege } from "../solfege-util/solfege.js";
 
 export class Tactic {
   constructor({scale, root, chord, targetNote, addChromaticism = false}) {
@@ -25,11 +14,12 @@ export class Tactic {
   }
 
   toString() {
-    const scale = capitalizeFirstLetter(this.root.equals(this.chord.root) ? this.scale : `${this.root} ${this.scale}`);
+    const scale = capitalizeFirstLetter(this.scale == Scales.chord_tones ? this.scale : `${this.root}${this.scale}`);
     if (!this.targetNote) {
       return scale;
     }
-    return `${scale} (${this.targetNote})`
+    
+    return `${scale} (${toSolfege(this.targetNote.toString())})`
   }
 }
 
@@ -72,28 +62,32 @@ export function toTactic(chord, {level = 0, /*key, prevChord, nextChord*/}) {
   if (chord.isMajor()) {
     const usePenta = Math.random() > level;
     if (usePenta) {
-      return makeTactic(Scales.pentatonic, randomizeRoot(chord, [intervals.M2, intervals.P5], [0.2, 0.5]), chord);
+      return makeTactic(Scales.pentatonic, randomizeRoot(chord, [Intervals.M2, Intervals.P5], [0.2, 0.5]), chord);
     }
   }
   if (chord.isMinor()) {
     const usePenta = Math.random() > level;
     if (usePenta) {
-      return makeTactic(Scales.minor_pentatonic, randomizeRoot(chord, [intervals.M2, intervals.P5], [0.2, 0.5]), chord);
+      return makeTactic(Scales.minor_pentatonic, randomizeRoot(chord, [Intervals.M2, Intervals.P5], [0.2, 0.5]), chord);
     }
   }
   if (chord.isDominant() || chord.isAugmented()){
     if (Math.random() < 0.5) {
-      return makeTactic(Scales.pentatonic, randomizeRoot(chord, [intervals.P4, intervals.m7, intervals.tritone], [0.4, 0.4, 0.1]), chord);
-    } else {
-      return makeTactic(Scales.minor_pentatonic, randomizeRoot(chord, [intervals.P4, intervals.P5, intervals.m7], [0.3, 0.3, 0.3]), chord);
+      return makeTactic(Scales.pentatonic, randomizeRoot(chord, [Intervals.P4, Intervals.m7, Intervals.tritone], [0.4, 0.4, 0.1]), chord);
+    } else if (Math.random() < 0.8) {
+      return makeTactic(Scales.minor_pentatonic, randomizeRoot(chord, [Intervals.P4, Intervals.m7], [0.4, 0.4]), chord);
     }
   }
+  // TODO for Bm7b5 or Bdim, treat it like G7.
   if (chord.isHalfDiminished()) {
-    const useDim = Math.random() > level;
-    if (useDim) {
-      return makeTactic(Scales.half_diminished, chord.root, chord);
+    if (Math.random() < 0.8) {
+      return makeTactic(Scales.minor_pentatonic, randomizeRoot(chord, [Intervals.P4, Intervals.m7, Intervals.m2, Intervals.m3, Intervals.tritone], [0.15, 0.15, 0.15, 0.15, 0.15]), chord);
     }
+    // return makeTactic(Scales.half_diminished, chord.root, chord);
   } else if (chord.isDiminished()) {
+    if (Math.random() < 0.8) {
+      return makeTactic(Scales.minor_pentatonic, randomizeRoot(chord, [Intervals.P4, Intervals.m7, Intervals.m2, Intervals.m3, Intervals.tritone], [0.15, 0.15, 0.15, 0.15, 0.15]), chord);
+    }
     return makeTactic(Scales.diminished, chord.root, chord);
     // TODO add harmonic minor (e.g. for Bdim7 use C harm. min.)
   }

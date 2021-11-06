@@ -1,4 +1,4 @@
-import { intervals } from './interval.js';
+import { Intervals } from './interval.js';
 import { Spelling } from './spell.js';
 import { mod } from '../math-util/mathUtil.js';
 
@@ -63,7 +63,7 @@ export class Chord {
     let rootStr = this.root.toString();
     if (baseKey) {
       rootStr = this.root.toRomanNumeralString(baseKey);
-      if (this.getThirdInterval() == intervals.m3) {
+      if (this.getThirdInterval() == Intervals.m3) {
         rootStr = rootStr.toLowerCase();
       }
     }
@@ -71,62 +71,62 @@ export class Chord {
   }
 
   isMajor() {
-    return this.getThirdInterval() == intervals.M3 && this.getSeventhInterval() == intervals.M7;
+    return this.getThirdInterval() == Intervals.M3 && this.getSeventhInterval() == Intervals.M7;
   }
   isDominant() {
-    return this.getThirdInterval() == intervals.M3 && this.getSeventhInterval() == intervals.m7;
+    return this.getThirdInterval() == Intervals.M3 && this.getSeventhInterval() == Intervals.m7;
   }
   // Both m7 and mM7
   isMinor() {
-    return this.getThirdInterval() == intervals.m3 && this.getFifthInterval() == intervals.P5;
+    return this.getThirdInterval() == Intervals.m3 && this.getFifthInterval() == Intervals.P5;
   }
   // Both half- and full-diminished
   isDiminished() {
-    return this.getThirdInterval() == intervals.m3 && this.getFifthInterval() == intervals.tritone;
+    return this.getThirdInterval() == Intervals.m3 && this.getFifthInterval() == Intervals.tritone;
   }
   isAugmented() {
-    return this.getThirdInterval() == intervals.M3 && this.getFifthInterval() == intervals.m6;
+    return this.getThirdInterval() == Intervals.M3 && this.getFifthInterval() == Intervals.m6;
   }
   isHalfDiminished() {
-    return this.getThirdInterval() == intervals.m3 && this.getFifthInterval() == intervals.tritone && this. getSeventhInterval() == intervals.m7;
+    return this.getThirdInterval() == Intervals.m3 && this.getFifthInterval() == Intervals.tritone && this. getSeventhInterval() == Intervals.m7;
   }
 
   getThirdInterval() {
     if (this.suspension == 2) {
-      return intervals.M2;
+      return Intervals.M2;
     }
     if (this.suspension == 4) {
-      return intervals.P4;
+      return Intervals.P4;
     }
     if (this.quality == 'dim' || this.quality == 'm') {
-      return intervals.m3;
+      return Intervals.m3;
     }
-    return intervals.M3;
+    return Intervals.M3;
   }
   getFifthInterval() {
     if (this.quality == 'dim') {
-      return intervals.tritone;
+      return Intervals.tritone;
     }
     if (this.quality == 'aug') {
-      return intervals.m6;
+      return Intervals.m6;
     }
-    return intervals.P5 + this.getAlteredAmount(5);
+    return Intervals.P5 + this.getAlteredAmount(5);
   }
   getSeventhInterval() {
     if (this.quality == 'dim') {
-      return intervals.M6;
+      return Intervals.M6;
     }
     if (this.suspension) {
-      return intervals.m7;
+      return Intervals.m7;
     }
     // Major chord without major 7.
     if (!this.quality && !this.extension) {
-      return intervals.M6;
+      return Intervals.M6;
     }
     if (this.extension && this.extension.isMajor7) {
-      return intervals.M7;
+      return Intervals.M7;
     }
-    return intervals.m7;
+    return Intervals.m7;
   }
 
   getAlteredAmount(extension) {
@@ -152,13 +152,13 @@ export class Chord {
     if (this.extension) {
       addToResIfNotBass(rootNoteNum + this.getSeventhInterval());
       if (this.extension.extensionNum === 9) {
-        addToResIfNotBass(rootNoteNum + intervals.M2);
+        addToResIfNotBass(rootNoteNum + Intervals.M2);
       }
       if (this.extension.extensionNum === 11) {
-        addToResIfNotBass(rootNoteNum + intervals.P4);
+        addToResIfNotBass(rootNoteNum + Intervals.P4);
       }
       if (this.extension.extensionNum === 13) {
-        addToResIfNotBass(rootNoteNum + intervals.M6);
+        addToResIfNotBass(rootNoteNum + Intervals.M6);
       }
     }
     if (this.quality == 'dim' || this.quality == 'aug') {
@@ -166,16 +166,16 @@ export class Chord {
     }
     Object.entries(this._altMap).forEach(([extNum, numSharps]) => {
       if (extNum === '5') {
-        addToResIfNotBass(rootNoteNum + intervals.P5 + numSharps);
+        addToResIfNotBass(rootNoteNum + Intervals.P5 + numSharps);
       }
       if (extNum === '9') {
-        addToResIfNotBass(rootNoteNum + intervals.M2 + numSharps);
+        addToResIfNotBass(rootNoteNum + Intervals.M2 + numSharps);
       }
       if (extNum === '11') {
-        addToResIfNotBass(rootNoteNum + intervals.P4 + numSharps);
+        addToResIfNotBass(rootNoteNum + Intervals.P4 + numSharps);
       }
       if (extNum === '6' || extNum === '13') {
-        addToResIfNotBass(rootNoteNum + intervals.M6 + numSharps);
+        addToResIfNotBass(rootNoteNum + Intervals.M6 + numSharps);
       }
     });
     
@@ -188,14 +188,14 @@ export class Chord {
     }
     if (includeAll) {
       const isLocrian = this.isHalfDiminished();
-      const isPhrygian = keySig && (this.quality === 'm' && mod(this.root.toNoteNum(), keySig.toNoteNum(), 12) == intervals.M3)
+      const isPhrygian = keySig && (this.quality === 'm' && mod(this.root.toNoteNum(), keySig.toNoteNum(), 12) == Intervals.M3)
       if (!isLocrian && !isPhrygian) {
-        addToResIfNotBass(rootNoteNum + intervals.M2);
+        addToResIfNotBass(rootNoteNum + Intervals.M2);
       }
     }
     if (includeAll) {
-      if (this.getThirdInterval() == intervals.m3) {
-        addToResIfNotBass(rootNoteNum + intervals.P4);
+      if (this.getThirdInterval() == Intervals.m3) {
+        addToResIfNotBass(rootNoteNum + Intervals.P4);
       }
     }
     // if (includeAll) {

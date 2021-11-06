@@ -1,5 +1,5 @@
 
-export const intervals = Object.freeze({
+export const Intervals = Object.freeze({
   P1: 0,
   m2: 1,
   M2: 2,

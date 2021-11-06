@@ -90,7 +90,7 @@ function genPartNameSvg(name, {bottomMargin = 10, xPadding = 6, yPadding = 2}) {
 // TODO figure of how to handle overlapping text.
 function genChordSvg(part, currTime8n, time8nInSong, {
   displayTactics = false,
-  fontSize = 22, widthPerBar = 250, heightPerBar = 45,
+  fontSize = 22, widthPerBar = 260, heightPerBar = 45,
   spacingBetweenBars = 30,
   barsPerLine = 4,
 }) {
@@ -173,9 +173,8 @@ function genChordSvg(part, currTime8n, time8nInSong, {
       const passed = time8nInSong.plus(change.start8n).leq(currTime8n);
       return makeSvgElt('text', {
         x: x, y: yBottom, 'dominant-baseline': 'hanging',
-        'font-size': fontSize * 0.85,
-        'font-weight': passed ? 'bold' : 'normal',
-        fill: 'green'
+        'font-size': fontSize * 0.75,
+        fill: passed ? 'red' : 'green',
       }, change.val.toString());
     });
     svg.append(...textElts);

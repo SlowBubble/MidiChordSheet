@@ -62,6 +62,8 @@ export class LyricsDisplayer {
 
 function joinWordInfos(infos) {
   return infos.map(info => info.word).filter(word => word !== '_').join(' ').replaceAll('- ', '-');
+  // TODO also need to make the timing correct.
+  // return infos.map(info => info.word).filter(word => word && !word.startsWith('_')).join(' ').replaceAll('- ', '-');
 }
 
 const punctuations = [',', '.', '!', '?', '"'];

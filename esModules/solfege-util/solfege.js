@@ -46,7 +46,11 @@ export function toSolfege(spellingStr) {
       return [solfegeToSpelling[solfege].toString(), solfege];
     }));
   }
-  return capitalize(spellingToSolfege.get(spellingStr));
+  const res = spellingToSolfege.get(spellingStr);
+  if (!res) {
+    return '';
+  }
+  return capitalize(res);
 }
 
 function capitalize(string) {

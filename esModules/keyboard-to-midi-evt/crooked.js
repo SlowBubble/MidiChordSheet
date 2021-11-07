@@ -1,11 +1,7 @@
 
-// 55 is G3.
-const startNoteNum = 55;
+// 48 is C4.
+const startNoteNum = 47;
 const musicKeys = [
-  'c',
-  'v',
-  'f',
-  '3',
   '`',
   '1',
   '2',
@@ -43,11 +39,7 @@ const musicKeys = [
   '[',
   ']',
   '=',
-  '-',
-  '7',
-  'm',
-  ',',
-  'k',
+  'Backspace',
 ];
 
 export const keyToNoteNum = {};

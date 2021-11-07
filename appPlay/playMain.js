@@ -111,7 +111,7 @@ function setupInteraction(actionMgr) {
   hotkeysDoc('shift+5', _ => actionMgr.setTransposedKey('F'));
   hotkeysDoc('shift+7', _ => actionMgr.setTransposedKey('G'));
   hotkeysDoc('shift+0', _ => actionMgr.setTransposedKey('Bb'));
-  hotkeysDoc('backspace', _ => actionMgr.moveToStart());
+  hotkeysDoc('enter', _ => actionMgr.moveToStart());
   hotkeysDoc('up', _ => actionMgr.moveUp());
   hotkeysDoc('down', _ => actionMgr.moveDown());
   hotkeysDoc('left', _ => actionMgr.moveLeft());

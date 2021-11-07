@@ -53,7 +53,7 @@ class KeyToMidiEvtFilter {
     const defaultChannelNum = 0;
     const defaultVelocity = 90;
     function toNoteNum(key) {
-      return bendRight.keyToNoteNum[key];
+      return crooked.keyToNoteNum[key];
     }
 
     keyDownSub((evt, time) => {

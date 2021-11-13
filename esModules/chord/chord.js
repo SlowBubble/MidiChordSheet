@@ -221,9 +221,9 @@ export class Chord {
   // TODO Avoid mutation by implementing clone.
   // Mutate.
   shift(key1, key2) {
-    this.root = this.root.shift(key1, key2);
+    this.root = this.root.shift(key1, key2, /*minimizeNumAccidentals=*/true);
     if (this.bass) {
-      this.bass = this.bass.shift(key1, key2);
+      this.bass = this.bass.shift(key1, key2, /*minimizeNumAccidentals=*/true);
     }
   }
 }

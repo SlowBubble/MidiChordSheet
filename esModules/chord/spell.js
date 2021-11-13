@@ -150,7 +150,7 @@ export class Spelling {
     return numSharps - 12;
   }
 
-  shift(key1, key2) {
+  shift(key1, key2, minimizeNumAccidentals) {
     const noteNumShift = mod(key2.toNoteNum() - key1.toNoteNum(), 12);
     const charShift = _minus(key2.letter, key1.letter);
     let newLetter = this.letter;
@@ -159,6 +159,18 @@ export class Spelling {
     });
     const targetNoteNum = this.toNoteNum() + noteNumShift;
     const possSpelling = fromNoteNumWithLetter(targetNoteNum, newLetter);
+    if (minimizeNumAccidentals && possSpelling.toString() === 'Cb') {
+      return makeSpelling('B');
+    }
+    if (minimizeNumAccidentals && possSpelling.toString() === 'Fb') {
+      return makeSpelling('E');
+    }
+    if (minimizeNumAccidentals && possSpelling.toString() === 'B#') {
+      return makeSpelling('C');
+    }
+    if (minimizeNumAccidentals && possSpelling.toString() === 'E#') {
+      return makeSpelling('F');
+    }
     if (Math.abs(possSpelling.numSharps) < 2) {
       return possSpelling;
     }

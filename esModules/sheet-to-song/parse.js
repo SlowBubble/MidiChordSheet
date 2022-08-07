@@ -86,13 +86,18 @@ function toSongParts(chunkedLocsWithPickup, initialHeader) {
   let currTempo;
   let currKeySig;
   let currSwing;
-  let currTranspose;
+  // No need to set currTranspose from the initialHeader since that will
+  // be set from the first song part. However, that means the first song
+  // part cannot have the Tranpose field set because the initialHeader
+  // will set it from the left side bar.
+  let currTranspose = 0;
   let currSyncopation;
   let currDensity;
 
   return chunkedLocsWithPickup.map((chunk, idx) => {
     const firstLoc = chunk.chordHeaderLocs[0];
     const headers = idx === 0 ? initialHeader : firstLoc.headers;
+
     let song = new Song({});
     const partForCopying = partNameToPart[headers[HeaderType.Copy]];
     if (partForCopying) {
@@ -122,11 +127,12 @@ function toSongParts(chunkedLocsWithPickup, initialHeader) {
     song.keySigChanges.defaultVal = currKeySig;
 
     if (headers[HeaderType.Transpose] !== undefined) {
-      currTranspose = headers[HeaderType.Transpose];
+      currTranspose += headers[HeaderType.Transpose];
     }
+
     if (headers[HeaderType.TransposedKey] !== undefined) {
       const newKey = headers[HeaderType.TransposedKey];
-      currTranspose = newKey.toNoteNum() - currKeySig.toNoteNum();
+      currTranspose += newKey.toNoteNum() - currKeySig.toNoteNum();
       if (currTranspose >= 6) {
         currTranspose -= 12;
       }

@@ -168,10 +168,14 @@ export class ActionMgr {
     if (subdivisions > 2 && swingRatio > 1) {
       swingStr += '*';
     }
-    const key = (
+    const keyBeforeTranspose = (
       this.initialHeaders[HeaderType.TransposedKey] ?
       this.initialHeaders[HeaderType.TransposedKey] :
-      fromNoteNumWithFlat(this.initialHeaders[HeaderType.Key].toNoteNum() + this.initialHeaders[HeaderType.Transpose]));
+      this.initialHeaders[HeaderType.Key]);
+    const key = (
+      this.initialHeaders[HeaderType.Transpose] ?
+      fromNoteNumWithFlat(keyBeforeTranspose.toNoteNum() + this.initialHeaders[HeaderType.Transpose]) :
+      keyBeforeTranspose);
     document.getElementById('subdivision-display').textContent = subdivisions;
     document.getElementById('tempo-display').textContent = this.initialHeaders[HeaderType.Tempo];
     document.getElementById('swing-display').textContent = swingStr;

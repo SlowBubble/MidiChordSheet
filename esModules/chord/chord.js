@@ -227,5 +227,11 @@ function abbreviate(str) {
     .replace('dim', '°')
     .replace('maj', 'Δ')
     .replace('M', 'Δ')
-    .replace('aug', '+');
+    .replace('aug', '+')
+    .replace('m', '-')
+    // Hacks to make Roman Numeral chord more readable
+    .replace('I7', 'I 7')
+    .replace('I9', 'I 9')
+    .replace('I1', 'I 1')
+    ;
 }

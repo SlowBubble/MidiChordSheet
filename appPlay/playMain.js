@@ -101,7 +101,7 @@ function setupInteraction(actionMgr) {
   hotkeysDoc('shift+l', _ => actionMgr.toggleLyrics());
   hotkeysDoc('alt+shift+l', _ => actionMgr.toggleSolfegeLyrics());
   hotkeysDoc('shift+c', _ => actionMgr.toggleChordView());
-  hotkeysDoc('alt+shift+n', _ => actionMgr.toggleRomanNumeralView());
+  hotkeysDoc('shift+a', _ => actionMgr.toggleRomanNumeralView());
   hotkeysDoc('shift+i', _ => actionMgr.toggleImprovTactics());
   hotkeysDoc('shift+-', _ => actionMgr.decreaseTempoMultiplier());
   hotkeysDoc('shift+=', _ => actionMgr.increaseTempoMultiplier());

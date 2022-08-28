@@ -1,7 +1,7 @@
 
 import { makeFrac } from "../fraction/fraction.js";
 import { Chord } from '../chord/chord.js';
-import { makeSpelling } from "../chord/spell.js";
+import { fromNoteNumWithFlat, makeSpelling } from "../chord/spell.js";
 import { TimeSig } from "../song-sheet/timeSigChanges.js";
 import { Swing } from "../song-sheet/swingChanges.js";
 import { chunkArray } from "../array-util/arrayUtil.js";
@@ -44,7 +44,7 @@ export function parseKeyValsToSongInfo(gridData, keyVals) {
 
 function createInitialHeaders(chunkedLocsWithPickup, keyVals) {
   const song = new Song({});
-  const headers = {}
+  const headers = {};
   headers[HeaderType.Meter] = song.timeSigChanges.defaultVal;
   headers[HeaderType.Tempo] = song.tempo8nPerMinChanges.defaultVal;
   headers[HeaderType.Key] = song.keySigChanges.defaultVal;
@@ -79,29 +79,55 @@ function createInitialHeaders(chunkedLocsWithPickup, keyVals) {
   return headers;
 }
 
+
+function getInitialTransposedNum(headers) {
+  let transposedNum = 0;
+  if (headers[HeaderType.TransposedKey] !== undefined) {
+    transposedNum += headers[HeaderType.TransposedKey].toNoteNum() - headers[HeaderType.Key].toNoteNum();
+    if (transposedNum >= 6) {
+      transposedNum -= 12;
+    }
+  }
+  if (headers[HeaderType.TransposedNum] !== undefined) {
+    transposedNum += headers[HeaderType.TransposedNum];
+  }
+  return transposedNum;
+}
+
 // Returns [{song: Song, compingStyle: CompingStyle}]
 function toSongParts(chunkedLocsWithPickup, initialHeader) {
   const partNameToPart = {};
+  const partNameToInitialHeader = {};
+  const initialTranposedNum = getInitialTransposedNum(initialHeader);
+
   let currTimeSig;
   let currTempo;
   let currKeySig;
   let currSwing;
-  // No need to set currTranspose from the initialHeader since that will
-  // be set from the first song part. However, that means the first song
-  // part cannot have the Tranpose field set because the initialHeader
-  // will set it from the left side bar.
-  let currTranspose = 0;
   let currSyncopation;
   let currDensity;
 
   return chunkedLocsWithPickup.map((chunk, idx) => {
     const firstLoc = chunk.chordHeaderLocs[0];
-    const headers = idx === 0 ? initialHeader : firstLoc.headers;
+    // Copy the header because we will modify it below.
+    const headers = Object.assign({}, firstLoc.headers);
 
     let song = new Song({});
     const partForCopying = partNameToPart[headers[HeaderType.Copy]];
     if (partForCopying) {
       song = new Song(partForCopying.song);
+      const headersForMerging = partNameToInitialHeader[headers[HeaderType.Copy]];
+      for (const [key, value] of Object.entries(headersForMerging)) {
+        if (!(key in headers)) {
+          headers[key] = value;
+        }
+      }
+    } else {
+      for (const [key, value] of Object.entries(initialHeader)) {
+        if (!(key in headers)) {
+          headers[key] = value;
+        }
+      }
     }
     song.title = headers[HeaderType.Part];
 
@@ -124,19 +150,12 @@ function toSongParts(chunkedLocsWithPickup, initialHeader) {
     if (headers[HeaderType.Key] !== undefined) {
       currKeySig = headers[HeaderType.Key];
     }
+
+    const transpose = (
+      headers[HeaderType.Transpose] === undefined ? initialTranposedNum :
+      initialTranposedNum + headers[HeaderType.Transpose]
+    );
     song.keySigChanges.defaultVal = currKeySig;
-
-    if (headers[HeaderType.Transpose] !== undefined) {
-      currTranspose += headers[HeaderType.Transpose];
-    }
-
-    if (headers[HeaderType.TransposedKey] !== undefined) {
-      const newKey = headers[HeaderType.TransposedKey];
-      currTranspose += newKey.toNoteNum() - currKeySig.toNoteNum();
-      if (currTranspose >= 6) {
-        currTranspose -= 12;
-      }
-    }
 
     if (headers[HeaderType.Swing] !== undefined) {
       currSwing = headers[HeaderType.Swing];
@@ -163,6 +182,13 @@ function toSongParts(chunkedLocsWithPickup, initialHeader) {
     }
 
     chunk.pickup.concat(chunk.chordHeaderLocs).forEach(loc => {
+      if (loc.headers) {
+        const time8n = idxToTime8n(loc.fractionalIdx);
+        if (loc.headers[HeaderType.Key]) {
+          song.keySigChanges.upsert(time8n, loc.headers[HeaderType.Key]);
+        }
+        // TODO process other types of header type.
+      }
       if (loc.chordType === ChordInfoType.Slot || loc.chordType === ChordInfoType.TurnAroundStart) {
         return;
       }
@@ -193,7 +219,7 @@ function toSongParts(chunkedLocsWithPickup, initialHeader) {
 
     const part = new SongPart({
       song: song, syncopationPct: currSyncopation,
-      densityPct: currDensity, transpose: currTranspose,
+      densityPct: currDensity, transpose: transpose,
     });
     const turnAroundLoc = chunk.chordHeaderLocs.find(loc => loc.chordType === ChordInfoType.TurnAroundStart);
     if (turnAroundLoc) {
@@ -201,6 +227,7 @@ function toSongParts(chunkedLocsWithPickup, initialHeader) {
     }
 
     partNameToPart[song.title] = part;
+    partNameToInitialHeader[song.title] = headers;
     return part;
   });
 }
@@ -327,8 +354,16 @@ export const HeaderType = Object.freeze({
   CompingStyle: 'CompingStyle',
   Syncopation: 'Syncopation',
   Density: 'Density',
-  Transpose: 'Transpose',
+  // Shift the entire song to this key, as supposed to `Key` 
+  // Should be only be set once at the start.
   TransposedKey: 'TransposedKey',
+  // Similar to TransposedKey but using a number instead and will
+  // be applied on top of TransposedKey.
+  TransposedNum: 'TransposedNum',
+  // Shift the song by this number of semi-tones.
+  // This can be set locally, and is interpreted relative to `TransposedKey`
+  // if it exists, else `Key`.
+  Transpose: 'Transpose',
   Repeat: 'Repeat',
   Subdivision: 'Subdivision',
 });
@@ -417,6 +452,11 @@ export function processKeyVal(key, valStr, warnError) {
     case 'transpose':
       return {
         type: HeaderType.Transpose,
+        value: parseInt(valStr),
+      };
+    case 'transposednum':
+      return {
+        type: HeaderType.TransposedNum,
         value: parseInt(valStr),
       };
     case 'transposedkey':

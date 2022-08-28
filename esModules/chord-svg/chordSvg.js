@@ -3,6 +3,7 @@ import { makeSvgElt, getBoundingBox } from "./svgUtil.js";
 import { range, findLast } from "../array-util/arrayUtil.js";
 import { mod } from "../math-util/mathUtil.js";
 import { SongForm } from "../sheet-to-song/songForm.js";
+import { fromNoteNumWithFlat } from "../chord/spell.js";
 
 // TODO don't hard code this.
 const pickupStart8n = makeFrac(-99);
@@ -171,7 +172,7 @@ function genChordSvg(part, currTime8n, time8nInSong, {
     const extraSvgElts = [];
     let hasKeyChange = false;
     if (displayRomanNumeral) {
-      const currKey = song.keySigChanges.getChange(change.start8n, true).val;
+      const currKey = song.keySigChanges.getChange(change.start8n).val;
       hasKeyChange = prevKey !== null && !currKey.equals(prevKey);
       chordStr = change.val.toRomanNumeralString(currKey);
       if (hasKeyChange) {

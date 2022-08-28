@@ -63,7 +63,8 @@ export class ActionMgr {
     this.currTime8n = null;
     // Unset these in the url param since they are song-specific.
     setUrlParam(HeaderType.Tempo);
-    setUrlParam(HeaderType.Transpose);
+    setUrlParam(HeaderType.TransposedKey);
+    setUrlParam(HeaderType.TransposedNum);
     await this.reloadSong(/*goToNextTune=*/true);
     this.play();
   }
@@ -134,8 +135,8 @@ export class ActionMgr {
       this.reloadOnHashChange = true;
       gridData = fileData.gridData;
       urlKeyVals.title = fileData.title;
-      if (urlKeyVals[HeaderType.Transpose] === undefined) {
-        urlKeyVals[HeaderType.Transpose] = `-${Math.floor(Math.random() * 12)}`;
+      if (urlKeyVals[HeaderType.TransposedNum] === undefined) {
+        urlKeyVals[HeaderType.TransposedNum] = `-${Math.floor(Math.random() * 12)}`;
       }
       if (urlKeyVals[HeaderType.Repeat] === undefined) {
         urlKeyVals[HeaderType.Repeat] = `${Math.floor(Math.random() * 2) + 1}`;
@@ -174,14 +175,14 @@ export class ActionMgr {
     if (subdivisions > 2 && swingRatio > 1) {
       swingStr += '*';
     }
-    const keyBeforeTranspose = (
-      this.initialHeaders[HeaderType.TransposedKey] ?
-      this.initialHeaders[HeaderType.TransposedKey] :
-      this.initialHeaders[HeaderType.Key]);
-    const key = (
-      this.initialHeaders[HeaderType.Transpose] ?
-      fromNoteNumWithFlat(keyBeforeTranspose.toNoteNum() + this.initialHeaders[HeaderType.Transpose]) :
-      keyBeforeTranspose);
+    let key = this.initialHeaders[HeaderType.Key];
+    if (this.initialHeaders[HeaderType.TransposedKey] !== undefined) {
+      key = this.initialHeaders[HeaderType.TransposedKey];
+    }
+    if (this.initialHeaders[HeaderType.TransposedNum] !== undefined) {
+      key = fromNoteNumWithFlat(key.toNoteNum() + this.initialHeaders[HeaderType.TransposedNum]);
+    }
+    this.initialHeaders[HeaderType.TransposedNum] || 0;
     document.getElementById('subdivision-display').textContent = subdivisions;
     document.getElementById('tempo-display').textContent = this.initialHeaders[HeaderType.Tempo];
     document.getElementById('swing-display').textContent = swingStr;
@@ -315,13 +316,13 @@ export class ActionMgr {
 
   transposeKeyDown() {
     this.actAndResume(_ => {
-      const transpose = this.initialHeaders[HeaderType.Transpose];
-      setUrlParam(HeaderType.Transpose, (transpose - 1) % 12);
+      setUrlParam(HeaderType.TransposedNum, ((this.initialHeaders[HeaderType.TransposedNum] || 0) - 1) % 12);
     });
   }
   transposeKeyUp() {
-    const transpose = this.initialHeaders[HeaderType.Transpose];
-    setUrlParam(HeaderType.Transpose, (transpose + 1) % 12);
+    this.actAndResume(_ => {
+      setUrlParam(HeaderType.TransposedNum, ((this.initialHeaders[HeaderType.TransposedNum] || 0) + 1) % 12);
+    });
   }
 
   decreaseOffbeatSyncopation() {
@@ -387,6 +388,7 @@ export class ActionMgr {
 
   setTransposedKey(keyStr) {
     setUrlParam(HeaderType.TransposedKey, keyStr);
+    setUrlParam(HeaderType.TransposedNum, 0);
   }
 
   decreaseTempoMultiplier() {

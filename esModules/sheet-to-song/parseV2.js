@@ -16,7 +16,7 @@ export function parseKeyValsToSongInfo2(gridData, keyVals) {
 
   // 3. Chunk the cells into parts.
   const parts = chunkCellsToParts(annotatedCells);
-  
+
   // 4a. Make it work for voice first.
   const songInfo = parseKeyValsToSongInfo(gridData, keyVals);
   songInfo.songParts = genSongPartsWithVoice(parts, songInfo);
@@ -109,6 +109,9 @@ function transposeSongParts(songParts) {
 
     // 3. Key Sig
     song.keySigChanges.defaultVal = newKey;
+    song.keySigChanges.changes.forEach(change => {
+      change.val = fromNoteNumWithFlat(change.val.toNoteNum() + part.transpose);
+    })
   });
 }
 

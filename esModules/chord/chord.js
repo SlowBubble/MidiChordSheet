@@ -31,18 +31,11 @@ export class Chord {
   }
   toPrettyString() {
     const str = this.toString();
-    return str
-      .replace('m7b5', 'ø7')
-      .replace('dim', '°')
-      .replace('maj', 'Δ')
-      .replace('M', 'Δ')
-      .replace('aug', '+')
-      // .replace('b', '♭')
-      // .replace('#', '♯')
-    ;
+    return abbreviate(str);
   }
   toRomanNumeralString(baseKey) {
-    return this._toString(baseKey);
+    const str = this._toString(baseKey);
+    return abbreviate(str);
   }
   _toString(baseKey) {
     const sus = (this.suspension == 4 ? 'sus' : (
@@ -226,4 +219,13 @@ export class Chord {
       this.bass = this.bass.shift(key1, key2, /*minimizeNumAccidentals=*/true);
     }
   }
+}
+
+function abbreviate(str) {
+  return str
+    .replace('m7b5', 'ø7')
+    .replace('dim', '°')
+    .replace('maj', 'Δ')
+    .replace('M', 'Δ')
+    .replace('aug', '+');
 }

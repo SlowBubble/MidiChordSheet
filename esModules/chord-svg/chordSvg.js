@@ -14,10 +14,12 @@ export class ChordSvgMgr {
     this.currTime8n = currTime8n || pickupStart8n;
   }
 
-  getSvgsInfo(displayTactics) {
+  getSvgsInfo(displayTactics, displayRomanNumeral) {
     let time8nInSong = makeFrac(0);
     const svgInfos = this.songParts.map(part => {
-      const chordSvgInfo = genChordSvg(part, this.currTime8n, time8nInSong, {displayTactics: displayTactics});
+      const chordSvgInfo = genChordSvg(part, this.currTime8n, time8nInSong, {
+        displayTactics: displayTactics, displayRomanNumeral: displayRomanNumeral,
+      });
       time8nInSong = time8nInSong.plus(part.song.getEnd8n());
       if (part.song.title === '::Unnamed::') {
         return chordSvgInfo;
@@ -38,8 +40,8 @@ export class ChordSvgMgr {
     const passingSvgInfo = findLast(svgInfos, info => info.hasPassed);
     return {svgs: [titleSvg, ...svgs], currentSvg: passingSvgInfo ? passingSvgInfo.svg : titleSvg};
   }
-  getSvgInfo(displayTactics) {
-    const svgsInfo = this.getSvgsInfo(displayTactics);
+  getSvgInfo(displayTactics, displayRomanNumeral) {
+    const svgsInfo = this.getSvgsInfo(displayTactics, displayRomanNumeral);
     const svg = stackSvgs(...svgsInfo.svgs);
     svg.style['padding-top'] = '20px';
     return {svg: svg, currentSvg: svgsInfo.currentSvg};
@@ -90,6 +92,7 @@ function genPartNameSvg(name, {bottomMargin = 10, xPadding = 6, yPadding = 2}) {
 // TODO figure of how to handle overlapping text.
 function genChordSvg(part, currTime8n, time8nInSong, {
   displayTactics = false,
+  displayRomanNumeral = false,
   fontSize = 22, widthPerBar = 260, heightPerBar = 45,
   spacingBetweenBars = 30,
   barsPerLine = 4,
@@ -155,12 +158,16 @@ function genChordSvg(part, currTime8n, time8nInSong, {
     const {x, y} = time8nToPos(change.start8n);
     const passed = time8nInSong.plus(change.start8n).leq(currTime8n);
     hasPassed = hasPassed || passed;
+    const chordStr = (
+      displayRomanNumeral ?
+      change.val.toRomanNumeralString(song.keySigChanges.getChange(change.start8n, true).val) :
+      change.val.toPrettyString());
     return makeSvgElt('text', {
       x: x, y: y, 'dominant-baseline': 'central',
       'font-size': fontSize,
       'font-weight': passed ? 'bold' : 'normal',
       fill: passed ? 'red' : 'black',
-    }, change.val.toPrettyString());
+    }, chordStr);
   });
   svg.append(...textElts);
 

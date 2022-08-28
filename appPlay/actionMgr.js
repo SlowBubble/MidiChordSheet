@@ -25,6 +25,7 @@ export class ActionMgr {
     this.lyricsDisplayer = lyricsDisplayer;
     this.chordSvgMgr = new ChordSvgMgr({});
     this.displayChordsOnly = true;
+    this.displayRomanNumeral = false;
     this.displayTactics = false;
     this.chordsCanvas = document.getElementById('chords-canvas');
     // null means play from the start with a bar of just beats.
@@ -85,6 +86,11 @@ export class ActionMgr {
     this.displayChordsOnly = !this.displayChordsOnly;
     this.render();
   }
+  toggleRomanNumeralView() {
+    this.displayChordsOnly = true;
+    this.displayRomanNumeral = !this.displayRomanNumeral;
+    this.render();
+  }
   toggleSolfegeLyrics() {
     this.lyricsDisplayer.displaySolfege = !this.lyricsDisplayer.displaySolfege;
     this.eBanner.success(this.lyricsDisplayer.displaySolfege ? 'Solfege' : 'Disabling solfege');
@@ -97,7 +103,7 @@ export class ActionMgr {
 
   renderChordsCanvas() {
     this.chordsCanvas.innerHTML = '';
-    const svgInfo = this.chordSvgMgr.getSvgInfo(this.displayTactics);
+    const svgInfo = this.chordSvgMgr.getSvgInfo(this.displayTactics, this.displayRomanNumeral);
     this.chordsCanvas.append(svgInfo.svg);
     svgInfo.currentSvg.scrollIntoView({
       // This causes jerking motion for narrow screens when moving.

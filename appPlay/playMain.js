@@ -101,17 +101,24 @@ function setupInteraction(actionMgr) {
   hotkeysDoc('shift+l', _ => actionMgr.toggleLyrics());
   hotkeysDoc('alt+shift+l', _ => actionMgr.toggleSolfegeLyrics());
   hotkeysDoc('shift+c', _ => actionMgr.toggleChordView());
+  hotkeysDoc('alt+shift+n', _ => actionMgr.toggleRomanNumeralView());
   hotkeysDoc('shift+i', _ => actionMgr.toggleImprovTactics());
-  hotkeysDoc('shift+`', _ => actionMgr.setTransposedKey('C'));
   hotkeysDoc('shift+-', _ => actionMgr.decreaseTempoMultiplier());
   hotkeysDoc('shift+=', _ => actionMgr.increaseTempoMultiplier());
   
-  hotkeysDoc('shift+2', _ => actionMgr.setTransposedKey('D'));
-  hotkeysDoc('shift+3', _ => actionMgr.setTransposedKey('Eb'));
-  hotkeysDoc('shift+5', _ => actionMgr.setTransposedKey('F'));
-  hotkeysDoc('shift+7', _ => actionMgr.setTransposedKey('G'));
-  hotkeysDoc('shift+0', _ => actionMgr.setTransposedKey('Bb'));
-  hotkeysDoc('enter', _ => actionMgr.moveToStart());
+  hotkeysDoc('alt+shift+`', _ => actionMgr.setTransposedKey('C'));
+  hotkeysDoc('alt+shift+1', _ => actionMgr.setTransposedKey('Db'));
+  hotkeysDoc('alt+shift+2', _ => actionMgr.setTransposedKey('D'));
+  hotkeysDoc('alt+shift+3', _ => actionMgr.setTransposedKey('Eb'));
+  hotkeysDoc('alt+shift+4', _ => actionMgr.setTransposedKey('E'));
+  hotkeysDoc('alt+shift+5', _ => actionMgr.setTransposedKey('F'));
+  hotkeysDoc('alt+shift+6', _ => actionMgr.setTransposedKey('Gb'));
+  hotkeysDoc('alt+shift+7', _ => actionMgr.setTransposedKey('G'));
+  hotkeysDoc('alt+shift+8', _ => actionMgr.setTransposedKey('Ab'));
+  hotkeysDoc('alt+shift+9', _ => actionMgr.setTransposedKey('A'));
+  hotkeysDoc('alt+shift+0', _ => actionMgr.setTransposedKey('Bb'));
+
+  hotkeysDoc('shift+0', _ => actionMgr.moveToStart());
   hotkeysDoc('up', _ => actionMgr.moveUp());
   hotkeysDoc('down', _ => actionMgr.moveDown());
   hotkeysDoc('left', _ => actionMgr.moveLeft());

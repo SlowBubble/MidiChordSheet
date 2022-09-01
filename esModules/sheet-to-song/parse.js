@@ -34,14 +34,19 @@ export function parseKeyValsToSongInfo(gridData, keyVals) {
     numRepeats: initialHeaders[HeaderType.Repeat],
   });
   return {
-    // TODO get rid of title and songParts
-    // TODO add voiceParts to songForm in the future.
+    // songParts need additionally processing in parseV2.js
     // songParts: songForm.getParts(),
     songForm: songForm,
     initialHeaders: initialHeaders,
   };
 }
 
+// InitialHeaders are the headers used by the very first part of the song
+// and is displayed on the sidebar. The values are determined by (in order of importance)
+// 1. url params.
+// 2. header in the first song part.
+// 3. default values if they are required.
+// 4. undefined if not required.
 function createInitialHeaders(chunkedLocsWithPickup, keyVals) {
   const song = new Song({});
   const headers = {};
@@ -94,7 +99,21 @@ function getInitialTransposedNum(headers) {
   return transposedNum;
 }
 
+// TODO Separate local and global header, i.e. how they are interpreted and how
+// they can be set; e.g. allowing setting local headers from the UI and url params
+// only if they are never changed later or add some warning about unexpected behavior.
+
 // Returns [{song: Song, compingStyle: CompingStyle}]
+// TODO implement this spec
+// What belongs in the global header types?
+// Global headers are meant for every part of the song.
+// Should be a relative value in order to be combined with the local header values.
+// E.g. TransposedKey, TransposedNum, Repeat, TempoMultiplier
+// Local header types are those that can changed for each part or even in the middle of a part.
+// Local header are inherited from previous parts. Should be an absolute value.
+// Currently, some local headers are confused as global header because they
+// are usually only set once in the beginning,
+// e.g. Meter, Key, Tempo, Subdivision, Swing
 function toSongParts(chunkedLocsWithPickup, initialHeader) {
   const partNameToPart = {};
   const partNameToInitialHeader = {};
@@ -102,10 +121,11 @@ function toSongParts(chunkedLocsWithPickup, initialHeader) {
 
   let currTimeSig;
   let currTempo;
-  let currKeySig;
   let currSwing;
   let currSyncopation;
   let currDensity;
+
+  let prevSong;
 
   return chunkedLocsWithPickup.map((chunk, idx) => {
     const firstLoc = chunk.chordHeaderLocs[0];
@@ -124,7 +144,8 @@ function toSongParts(chunkedLocsWithPickup, initialHeader) {
       }
     } else {
       for (const [key, value] of Object.entries(initialHeader)) {
-        if (!(key in headers)) {
+        // for idx > 0, only apply the global header types.
+        if (!(key in headers) && (idx == 0 || GlobalHeaderType.has(key))) {
           headers[key] = value;
         }
       }
@@ -147,15 +168,22 @@ function toSongParts(chunkedLocsWithPickup, initialHeader) {
     
     song.tempo8nPerMinChanges.defaultVal = currTempo;
 
-    if (headers[HeaderType.Key] !== undefined) {
-      currKeySig = headers[HeaderType.Key];
+    let currKeySig = headers[HeaderType.Key];
+    if (!currKeySig && prevSong) {
+      currKeySig = prevSong.keySigChanges.getChange(prevSong.getEnd8n()).val;
+    }
+    if (currKeySig) {
+      song.keySigChanges.defaultVal = currKeySig;
+      // Set the header key because it may need to be inherited by a later part via Copy.
+      // TODO think about whether this is the correct thing to do, but only for Key
+      // i.e. is Key the only local thing we should explicitly set for Copy? Meter, etc.
+      headers[HeaderType.Key] = currKeySig;
     }
 
     const transpose = (
       headers[HeaderType.Transpose] === undefined ? initialTranposedNum :
       initialTranposedNum + headers[HeaderType.Transpose]
     );
-    song.keySigChanges.defaultVal = currKeySig;
 
     if (headers[HeaderType.Swing] !== undefined) {
       currSwing = headers[HeaderType.Swing];
@@ -228,6 +256,7 @@ function toSongParts(chunkedLocsWithPickup, initialHeader) {
 
     partNameToPart[song.title] = part;
     partNameToInitialHeader[song.title] = headers;
+    prevSong = song;
     return part;
   });
 }
@@ -367,6 +396,13 @@ export const HeaderType = Object.freeze({
   Repeat: 'Repeat',
   Subdivision: 'Subdivision',
 });
+
+export const GlobalHeaderType = new Set([
+  HeaderType.TransposedKey,
+  HeaderType.TransposedNum,
+  HeaderType.Repeat,
+  HeaderType.TempoMultiplier,
+]);
 
 export function processKeyVal(key, valStr, warnError) {
   switch(key) {

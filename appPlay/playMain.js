@@ -102,6 +102,8 @@ function setupInteraction(actionMgr) {
   hotkeysDoc('alt+shift+l', _ => actionMgr.toggleSolfegeLyrics());
   hotkeysDoc('shift+c', _ => actionMgr.toggleChordView());
   hotkeysDoc('shift+a', _ => actionMgr.toggleRomanNumeralView());
+  document.getElementById("toggle-roman-numeral-btn").onclick = _ => actionMgr.toggleRomanNumeralView();
+
   hotkeysDoc('shift+i', _ => actionMgr.toggleImprovTactics());
   hotkeysDoc('shift+-', _ => actionMgr.decreaseTempoMultiplier());
   hotkeysDoc('shift+=', _ => actionMgr.increaseTempoMultiplier());

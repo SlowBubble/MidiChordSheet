@@ -17,12 +17,21 @@ export class ChordSvgMgr {
 
   getSvgsInfo(displayTactics, displayRomanNumeral) {
     let time8nInSong = makeFrac(0);
-    let prevChordSvgInfo = null;
-    const svgInfos = this.songParts.map(part => {
+    const svgInfos = this.songParts.map((part, idx) => {
+      let prevKey = null;
+      if (idx > 0) {
+        const prevPart = this.songParts[idx - 1]
+        prevKey = prevPart.song.keySigChanges.getChange(prevPart.song.getEnd8n()).val;
+      }
+      let nextKey = null;
+      if (idx + 1 < this.songParts.length) {
+        const nextPart = this.songParts[idx + 1]
+        nextKey = nextPart.song.keySigChanges.defaultVal;
+      }
       const chordSvgInfo = genChordSvg(part, this.currTime8n, time8nInSong, {
         displayTactics: displayTactics, displayRomanNumeral: displayRomanNumeral,
-        prevKey: prevChordSvgInfo ? prevChordSvgInfo.finalKey : null,
-        prevChord: prevChordSvgInfo ? prevChordSvgInfo.finalChord : null,
+        prevKey: prevKey,
+        nextKey: nextKey,
       });
       time8nInSong = time8nInSong.plus(part.song.getEnd8n());
       if (part.song.title === '::Unnamed::') {
@@ -30,7 +39,6 @@ export class ChordSvgMgr {
       }
       const partNameSvg = genPartNameSvg(part.song.title, {});  
       chordSvgInfo.svg = stackSvgs(partNameSvg, chordSvgInfo.svg);
-      prevChordSvgInfo = chordSvgInfo;
       return chordSvgInfo;
     });
     const svgs = svgInfos.map(svgInfo => svgInfo.svg);
@@ -98,10 +106,8 @@ function genPartNameSvg(name, {bottomMargin = 10, xPadding = 6, yPadding = 2}) {
 function genChordSvg(part, currTime8n, time8nInSong, {
   displayTactics = false,
   displayRomanNumeral = false,
-  // TODO figure out how to avoid passing these at render-time by processing these earlier
-  // so that we can also render prevChord earlier in the sheet.
   prevKey = null,
-  prevChord = null,
+  nextKey = null,
   fontSize = 22, widthPerBar = 260, heightPerBar = 45,
   spacingBetweenBars = 30,
   barsPerLine = 4,
@@ -160,10 +166,10 @@ function genChordSvg(part, currTime8n, time8nInSong, {
 
   // TODO deal with pickup chords.
   let hasPassed = false;
-  const changes = song.chordChanges.getChanges();
-  const textElts = changes.filter(change => {
+  const changes = song.chordChanges.getChanges().filter(change => {
     return change.start8n.geq(0);
-  }).flatMap(change => {
+  });
+  const textElts = changes.flatMap((change, idx) => {
     const {x, y} = time8nToPos(change.start8n);
     const passed = time8nInSong.plus(change.start8n).leq(currTime8n);
     hasPassed = hasPassed || passed;
@@ -171,6 +177,7 @@ function genChordSvg(part, currTime8n, time8nInSong, {
     let chordStr = change.val.toPrettyString();
     const extraSvgElts = [];
     let hasKeyChange = false;
+    let hasUpcomingKeyChange = false;
     if (displayRomanNumeral) {
       const currKey = song.keySigChanges.getChange(change.start8n).val;
       hasKeyChange = prevKey !== null && !currKey.equals(prevKey);
@@ -182,17 +189,43 @@ function genChordSvg(part, currTime8n, time8nInSong, {
           'font-size': fontSize / 1.5,
           'font-weight': passed ? 'bold' : 'normal',
           fill: passed ? 'red' : 'black',
-        }, `Prev: ${prevChord.toRomanNumeralString(currKey)} `));
+        }, `(Prev: ${change.val.toRomanNumeralString(prevKey)})`));
       }
       prevKey = currKey;
-      prevChord = change.val;
+
+      // See if there's any upcoming key change.
+      if (!hasKeyChange) {
+        // Key change that happens in between 2 parts
+        if (idx + 1 === changes.length && nextKey && !currKey.equals(nextKey)) {
+          hasUpcomingKeyChange = true;
+          extraSvgElts.push(makeSvgElt('text', {
+            x: x, y: y, 'dominant-baseline': 'text-before-edge',
+            'font-size': fontSize / 1.5,
+            'font-weight': passed ? 'bold' : 'normal',
+            fill: passed ? 'red' : 'black',
+          }, `(${nextKey.toString()}: ${change.val.toRomanNumeralString(nextKey)})`));
+        }
+        if (idx + 1 < changes.length) {
+          const nextChangeKey = song.keySigChanges.getChange(changes[idx + 1].start8n).val;
+          if (!currKey.equals(nextChangeKey)) {
+            hasUpcomingKeyChange = true;
+            extraSvgElts.push(makeSvgElt('text', {
+              x: x, y: y, 'dominant-baseline': 'text-before-edge',
+              'font-size': fontSize / 2,
+              'font-weight': passed ? 'bold' : 'normal',
+              fill: passed ? 'red' : 'black',
+            }, `(${nextChangeKey.toString()}: ${change.val.toRomanNumeralString(nextChangeKey)})`));
+          }
+        }
+      }
     }
 
     return [makeSvgElt('text', {
-      x: x, y: y, 'dominant-baseline': hasKeyChange ? 'text-before-edge' : 'central',
+      x: x, y: y, 'dominant-baseline': hasKeyChange ? 'text-before-edge' : (
+        hasUpcomingKeyChange ? 'text-after-edge' : 'central'),
       'font-size': fontSize,
       'font-weight': passed ? 'bold' : 'normal',
-      fill: passed ? 'red' : 'black',
+      fill: hasKeyChange ? 'blue' : (passed ? 'red' : 'black'),
     }, chordStr)].concat(extraSvgElts);
   });
   svg.append(...textElts);
@@ -216,7 +249,5 @@ function genChordSvg(part, currTime8n, time8nInSong, {
   return {
     svg: svg,
     hasPassed: hasPassed,
-    finalKey: prevKey,
-    finalChord: prevChord,
   };
 }

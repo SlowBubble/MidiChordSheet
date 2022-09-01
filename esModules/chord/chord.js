@@ -35,7 +35,7 @@ export class Chord {
   }
   toRomanNumeralString(baseKey) {
     const str = this._toString(baseKey);
-    return abbreviate(str);
+    return abbreviateRomanNumeral(str);
   }
   _toString(baseKey) {
     const sus = (this.suspension == 4 ? 'sus' : (
@@ -228,8 +228,13 @@ function abbreviate(str) {
     .replace('maj', 'Δ')
     .replace('M', 'Δ')
     .replace('aug', '+')
+    ;
+}
+
+// Hacks to make Roman Numeral chord more readable
+function abbreviateRomanNumeral(str) {
+  return abbreviate(str)
     .replace('m', '-')
-    // Hacks to make Roman Numeral chord more readable
     .replace('I7', 'I 7')
     .replace('I9', 'I 9')
     .replace('I1', 'I 1')

@@ -2,30 +2,29 @@ import { makeFrac } from "../fraction/fraction.js";
 import { makeSvgElt, getBoundingBox } from "./svgUtil.js";
 import { range, findLast } from "../array-util/arrayUtil.js";
 import { mod } from "../math-util/mathUtil.js";
-import { SongForm } from "../sheet-to-song/songForm.js";
-import { fromNoteNumWithFlat } from "../chord/spell.js";
 
 // TODO don't hard code this.
 const pickupStart8n = makeFrac(-99);
 
 export class ChordSvgMgr {
-  constructor({songForm = {}, songParts = [], currTime8n = pickupStart8n}) {
-    this.songForm = new SongForm(songForm);
-    this.songParts = songParts
+  constructor({currTime8n = pickupStart8n, songTitle = '', sequencedParts = []}) {
     this.currTime8n = currTime8n || pickupStart8n;
+    this.songTitle = songTitle;
+    this.sequencedParts = sequencedParts;
   }
 
   getSvgsInfo(displayTactics, displayRomanNumeral) {
     let time8nInSong = makeFrac(0);
-    const svgInfos = this.songParts.map((part, idx) => {
+    const songParts = this.sequencedParts;
+    const svgInfos = songParts.map((part, idx) => {
       let prevKey = null;
       if (idx > 0) {
-        const prevPart = this.songParts[idx - 1]
+        const prevPart = songParts[idx - 1]
         prevKey = prevPart.song.keySigChanges.getChange(prevPart.song.getEnd8n()).val;
       }
       let nextKey = null;
-      if (idx + 1 < this.songParts.length) {
-        const nextPart = this.songParts[idx + 1]
+      if (idx + 1 < songParts.length) {
+        const nextPart = songParts[idx + 1]
         nextKey = nextPart.song.keySigChanges.defaultVal;
       }
       const chordSvgInfo = genChordSvg(part, this.currTime8n, time8nInSong, {
@@ -47,7 +46,7 @@ export class ChordSvgMgr {
     const titleText = makeSvgElt('text', {
       x: maxWidth / 2, y: 0, 'text-anchor': "middle", 'dominant-baseline': 'hanging',
       'font-size': 28,
-    }, this.songForm.title);
+    }, this.songTitle);
     const titleSvg = makeSvgElt('svg', {width: maxWidth, height: 28 + 4});
     titleSvg.append(titleText);
     const passingSvgInfo = findLast(svgInfos, info => info.hasPassed);

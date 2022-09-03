@@ -1,9 +1,8 @@
 import { HeaderType } from "../esModules/sheet-to-song/parse.js";
 import { fromNoteNumWithFlat } from "../esModules/chord/spell.js";
-import { joinSongParts } from "../esModules/sheet-to-song/songForm.js";
 import { ChordSvgMgr } from "../esModules/chord-svg/chordSvg.js";
 import { makeFrac } from "../esModules/fraction/fraction.js";
-import { parseKeyValsToSongInfo2 } from "../esModules/sheet-to-song/parseV2.js";
+import { parseKeyValsToSongInfo } from "../esModules/sheet-to-song/parseV2.js";
 import { shuffle, range } from "../esModules/array-util/arrayUtil.js";
 
 export class ActionMgr {
@@ -149,8 +148,8 @@ export class ActionMgr {
       }
     }
 
-    const songInfo = parseKeyValsToSongInfo2(gridData, urlKeyVals);
-    this.song = joinSongParts(songInfo.songParts, songInfo.songForm);
+    const songInfo = parseKeyValsToSongInfo(gridData, urlKeyVals);
+    this.song = songInfo.songForm.toFullyArrangedSong();
     this.initialHeaders = songInfo.initialHeaders;
 
     if (this.filePaths) {
@@ -192,8 +191,8 @@ export class ActionMgr {
 
     this.lyricsDisplayer.setVoice(this.song.getVoice(0));
     this.chordSvgMgr = new ChordSvgMgr({
-      songForm: songInfo.songForm,
-      songParts: songInfo.songParts,
+      songTitle: songInfo.songForm.title,
+      sequencedParts: songInfo.songForm.getSequencedParts(),
       currTime8n: this.currTime8n,
     });
     this.render();

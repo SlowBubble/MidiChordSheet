@@ -12,33 +12,30 @@ import { CompingStyle, SongPart } from "./songPart.js";
 import { computeBeatInfo } from "../musical-beat/pattern.js";
 
 
-export function parseKeyValsToSongInfo(gridData, keyVals) {
+export function genChunkedLocs(gridData) {
   const chordLocs = parseChordLocations(gridData);
   const headerLocs = parseHeaderLocations(gridData);
   const chordHeaderLocs = combineChordAndHeader(chordLocs, headerLocs, gridData.length);
   const chunkedLocs = chunkLocationsByPart(chordHeaderLocs);
   const chunkedLocsWithPickup = extractPickup(chunkedLocs);
 
-  const initialHeaders = createInitialHeaders(chunkedLocsWithPickup, keyVals);
-  const songParts = toSongParts(chunkedLocsWithPickup, initialHeaders);
+  return chunkedLocsWithPickup;
+}
+
+export function genChordOnlySongForm(chunkedLocsWithPickup, initialHeaders, keyVals) {
+  const songParts = genChordOnlySongParts(chunkedLocsWithPickup, initialHeaders);
   const possIntro = songParts.find(part => part.song.title.trim().toLowerCase() === 'intro');
   const possOutro = songParts.find(part => part.song.title.trim().toLowerCase() === 'outro');
   const body = songParts.filter(
     part => ['intro', 'outro'].indexOf(part.song.title.trim().toLowerCase()) < 0
   ).map(part => part.song.title);
-  const songForm = new SongForm({
+  return new SongForm({
     title: keyVals.title, parts: songParts,
     intro: possIntro ? possIntro.song.title : '',
     outro: possOutro ? possOutro.song.title : '',
     body: body,
     numRepeats: initialHeaders[HeaderType.Repeat],
   });
-  return {
-    // songParts need additionally processing in parseV2.js
-    // songParts: songForm.getParts(),
-    songForm: songForm,
-    initialHeaders: initialHeaders,
-  };
 }
 
 // InitialHeaders are the headers used by the very first part of the song
@@ -47,7 +44,7 @@ export function parseKeyValsToSongInfo(gridData, keyVals) {
 // 2. header in the first song part.
 // 3. default values if they are required.
 // 4. undefined if not required.
-function createInitialHeaders(chunkedLocsWithPickup, keyVals) {
+export function createInitialHeaders(chunkedLocsWithPickup, keyVals) {
   const song = new Song({});
   const headers = {};
   headers[HeaderType.Meter] = song.timeSigChanges.defaultVal;
@@ -114,7 +111,7 @@ function getInitialTransposedNum(headers) {
 // Currently, some local headers are confused as global header because they
 // are usually only set once in the beginning,
 // e.g. Meter, Key, Tempo, Subdivision, Swing
-function toSongParts(chunkedLocsWithPickup, initialHeader) {
+function genChordOnlySongParts(chunkedLocsWithPickup, initialHeader) {
   const partNameToPart = {};
   const partNameToInitialHeader = {};
   const initialTranposedNum = getInitialTransposedNum(initialHeader);

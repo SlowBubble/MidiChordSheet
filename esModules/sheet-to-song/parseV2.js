@@ -1,4 +1,4 @@
-import { parseKeyValsToSongInfo, processKeyVal, HeaderType, defaultPartName } from "./parse.js";
+import { genChunkedLocs, processKeyVal, HeaderType, defaultPartName, genChordOnlySongForm, createInitialHeaders } from "./parse.js";
 import { parseCell, TokenType } from "../sheet-melody/parseSheet.js";
 import { chunkArray } from "../array-util/arrayUtil.js";
 import { Voice } from "../song-sheet/voice.js";
@@ -6,22 +6,28 @@ import { VoiceSettings } from "../song-sheet/voiceSettings.js";
 import { instruments } from "../musical-sound/musicalSound.js";
 import { makeFrac } from "../fraction/fraction.js";
 import { makeSimpleQng, QuantizedNoteGp } from "../song-sheet/quantizedNoteGp.js";
-import { fromNoteNumWithFlat } from "../chord/spell.js";
 
-export function parseKeyValsToSongInfo2(gridData, keyVals) {
+export function parseKeyValsToSongInfo(gridData, keyVals) {
   // 1. Group the cells into header, chord and voice.
   const groupedCells = groupCells(gridData);
   // 2. Attach the headers to the appropriate cell.
   const annotatedCells = combineHeadersWithCells(groupedCells, gridData.length);
 
-  // 3. Chunk the cells into parts.
-  const parts = chunkCellsToParts(annotatedCells);
+  // 3. Chunk the cells into cellsParts.
+  const cellsParts = chunkCellsToParts(annotatedCells);
+
+  // TODO replace usages of chunkedLocsWithPickup with cellsParts
+  const chunkedLocsWithPickup = genChunkedLocs(gridData);
+  const initialHeaders = createInitialHeaders(chunkedLocsWithPickup, keyVals);
+  const songForm = genChordOnlySongForm(chunkedLocsWithPickup, initialHeaders, keyVals);
 
   // 4a. Make it work for voice first.
-  const songInfo = parseKeyValsToSongInfo(gridData, keyVals);
-  songInfo.songParts = genSongPartsWithVoice(parts, songInfo);
+  genSongPartsWithVoice(cellsParts, songForm);
 
-  return songInfo;
+  return {
+    initialHeaders: initialHeaders,
+    songForm: songForm,
+  };
 
   // 4b. Migrate chords over.
   // // 4. Initialize the context headers.
@@ -29,101 +35,70 @@ export function parseKeyValsToSongInfo2(gridData, keyVals) {
   // overrideFromUrlParams(contextHeaders, keyVals);
   
   // // 5. Use the context headers to interpret each cell, updating the context when encountering a new header.
-  // const songParts = convertToSongParts(parts, contextHeaders);
+  // const songParts = convertToSongParts(cellsParts, contextHeaders);
 }
 
-function genSongPartsWithVoice(parts, songInfo) {
-  const voiceParts = parts.filter(part => part.type === CellType.Voice);
-  const songParts = songInfo.songForm.getParts();
+function genSongPartsWithVoice(cellsParts, songForm) {
+  const voiceCellsParts = cellsParts.filter(part => part.type === CellType.Voice);
+  const songParts = songForm.getParts();
 
-  addVoicePartsToSongParts(voiceParts, songParts);
+  addVoicePartsToSongParts(voiceCellsParts, songParts);
 
-  const lyricsParts = parts.filter(part => part.type === CellType.Lyrics);
-  addLyricsPartsToSongParts(lyricsParts, songParts);
+  const lyricsCellsParts = cellsParts.filter(part => part.type === CellType.Lyrics);
+  addLyricsPartsToSongParts(lyricsCellsParts, songParts);
 
-  transposeSongParts(songParts);
   return songParts;
 }
 
-// TODO in the future, if there are multiple voiceParts, do it here;
-// will need to implement muting of repeated voicePart here (i.e. revert the "supress" changes).
-function addVoicePartsToSongParts(voiceParts, songParts) {
+// TODO in the future, if there are multiple voiceCellsParts, do it here;
+// will need to implement muting of repeated voiceCellsPart here (i.e. revert the "supress" changes).
+function addVoicePartsToSongParts(voiceCellsParts, songParts) {
   const usedPartNames = new Set();
   songParts.forEach(songPart => {
     const partName = songPart.song.title;
     usedPartNames.add(partName);
-    const voicePart = voiceParts.find(voicePart => partName === voicePart.name);
-    if (!voicePart) {
+    const voiceCellsPart = voiceCellsParts.find(voiceCellsPart => partName === voiceCellsPart.name);
+    if (!voiceCellsPart) {
       return;
     }
     let baseSongPart;
-    if (voicePart.cells.length) {
-      const partToCopy = voicePart.cells[0].headerValByType.get(HeaderType.Copy);
+    if (voiceCellsPart.cells.length) {
+      const partToCopy = voiceCellsPart.cells[0].headerValByType.get(HeaderType.Copy);
       if (partToCopy) {
         baseSongPart = songParts.find(songPart => songPart.song.title === partToCopy);
       }
     }
-    addVoiceToSong(voicePart, songPart, baseSongPart);
+    addVoiceToSong(voiceCellsPart, songPart, baseSongPart);
   });
 }
 
-function addLyricsPartsToSongParts(lyricsParts, songParts) {
+function addLyricsPartsToSongParts(lyricsCellsParts, songParts) {
   songParts.forEach(songPart => {
     const partName = songPart.song.title;
-    const lyricsPart = lyricsParts.find(lyricsPart => partName === lyricsPart.name);
-    if (!lyricsPart) {
+    const lyricsCellsPart = lyricsCellsParts.find(lyricsCellsPart => partName === lyricsCellsPart.name);
+    if (!lyricsCellsPart) {
       return;
     }
     let baseLyricsPart;
-    if (lyricsPart.cells.length) {
-      const partToCopy = lyricsPart.cells[0].headerValByType.get(HeaderType.Copy);
+    if (lyricsCellsPart.cells.length) {
+      const partToCopy = lyricsCellsPart.cells[0].headerValByType.get(HeaderType.Copy);
       if (partToCopy) {
-        baseLyricsPart = lyricsParts.find(lp => lp.name === partToCopy);
+        baseLyricsPart = lyricsCellsParts.find(lp => lp.name === partToCopy);
       }
     }
-    addLyricsToSong(lyricsPart, songPart, baseLyricsPart);
+    addLyricsToSong(lyricsCellsPart, songPart, baseLyricsPart);
   });
 }
 
-function transposeSongParts(songParts) {
-  songParts.forEach(part => {
-    const song = part.song;
-    const oldKey = song.keySigChanges.defaultVal;
-    const newKey = fromNoteNumWithFlat(oldKey.toNoteNum() + part.transpose);
-    // 1. Chords
-    song.chordChanges.getChanges().forEach(change => {
-      change.val.shift(oldKey, newKey);
-    });
-    
-    // 2. Voices
-    song.voices.forEach(voice => {
-      voice.noteGps.forEach(noteGp => {
-        noteGp.midiNotes.forEach(note => {
-          note.noteNum = note.noteNum + part.transpose;
-          if (note.spelling) {
-            note.spelling = note.spelling.shift(oldKey, newKey);
-          }
-        });
-      });
-    });
-
-    // 3. Key Sig
-    song.keySigChanges.defaultVal = newKey;
-    song.keySigChanges.changes.forEach(change => {
-      change.val = fromNoteNumWithFlat(change.val.toNoteNum() + part.transpose);
-    })
-  });
-}
-
-function addLyricsToSong(lyricsPart, songPart, baseLyricsPart) {
+function addLyricsToSong(lyricsCellsPart, songPart, baseLyricsPart) {
   const qngs = songPart.song.getVoice(0).noteGps;
   const durPerMeasure8n = songPart.song.timeSigChanges.defaultVal.getDurPerMeasure8n();
   let baseCells = [];
   if (baseLyricsPart) {
     baseCells = baseLyricsPart.pickupCells.concat(baseLyricsPart.cells);
   }
-  lyricsPart.pickupCells.concat(lyricsPart.cells).forEach((cell, idxRelPickupCell) => {
-    const idx = idxRelPickupCell - lyricsPart.pickupCells.length;
+  lyricsCellsPart.pickupCells.concat(lyricsCellsPart.cells).forEach((cell, idxRelPickupCell) => {
+    const idx = idxRelPickupCell - lyricsCellsPart.pickupCells.length;
     const barStart8n = durPerMeasure8n.times(idx);
     const barEnd8n = durPerMeasure8n.times(idx + 1);
     const relevantQngs = qngs.filter(
@@ -162,11 +137,11 @@ function parseLyricsCell(str) {
   return str.split(' ');
 }
 
-function addVoiceToSong(voicePart, songPart, baseSongPart) {
+function addVoiceToSong(voiceCellsPart, songPart, baseSongPart) {
   const durPerMeasure8n = songPart.song.timeSigChanges.defaultVal.getDurPerMeasure8n();
   let seenNonblankToken = false;
-  const tokenInfos = voicePart.pickupCells.concat(voicePart.cells).flatMap((cell, idx) => {
-    idx = idx - voicePart.pickupCells.length;
+  const tokenInfos = voiceCellsPart.pickupCells.concat(voiceCellsPart.cells).flatMap((cell, idx) => {
+    idx = idx - voiceCellsPart.pickupCells.length;
     const tokens = parseCell(cell.val.toLowerCase());
     let start8nRelIdx = makeFrac(0);
     return tokens.map(token => {
@@ -246,7 +221,7 @@ function addVoiceToSong(voicePart, songPart, baseSongPart) {
   songPart.song.voices = [voice];
 }
 
-// function convertToSongParts(parts, contextHeaders) {
+// function convertToSongParts(cellsParts, contextHeaders) {
 // }
 // function overrideFromUrlParams(contextHeaders, keyVals) {
 //   Object.entries(keyVals).forEach(([key, val]) => {
@@ -281,7 +256,7 @@ function chunkCellsToParts(cells) {
     cell.headerValByType.has(HeaderType.LyricsPart) ||
     cell.headerValByType.has(HeaderType.VoicePart));
   let pickupBuffer = [];
-  let partsOrNull = chunks.map(chunk => {
+  let cellsPartsOrNull = chunks.map(chunk => {
     const firstCell = chunk[0];
     if (firstCell.colIdx < zeroTimeColIdx) {
       pickupBuffer.push(...chunk);
@@ -296,11 +271,11 @@ function chunkCellsToParts(cells) {
     } else if (firstCell.headerValByType.has(HeaderType.LyricsPart)) {
       partName = firstCell.headerValByType.get(HeaderType.LyricsPart);
     }
-    const res = new Part({cells: chunk, pickupCells: pickupBuffer, type: type, name: partName});
+    const res = new CellsPart({cells: chunk, pickupCells: pickupBuffer, type: type, name: partName});
     pickupBuffer = [];
     return res;
   });
-  return partsOrNull.filter(x => x);
+  return cellsPartsOrNull.filter(x => x);
 }
 
 function groupCells(gridData) {
@@ -377,7 +352,7 @@ class Cell {
   }
 }
 
-class Part {
+class CellsPart {
   constructor({cells, pickupCells, type, name}) {
     this.cells = cells;
     this.pickupCells = pickupCells

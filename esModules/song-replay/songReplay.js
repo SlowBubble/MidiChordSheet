@@ -31,7 +31,6 @@ export class SongReplayer {
     }
     // TODO move volume info out of here to free up channels that were for muting purposes.
     const voiceIdxToChannelInfos = genVoiceIdxToChannelInfos(voices);
-    console.log(voiceIdxToChannelInfos);
     this._musicalSound.configure([...voiceIdxToChannelInfos.values()].flatMap(infos => infos));
 
     const timeMsToMidiEvts = _computeTimeMsToMidiEvts(song, voices, voiceIdxToChannelInfos, opts);

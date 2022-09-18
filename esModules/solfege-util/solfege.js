@@ -1,4 +1,4 @@
-import { makeSpelling } from "../chord/spell.js";
+import { makeSpelling, Spelling } from "../chord/spell.js";
 
 const solfegeToSpelling = {
   de: makeSpelling('C', -1),
@@ -37,7 +37,9 @@ const solfegeToSpelling = {
 let spellingToSolfege;
 
 export function toSpelling(str) {
-  return solfegeToSpelling[str.toLowerCase()];
+  const res = solfegeToSpelling[str.toLowerCase()];
+  // Cloning in case the caller modifies it.
+  return new Spelling(res);
 }
 
 export function toSolfege(spellingStr) {

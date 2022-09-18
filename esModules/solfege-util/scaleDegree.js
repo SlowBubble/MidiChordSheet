@@ -1,4 +1,4 @@
-import { makeSpelling } from "../chord/spell.js";
+import { makeSpelling, Spelling } from "../chord/spell.js";
 
 const scaleNumberToSpelling = {
   1: makeSpelling('C', 0),
@@ -11,7 +11,8 @@ const scaleNumberToSpelling = {
 };
 
 export function scaleDegreeToSpelling(scaleDegree) {
-  const res = scaleNumberToSpelling[scaleDegree.scaleNumber];
+  // Need to clone since we are modifying this on the very next line.
+  const res = new Spelling(scaleNumberToSpelling[scaleDegree.scaleNumber]);
   res.numSharps = scaleDegree.numSharps;
   return res;
 }

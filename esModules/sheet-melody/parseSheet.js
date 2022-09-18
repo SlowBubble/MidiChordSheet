@@ -1,6 +1,6 @@
 import { chunkArray } from "../array-util/arrayUtil.js";
 import { makeFrac } from "../fraction/fraction.js";
-import { makeSpelling } from "../chord/spell.js";
+import { scaleDegreeToSpelling } from "../solfege-util/scaleDegree.js";
 import { toSpelling } from "../solfege-util/solfege.js";
 
 // Deps: nearley (nearley.js), grammar (melodicCell.js)
@@ -32,7 +32,7 @@ export function parseCell(cell) {
         relDur: makeFrac(numDivisionsInChunk, numDivisions * numTokens),
         type: token.type,
         noteInfo: token.type === TokenType.Note ? new NoteInfo({
-          spelling: toSpelling(token.solfege),
+          spelling: token.solfege ? toSpelling(token.solfege) : scaleDegreeToSpelling(token.scaleDegree),
           octave: token.octave + 5, // E.g. mi defaults to E5.
         }) : undefined,
       });

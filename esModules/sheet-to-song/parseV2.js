@@ -16,7 +16,7 @@ export function parseKeyValsToSongInfo(gridData, keyVals) {
   // 3. Chunk the cells into cellsParts.
   const cellsParts = chunkCellsToParts(annotatedCells);
 
-  // TODO replace usages of chunkedLocsWithPickup with cellsParts
+  // TODO replace usages of chunkedLocsWithPickup with cellsParts and remove genChunkedLocs.
   const chunkedLocsWithPickup = genChunkedLocs(gridData);
   const initialHeaders = createInitialHeaders(chunkedLocsWithPickup, keyVals);
   const songForm = genChordOnlySongForm(chunkedLocsWithPickup, initialHeaders, keyVals);
@@ -53,22 +53,27 @@ function genSongPartsWithVoice(cellsParts, songForm) {
 // TODO in the future, if there are multiple voiceCellsParts, do it here;
 // will need to implement muting of repeated voiceCellsPart here (i.e. revert the "supress" changes).
 function addVoicePartsToSongParts(voiceCellsParts, songParts) {
-  const usedPartNames = new Set();
+  const numIndices = Math.max(1, ...voiceCellsParts.map(part => part.index + 1));
   songParts.forEach(songPart => {
     const partName = songPart.song.title;
-    usedPartNames.add(partName);
-    const voiceCellsPart = voiceCellsParts.find(voiceCellsPart => partName === voiceCellsPart.name);
-    if (!voiceCellsPart) {
-      return;
-    }
-    let baseSongPart;
-    if (voiceCellsPart.cells.length) {
-      const partToCopy = voiceCellsPart.cells[0].headerValByType.get(HeaderType.Copy);
-      if (partToCopy) {
-        baseSongPart = songParts.find(songPart => songPart.song.title === partToCopy);
+    for (let idx = 0; idx < numIndices; idx++) {
+      const voiceCellsPart = voiceCellsParts.find(
+        voiceCellsPart => partName === voiceCellsPart.name && idx === voiceCellsPart.index);
+      if (!voiceCellsPart) {
+        // Insert an empty voice with the correct duration if the voice is not specified
+        // for a particular part name.
+        addVoiceToSong(null, songPart, null, idx === 0);
+        return;
       }
+      let baseSongPart;
+      if (voiceCellsPart.cells.length) {
+        const partToCopy = voiceCellsPart.cells[0].headerValByType.get(HeaderType.Copy);
+        if (partToCopy) {
+          baseSongPart = songParts.find(songPart => songPart.song.title === partToCopy);
+        }
+      }
+      addVoiceToSong(voiceCellsPart, songPart, baseSongPart, idx === 0);
     }
-    addVoiceToSong(voiceCellsPart, songPart, baseSongPart);
   });
 }
 
@@ -133,14 +138,26 @@ function addLyricsToSong(lyricsCellsPart, songPart, baseLyricsPart) {
   });
 }
 
-function parseLyricsCell(str) {
-  return str.split(' ');
+function parseLyricsCell(lyricsString) {
+  const asianRegexStr = '[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uff66-\uff9f]';
+  // 'abc  def' => ['abc', 'def']
+  return lyricsString.split(/[\s]+/)
+    // '天如' => ['天', '如']
+    // Not using splitAfter here because we want:
+    // '天?' => ['天?']
+    .flatMap(phrase => splitBefore(phrase, asianRegexStr))
+    .filter(phrase => phrase !== '');
 }
 
-function addVoiceToSong(voiceCellsPart, songPart, baseSongPart) {
+function splitBefore(phrase, delimiterSubregexString) {
+  // use positive look-ahead so that the split doesn't remove the delimiter.
+  return phrase.split(new RegExp(`(?=${delimiterSubregexString})`));
+}
+
+function addVoiceToSong(voiceCellsPart, songPart, baseSongPart, isFirst) {
   const durPerMeasure8n = songPart.song.timeSigChanges.defaultVal.getDurPerMeasure8n();
   let seenNonblankToken = false;
-  const tokenInfos = voiceCellsPart.pickupCells.concat(voiceCellsPart.cells).flatMap((cell, idx) => {
+  const tokenInfos = voiceCellsPart === null ? [] : voiceCellsPart.pickupCells.concat(voiceCellsPart.cells).flatMap((cell, idx) => {
     idx = idx - voiceCellsPart.pickupCells.length;
     const tokens = parseCell(cell.val.toLowerCase());
     let start8nRelIdx = makeFrac(0);
@@ -212,13 +229,20 @@ function addVoiceToSong(voiceCellsPart, songPart, baseSongPart) {
     if (finalNoteGp.end8n.lessThan(end8n)) {
       noteGps.push(makeSimpleQng(finalNoteGp.end8n, end8n));
     }
+  } else {
+    // For empty voice, just insert rest for the entire duration.
+    noteGps.push(makeSimpleQng(makeFrac(0), end8n));
   }
   const voice = new Voice({
     noteGps: noteGps,
   });
   // TODO remove this and do it when joining.
   voice.settingsChanges.defaultVal = new VoiceSettings({instrument: instruments.electric_piano_2});
-  songPart.song.voices = [voice];
+  if (isFirst) {
+    songPart.song.voices = [voice];
+  } else {
+    songPart.song.voices.push(voice);
+  }
 }
 
 // function convertToSongParts(cellsParts, contextHeaders) {
@@ -264,14 +288,17 @@ function chunkCellsToParts(cells) {
     }
     const type = firstCell.type;
     let partName = defaultPartName;
+    let partIndex = 0;
     if (firstCell.headerValByType.has(HeaderType.Part)) {
       partName = firstCell.headerValByType.get(HeaderType.Part);
     } else if (firstCell.headerValByType.has(HeaderType.VoicePart)) {
-      partName = firstCell.headerValByType.get(HeaderType.VoicePart);
+      partName = firstCell.headerValByType.get(HeaderType.VoicePart).name;
+      partIndex = firstCell.headerValByType.get(HeaderType.VoicePart).index;
     } else if (firstCell.headerValByType.has(HeaderType.LyricsPart)) {
-      partName = firstCell.headerValByType.get(HeaderType.LyricsPart);
+      partName = firstCell.headerValByType.get(HeaderType.LyricsPart).name;
+      partIndex = firstCell.headerValByType.get(HeaderType.LyricsPart).index;
     }
-    const res = new CellsPart({cells: chunk, pickupCells: pickupBuffer, type: type, name: partName});
+    const res = new CellsPart({cells: chunk, pickupCells: pickupBuffer, type: type, name: partName, index: partIndex});
     pickupBuffer = [];
     return res;
   });
@@ -282,7 +309,7 @@ function groupCells(gridData) {
   let mode = CellType.Chord;
   const groupedCellsOrNull = gridData.flatMap((row, rowIdx) => {
     return row.map((val, colIdx) => {
-      val = val.trim();
+      val = val.toString().trim();
       if (val === '') {
         return;
       }
@@ -353,11 +380,13 @@ class Cell {
 }
 
 class CellsPart {
-  constructor({cells, pickupCells, type, name}) {
+  constructor({cells, pickupCells, type, name, index}) {
     this.cells = cells;
     this.pickupCells = pickupCells
     // Chord or Voice.
     this.type = type;
     this.name = name;
+    // A number to distinguish the voices in a multi-voice part.
+    this.index = index;
   }
 }

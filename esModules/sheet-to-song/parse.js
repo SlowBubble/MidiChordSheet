@@ -346,7 +346,7 @@ function combineChordAndHeader(chordLocs, headerLocs, maxRows) {
 function parseHeaderLocations(gridData) {
   return gridData.flatMap((row, rowIdx) => {
     return row.map((cell, colIdx) => {
-      const possKeyVal = cell.split(':');
+      const possKeyVal = cell.toString().split(':');
       if (possKeyVal.length !== 2) {
         return;
       }
@@ -452,20 +452,53 @@ export function processKeyVal(key, valStr, warnError) {
         type: HeaderType.Part,
         value: valStr,
       };
-    // TODO make the string before part be the voice id;
-    // in this case the voice id is "Voice" (need to remove toLowerCase).
-    case 'melody':
     case 'voice':
-    case 'voicepart':
       return {
         type: HeaderType.VoicePart,
-        value: valStr || defaultPartName,
+        value: {
+          name: valStr || defaultPartName,
+          index: 0,
+        },
       };
     case 'lyrics':
-    case 'lyricspart':
       return {
         type: HeaderType.LyricsPart,
-        value: valStr || defaultPartName,
+        value: {
+          name: valStr || defaultPartName,
+          index: 0,
+        },
+      };
+    case 'voice1':
+      return {
+        type: HeaderType.VoicePart,
+        value: {
+          name: valStr || defaultPartName,
+          index: 1,
+        },
+      };
+    case 'lyrics1':
+      return {
+        type: HeaderType.LyricsPart,
+        value: {
+          name: valStr || defaultPartName,
+          index: 1,
+        },
+      };
+    case 'voice2':
+      return {
+        type: HeaderType.VoicePart,
+        value: {
+          name: valStr || defaultPartName,
+          index: 2,
+        },
+      };
+    case 'lyrics2':
+      return {
+        type: HeaderType.LyricsPart,
+        value: {
+          name: valStr || defaultPartName,
+          index: 2,
+        },
       };
     case 'repeat':
       return {
@@ -564,7 +597,7 @@ function parseChordLocations(gridData) {
       if (hasPrevErrorInRow) {
         return;
       }
-      cell = cell.trim();
+      cell = cell.toString().trim();
       if (!cell || cell.toLowerCase() === 'backing track') {
         return;
       }

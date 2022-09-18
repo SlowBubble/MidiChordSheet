@@ -6,17 +6,21 @@ export function orchestrate(songParts, songForm) {
   if (!songParts.length || !songParts[0].song.voices.length) {
     return;
   }
-  const hasMel = songParts[0].song.voices.length === 3;
-  let melodyIdx = hasMel ? 0 : -1;
-  let compingIdx = hasMel ? 1 : 0;
-  let bassIdx = hasMel ? 2 : 1;
+  const numVoices = songParts[0].song.voices.length;
+  const hasMel = numVoices >= 3;
+  const melodyIdx = hasMel ? 0 : null;
+  const voiceIndices = [...Array(numVoices).keys()];
+  const compingIdx = numVoices - 2;
+  const bassIdx = numVoices - 1;
   const repeatPartIndices = songForm.getRepeatPartIndices();
   const repeatPartIndicesSet = new Set(repeatPartIndices);
   shuffle(compingSettings);
   let voiceIdxToSettingsIdx = {};
-  voiceIdxToSettingsIdx[melodyIdx] = mod(melodyIdx, compingSettings.length);
-  voiceIdxToSettingsIdx[compingIdx] = mod(compingIdx, compingSettings.length);
-  voiceIdxToSettingsIdx[bassIdx] = mod(bassIdx, compingSettings.length);
+  voiceIndices.forEach(idx => {
+    voiceIdxToSettingsIdx[idx] = mod(idx, compingSettings.length);
+  });
+  console.log(compingSettings);
+  // Why + 2?
   let numChannelUsed = bassIdx + 2;
   let muteMelody = false;
   songParts.forEach((part, partIdx) => {
@@ -39,11 +43,11 @@ export function orchestrate(songParts, songForm) {
       }
       const setting = compingSettings[voiceIdxToSettingsIdx[voiceIdx]];
       voice.settings.instrument = setting.instrument;
-      let relVolPct = 100;
+      let relVolPct = 80;
       if (voiceIdx === compingIdx) {
         relVolPct = 60;
-      } else if (voiceIdx === bassIdx) {
-        relVolPct = 80;
+      } else if (voiceIdx === melodyIdx) {
+        relVolPct = 100;
       }
       voice.settings.volumePercent = relVolPct * setting.volumePercent / 100;
     });
@@ -57,7 +61,7 @@ const instrumentSettings = {
   },
   electric_piano_2: {
     instrument: instruments.electric_piano_2,
-    volumePercent: 85,
+    volumePercent: 70,
   },
   electric_guitar_clean: {
     instrument: instruments.electric_guitar_clean,
@@ -65,7 +69,7 @@ const instrumentSettings = {
   },
   electric_piano_1: {
     instrument: instruments.electric_piano_1,
-    volumePercent: 110,
+    volumePercent: 50,
   },
 }
 

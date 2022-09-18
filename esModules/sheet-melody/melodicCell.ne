@@ -17,9 +17,15 @@ Notes -> Notes _ Note {% data => {return data.flat().filter(item => item !== nul
 # data[1] is a singleton array, e.g. ["daw"].
 Note -> [/]:* Solfege  {% data => {return {type:'Note', solfege: data[1][0], octave: -data[0].length}} %}
 	| [\\]:+ Solfege  {% data => {return {type:'Note', solfege: data[1][0], octave: data[0].length}} %}
+	| [/]:* ScaleDegree  {% data => {return {type:'Note', scaleDegree: data[1], octave: -data[0].length}} %}
+	| [\\]:+ ScaleDegree  {% data => {return {type:'Note', scaleDegree: data[1], octave: data[0].length}} %}
 	| "_" {% _ => {return {type:'Blank'}} %}
 	| "-" {% _ => {return {type:'Slot'}} %}
 	| "x" {% _ => {return {type:'Rest'}} %}
+
+scaleNumber -> [1-7] {% data => { return parseInt(data[0]); } %}
+ScaleDegree -> [b]:* scaleNumber {% data => {return {numSharps: -data[0].length, scaleNumber: data[1]}} %}
+  | [#]:+ scaleNumber {% data => {return {numSharps: data[0].length, scaleNumber: data[1]}} %}
 
 Solfege -> "daw"
 	| "de"

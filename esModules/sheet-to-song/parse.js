@@ -392,6 +392,7 @@ export const HeaderType = Object.freeze({
   Transpose: 'Transpose',
   Repeat: 'Repeat',
   Subdivision: 'Subdivision',
+  // TODO add a header for the ending to be dropped off when another part comes after.
 });
 
 export const GlobalHeaderType = new Set([

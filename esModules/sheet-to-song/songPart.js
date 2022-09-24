@@ -126,14 +126,19 @@ export class SongPart {
           Math.random() < this.densityFactor * 2);
       }
       if (isDenseTreble && !isFinalNote) {
+        const isSimpleMinorFour = (
+          chord.isMinor() && !chord.hasExtension() &&
+          Math.abs(chord.root.toNoteNum() - this.song.keySigChanges.defaultVal.toNoteNum()) === Intervals.P4);
         const third = chord.root.toNoteNum() + chord.getThirdInterval();
         const seventh = chord.root.toNoteNum() + chord.getSeventhInterval();
         const fifth = chord.root.toNoteNum() + chord.getFifthInterval();
         const interval9Or11 = chord.isMinor() || chord.isDiminished() ? Intervals.P4 :  Intervals.M2;
         const ninthOr11th = chord.root.toNoteNum() + interval9Or11;
+        const interval6Or9Or11 = Math.random() < 0.6 ? Intervals.M6 : (Math.random() < 0.5 ? Intervals.M2 : Intervals.P4);
         const useFifth = Math.random() < 0.6;
         const color = useFifth ? fifth : ninthOr11th;
-        let trebleNoteNums2 = genNearestNums([third, seventh, color], trebleNoteNums, minTreble, maxTreble);
+        const intervalsToUse = isSimpleMinorFour ? [third, fifth, chord.root.toNoteNum() + interval6Or9Or11] : [third, seventh, color];
+        let trebleNoteNums2 = genNearestNums(intervalsToUse, trebleNoteNums, minTreble, maxTreble);
         // For this to work, we need to unavoid clusters of 3 notes, in particular, if 11th or 13th is involved,
         // move them up and octave or move the 3 or 5 or 7 down an octave.
         // const colorNoteNums2 = shuffle(

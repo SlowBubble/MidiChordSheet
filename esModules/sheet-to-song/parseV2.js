@@ -72,7 +72,7 @@ function addVoicePartsToSongParts(voiceCellsParts, songParts) {
           baseSongPart = songParts.find(songPart => songPart.song.title === partToCopy);
         }
       }
-      addVoiceToSong(voiceCellsPart, songPart, baseSongPart, idx === 0);
+      addVoiceToSong(voiceCellsPart, songPart, baseSongPart, idx);
     }
   });
 }
@@ -154,7 +154,8 @@ function splitBefore(phrase, delimiterSubregexString) {
   return phrase.split(new RegExp(`(?=${delimiterSubregexString})`));
 }
 
-function addVoiceToSong(voiceCellsPart, songPart, baseSongPart, isFirst) {
+function addVoiceToSong(voiceCellsPart, songPart, baseSongPart, voiceIdx) {
+  const isFirst = voiceIdx === 0;
   const durPerMeasure8n = songPart.song.timeSigChanges.defaultVal.getDurPerMeasure8n();
   let seenNonblankToken = false;
   const tokenInfos = voiceCellsPart === null ? [] : voiceCellsPart.pickupCells.concat(voiceCellsPart.cells).flatMap((cell, idx) => {
@@ -190,7 +191,7 @@ function addVoiceToSong(voiceCellsPart, songPart, baseSongPart, isFirst) {
       }];
     }
     if (token.type === TokenType.Slot) {
-      const baseMelody = baseSongPart.song.voices[0];
+      const baseMelody = baseSongPart.song.voices[voiceIdx];
       const relevantBaseNoteGps = baseMelody.noteGps.map(qng => new QuantizedNoteGp(qng)).filter(
         noteGp => noteGp.start8n.geq(start8n) && noteGp.start8n.lessThan(end8n));
       const res = [];

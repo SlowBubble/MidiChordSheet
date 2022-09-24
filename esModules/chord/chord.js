@@ -69,9 +69,11 @@ export class Chord {
   isDominant() {
     return this.getThirdInterval() == Intervals.M3 && this.getSeventhInterval() == Intervals.m7;
   }
-  // Both m7 and mM7
   isMinor() {
     return this.getThirdInterval() == Intervals.m3 && this.getFifthInterval() == Intervals.P5;
+  }
+  hasExtension() {
+    return this.extension || this.alterations.length;
   }
   // Both half- and full-diminished
   isDiminished() {
@@ -118,6 +120,10 @@ export class Chord {
     }
     if (this.extension && this.extension.isMajor7) {
       return Intervals.M7;
+    }
+    // minor 6th chord
+    if (this.quality == 'm' && this._altMap[6] === 0) {
+      return Intervals.M6;
     }
     return Intervals.m7;
   }

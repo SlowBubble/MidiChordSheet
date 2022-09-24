@@ -19,7 +19,6 @@ export function orchestrate(songParts, songForm) {
   voiceIndices.forEach(idx => {
     voiceIdxToSettingsIdx[idx] = mod(idx, compingSettings.length);
   });
-  console.log(compingSettings);
   // Why + 2?
   let numChannelUsed = bassIdx + 2;
   let muteMelody = false;
@@ -43,9 +42,9 @@ export function orchestrate(songParts, songForm) {
       }
       const setting = compingSettings[voiceIdxToSettingsIdx[voiceIdx]];
       voice.settings.instrument = setting.instrument;
-      let relVolPct = 80;
+      let relVolPct = 90;
       if (voiceIdx === compingIdx) {
-        relVolPct = 60;
+        relVolPct = 75;
       } else if (voiceIdx === melodyIdx) {
         relVolPct = 100;
       }
@@ -61,7 +60,7 @@ const instrumentSettings = {
   },
   electric_piano_2: {
     instrument: instruments.electric_piano_2,
-    volumePercent: 70,
+    volumePercent: 85,
   },
   electric_guitar_clean: {
     instrument: instruments.electric_guitar_clean,
@@ -69,7 +68,7 @@ const instrumentSettings = {
   },
   electric_piano_1: {
     instrument: instruments.electric_piano_1,
-    volumePercent: 50,
+    volumePercent: 110,
   },
 }
 

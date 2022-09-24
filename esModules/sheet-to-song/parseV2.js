@@ -62,8 +62,8 @@ function addVoicePartsToSongParts(voiceCellsParts, songParts) {
       if (!voiceCellsPart) {
         // Insert an empty voice with the correct duration if the voice is not specified
         // for a particular part name.
-        addVoiceToSong(null, songPart, null, idx === 0);
-        return;
+        addVoiceToSong(null, songPart, null, idx);
+        continue;
       }
       let baseSongPart;
       if (voiceCellsPart.cells.length) {

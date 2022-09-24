@@ -10,7 +10,7 @@ export function orchestrate(songParts, songForm) {
   const hasMel = numVoices >= 3;
   const melodyIdx = hasMel ? 0 : null;
   const voiceIndices = [...Array(numVoices).keys()];
-  const compingIdx = numVoices - 2;
+  // const compingIdx = numVoices - 2;
   const bassIdx = numVoices - 1;
   const repeatPartIndices = songForm.getRepeatPartIndices();
   const repeatPartIndicesSet = new Set(repeatPartIndices);
@@ -42,9 +42,9 @@ export function orchestrate(songParts, songForm) {
       }
       const setting = compingSettings[voiceIdxToSettingsIdx[voiceIdx]];
       voice.settings.instrument = setting.instrument;
-      let relVolPct = 90;
-      if (voiceIdx === compingIdx) {
-        relVolPct = 75;
+      let relVolPct = 75;
+      if (voiceIdx === bassIdx) {
+        relVolPct = 90;
       } else if (voiceIdx === melodyIdx) {
         relVolPct = 100;
       }

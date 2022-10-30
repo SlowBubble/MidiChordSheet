@@ -454,6 +454,7 @@ export function processKeyVal(key, valStr, warnError) {
         value: valStr,
       };
     case 'voice':
+    case 'voicepart':
       return {
         type: HeaderType.VoicePart,
         value: {
@@ -462,6 +463,7 @@ export function processKeyVal(key, valStr, warnError) {
         },
       };
     case 'lyrics':
+    case 'lyricspart':
       return {
         type: HeaderType.LyricsPart,
         value: {

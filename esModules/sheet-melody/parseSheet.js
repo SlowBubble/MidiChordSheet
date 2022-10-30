@@ -1,4 +1,5 @@
 import { chunkArray } from "../array-util/arrayUtil.js";
+import { makeSpelling } from "../chord/spell.js";
 import { makeFrac } from "../fraction/fraction.js";
 import { scaleDegreeToSpelling } from "../solfege-util/scaleDegree.js";
 import { toSpelling } from "../solfege-util/solfege.js";
@@ -32,7 +33,8 @@ export function parseCell(cell) {
         relDur: makeFrac(numDivisionsInChunk, numDivisions * numTokens),
         type: token.type,
         noteInfo: token.type === TokenType.Note ? new NoteInfo({
-          spelling: token.solfege ? toSpelling(token.solfege) : scaleDegreeToSpelling(token.scaleDegree),
+          spelling: token.solfege ? toSpelling(token.solfege) : null,
+          scaleDegree: token.scaleDegree ? token.scaleDegree : null ,
           octave: token.octave + 5, // E.g. mi defaults to E5.
         }) : undefined,
       });
@@ -50,12 +52,20 @@ export class VoiceToken {
 }
 
 export class NoteInfo {
-  constructor({spelling, octave}) {
+  constructor({spelling, scaleDegree, octave}) {
     this.spelling = spelling;
+    this.scaleDegree = scaleDegree;
     this.octave = octave;
   }
-  toNoteNum() {
-    return this.spelling.toNoteNum(this.octave);
+  toNoteNum(currTimeSig) {
+    return this.getSpelling(currTimeSig).toNoteNum(this.octave);
+  }
+  getSpelling(currTimeSig) {
+    if (this.spelling) {
+      return this.spelling;
+    }
+    return scaleDegreeToSpelling(this.scaleDegree)
+      .shift(makeSpelling('C'), currTimeSig);
   }
 }
 

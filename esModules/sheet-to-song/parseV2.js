@@ -186,8 +186,12 @@ function addVoiceToSong(voiceCellsPart, songPart, baseSongPart, voiceIdx) {
     const end8n = tokenInfo.end8n;
     const token = tokenInfo.token;
     if (token.type === TokenType.Note) {
+      const currKeySig = songPart.song.keySigChanges.getChange(start8n).val;
       return [{
-        qng: makeSimpleQng(start8n, end8n, [token.noteInfo.toNoteNum()], 120, [token.noteInfo.spelling]),
+        qng: makeSimpleQng(
+          start8n, end8n,
+          [token.noteInfo.toNoteNum(currKeySig)], 120,
+          [token.noteInfo.getSpelling(currKeySig)]),
       }];
     }
     if (token.type === TokenType.Slot) {

@@ -183,7 +183,7 @@ export class ActionMgr {
     }
     this.initialHeaders[HeaderType.TransposedNum] || 0;
     document.getElementById('subdivision-display').textContent = subdivisions;
-    document.getElementById('tempo-display').textContent = this.initialHeaders[HeaderType.Tempo];
+    document.getElementById('tempo-display').textContent = Math.floor(this.initialHeaders[HeaderType.Tempo] * (this.initialHeaders[HeaderType.TempoMultiplier] || 100) / 100);
     document.getElementById('swing-display').textContent = swingStr;
     document.getElementById('key-display').textContent = key;
     document.getElementById('repeat-display').textContent = this.initialHeaders[HeaderType.Repeat];
@@ -299,18 +299,6 @@ export class ActionMgr {
       } else {
         setUrlParam(HeaderType.Swing, 'Medium');
       }
-  }
-
-  decreaseTempo() {
-      const tempo = this.initialHeaders[HeaderType.Tempo];
-      if (tempo - 10 <= 0) {
-        return;
-      }
-      setUrlParam(HeaderType.Tempo, tempo - 10);
-  }
-  increaseTempo() {
-      const tempo = this.initialHeaders[HeaderType.Tempo];
-      setUrlParam(HeaderType.Tempo, tempo + 10);
   }
 
   transposeKeyDown() {

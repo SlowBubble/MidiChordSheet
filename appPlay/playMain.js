@@ -63,10 +63,8 @@ function setupInteraction(actionMgr) {
   document.getElementById("incr-swing-btn").onclick = _ => actionMgr.toggleSwing();
   document.getElementById("decr-swing-btn").onclick = _ => actionMgr.toggleSwing();
 
-  hotkeysDoc('shift+t', _ => actionMgr.increaseTempo());
-  hotkeysDoc('alt+shift+t', _ => actionMgr.decreaseTempo());
-  document.getElementById("incr-tempo-btn").onclick = _ => actionMgr.increaseTempo();
-  document.getElementById("decr-tempo-btn").onclick = _ => actionMgr.decreaseTempo();
+  document.getElementById("incr-tempo-btn").onclick = _ => actionMgr.increaseTempoMultiplier();
+  document.getElementById("decr-tempo-btn").onclick = _ => actionMgr.decreaseTempoMultiplier();
 
   hotkeysDoc('shift+r', _ => actionMgr.incrementRepeat());
   hotkeysDoc('alt+shift+r', _ => actionMgr.decrementRepeat());

@@ -32,6 +32,9 @@ export class ActionMgr {
     // Initialize these lazily.
     this.filePaths = null;
     this.reloadOnHashChange = true;
+    if (getUrlKeyVals()['displayNotes']) {
+      this.displayChordsOnly = false;
+    }
 
     metronomeBeatSub(beat => {
       this.setCurrTime8n(beat.time8n);

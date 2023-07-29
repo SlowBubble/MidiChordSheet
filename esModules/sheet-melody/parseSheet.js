@@ -23,9 +23,17 @@ export function parseCell(cell) {
   const chunks = chunkArray(tokens, token => token.type === TokenType.Bar);
   const res = chunks.flatMap(chunk => {
     chunk = chunk.filter(token => token.type !== TokenType.Bar);
-    const chunkWithoutGuideBars = chunk.filter(token => token.type !== TokenType.GuideBar);
+    let chunkWithoutGuideBars = chunk.filter(token => token.type !== TokenType.GuideBar);
+    const needToAddInExtraBlank = chunkWithoutGuideBars.length === 0;
+    if (needToAddInExtraBlank) {
+      chunkWithoutGuideBars = [{type: TokenType.Blank}];
+    }
+    
     const numTokens = chunkWithoutGuideBars.length;
-    const numGuideBars = chunk.length - chunkWithoutGuideBars.length;
+    let numGuideBars = chunk.length - chunkWithoutGuideBars.length;
+    if (needToAddInExtraBlank) {
+      numGuideBars += 1;
+    }
     const numDivisionsInChunk = 1 + numGuideBars;
 
     return chunkWithoutGuideBars.map(token => {

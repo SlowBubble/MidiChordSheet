@@ -163,16 +163,17 @@ function addVoiceToSong(voiceCellsPart, songPart, baseSongPart, voiceIdx) {
     const tokens = parseCell(cell.val.toLowerCase());
     let start8nRelIdx = makeFrac(0);
     return tokens.map(token => {
+      const start8n = durPerMeasure8n.times(start8nRelIdx.plus(idx));
       const res = {
         token: token,
-        start8n: durPerMeasure8n.times(start8nRelIdx.plus(idx)),
+        start8n: start8n,
         end8n: durPerMeasure8n.times(start8nRelIdx.plus(token.relDur).plus(idx)),
       };
       start8nRelIdx = start8nRelIdx.plus(token.relDur);
       if (token.type !== TokenType.Blank) {
         seenNonblankToken = true;
       }
-      if (!seenNonblankToken) {
+      if (!seenNonblankToken && start8n.lessThan(0)) {
         return;
       }
       return res;

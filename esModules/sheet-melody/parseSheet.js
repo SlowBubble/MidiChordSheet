@@ -33,7 +33,8 @@ export function parseCell(cell) {
         relDur: makeFrac(numDivisionsInChunk, numDivisions * numTokens),
         type: token.type,
         noteInfo: token.type === TokenType.Note ? new NoteInfo({
-          spelling: token.solfege ? toSpelling(token.solfege) : null,
+          spelling: token.solfege ? toSpelling(token.solfege) : (
+            token.spelling ? makeSpelling(token.spelling.letter, token.spelling.numSharps) : null),
           scaleDegree: token.scaleDegree ? token.scaleDegree : null ,
           octave: token.octave + 5, // E.g. mi defaults to E5.
         }) : undefined,

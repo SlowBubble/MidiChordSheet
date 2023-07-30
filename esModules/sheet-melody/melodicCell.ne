@@ -20,13 +20,21 @@ Note -> [/]:* Solfege  {% data => {return {type:'Note', solfege: data[1][0], oct
 	| [\\]:+ Solfege  {% data => {return {type:'Note', solfege: data[1][0], octave: data[0].length}} %}
 	| [/]:* ScaleDegree  {% data => {return {type:'Note', scaleDegree: data[1], octave: -data[0].length}} %}
 	| [\\]:+ ScaleDegree  {% data => {return {type:'Note', scaleDegree: data[1], octave: data[0].length}} %}
+	| [/]:* Spelling  {% data => {return {type:'Note', spelling: data[1], octave: -data[0].length}} %}
+	| [\\]:+ Spelling  {% data => {return {type:'Note', spelling: data[1], octave: data[0].length}} %}
 	| "_" {% _ => {return {type:'Blank'}} %}
 	| "-" {% _ => {return {type:'Slot'}} %}
 	| "x" {% _ => {return {type:'Rest'}} %}
 
+
 scaleNumber -> [1-7] {% data => { return parseInt(data[0]); } %}
 ScaleDegree -> [b]:* scaleNumber {% data => {return {numSharps: -data[0].length, scaleNumber: data[1]}} %}
   | [#]:+ scaleNumber {% data => {return {numSharps: data[0].length, scaleNumber: data[1]}} %}
+
+Spelling -> Letter [b]:* {% data => {return {letter: data[0], numSharps: -data[1].length}} %}
+  | Letter [#]:+ {% data => {return {letter: data[0], numSharps: data[1].length}} %}
+
+Letter -> [a-gA-G] {% data => {return data[0].toUpperCase() } %}
 
 Solfege -> "daw"
 	| "de"

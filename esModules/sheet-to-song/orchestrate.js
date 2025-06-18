@@ -2,7 +2,8 @@ import { instruments } from "../musical-sound/musicalSound.js";
 import { shuffle } from "../array-util/arrayUtil.js";
 import { mod } from "../math-util/mathUtil.js";
 
-export function orchestrate(songParts, songForm) {
+// If muteHarmony is true, then mute the non-melody voices (drum voices are not in here).
+export function orchestrate(songParts, songForm, muteHarmony=false) {
   if (!songParts.length || !songParts[0].song.voices.length) {
     return;
   }
@@ -24,6 +25,13 @@ export function orchestrate(songParts, songForm) {
   let muteMelody = false;
   songParts.forEach((part, partIdx) => {
     part.song.voices.forEach((voice, voiceIdx) => {
+      if (muteHarmony) {
+        const setting = compingSettings[voiceIdxToSettingsIdx[voiceIdx]];
+        voice.settings.instrument = setting.instrument;
+        voice.settings.volumePercent = voiceIdx === melodyIdx ? 100 : 0;
+        return;
+      }
+
       // Mute the melody for a repeated part.
       if (voiceIdx === melodyIdx) {
         if (repeatPartIndicesSet.has(partIdx) && partIdx > 0 && numChannelUsed < 16) {

@@ -105,6 +105,7 @@ function setupInteraction(actionMgr) {
   hotkeysDoc('shift+i', _ => actionMgr.toggleImprovTactics());
   hotkeysDoc('shift+-', _ => actionMgr.decreaseTempoMultiplier());
   hotkeysDoc('shift+=', _ => actionMgr.increaseTempoMultiplier());
+  hotkeysDoc('shift+h', _ => actionMgr.toggleMuteHarmony());
   
   hotkeysDoc('alt+shift+`', _ => actionMgr.setTransposedKey('C'));
   hotkeysDoc('alt+shift+1', _ => actionMgr.setTransposedKey('Db'));

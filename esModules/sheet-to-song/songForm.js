@@ -66,7 +66,7 @@ export class SongForm {
 
   // TODO disable addDrumBeat in songReplay.js and do it here so that we can mute it when we want
   //   (add volumePercent = 0 at time 0 to end of first part)
-  toFullyArrangedSong() {
+  toFullyArrangedSong(muteHarmony) {
     const parts = this.getSequencedParts();
     if (parts.length === 0) {
       throw 'TODO: Handle no parts gracefully';
@@ -81,7 +81,7 @@ export class SongForm {
     });
     
     // Must be done after comping is done.
-    orchestrate(parts, this);
+    orchestrate(parts, this, muteHarmony);
   
     let songRes;
     parts.forEach(part => {

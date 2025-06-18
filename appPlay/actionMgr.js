@@ -152,7 +152,7 @@ export class ActionMgr {
     }
 
     const songInfo = parseKeyValsToSongInfo(gridData, urlKeyVals);
-    this.song = songInfo.songForm.toFullyArrangedSong();
+    this.song = songInfo.songForm.toFullyArrangedSong(!!urlKeyVals['MuteHarmony']);
     this.initialHeaders = songInfo.initialHeaders;
 
     if (this.filePaths) {
@@ -395,6 +395,14 @@ export class ActionMgr {
     const mult = headerMult === undefined ? 100 : headerMult;
     const newMult = mult + 5;
     setUrlParam(HeaderType.TempoMultiplier, newMult);
+  }
+  toggleMuteHarmony() {
+    const urlKeyVals = getUrlKeyVals();
+    if (urlKeyVals['MuteHarmony']) {
+      setUrlParam('MuteHarmony');
+    } else {
+      setUrlParam('MuteHarmony', '1');
+    }
   }
 }
 

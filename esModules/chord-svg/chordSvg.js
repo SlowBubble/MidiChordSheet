@@ -149,6 +149,21 @@ function genChordSvg(part, currTime8n, time8nInSong, {
   });
   svg.append(...barElts);
 
+  // Add current time indicator
+  const currTime8nInPart = currTime8n.minus(time8nInSong);
+  if (currTime8nInPart.geq(0) && currTime8nInPart.leq(song.getEnd8n())) {
+    const {x} = time8nToPos(currTime8nInPart);
+    const currBarIdx = Math.floor(currTime8nInPart.over(durPerMeasure8n).toFloat());
+    const currBarPos = idxToPos(currBarIdx);
+    const timeIndicator = makeSvgElt('circle', {
+      cx: x,
+      cy: currBarPos.y + heightPerBar,
+      r: 6,
+      fill: 'green'
+    });
+    svg.append(timeIndicator);
+  }
+
   function time8nToPos(time8n) {
     const barMargin = 5;
     const fracIdx = time8n.over(durPerMeasure8n).toFloat();
@@ -161,7 +176,6 @@ function genChordSvg(part, currTime8n, time8nInSong, {
       yBottom: idxPos.y + heightPerBar / 2 + fontSize / 2,
     }
   }
-
 
   // TODO deal with pickup chords.
   let hasPassed = false;

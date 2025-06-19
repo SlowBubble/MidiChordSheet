@@ -105,6 +105,7 @@ function genPartNameSvg(name, {bottomMargin = 10, xPadding = 6, yPadding = 2}) {
 function genChordSvg(part, currTime8n, time8nInSong, {
   displayTactics = false,
   displayRomanNumeral = false,
+  displayMelody = true,
   prevKey = null,
   nextKey = null,
   fontSize = 22, widthPerBar = 260, heightPerBar = 45,
@@ -112,6 +113,10 @@ function genChordSvg(part, currTime8n, time8nInSong, {
   barsPerLine = 4,
 }) {
   const song = part.song;
+  const numVoices = song.voices.length;
+  const hasMel = numVoices >= 1;
+  const melodyIdx = hasMel ? 0 : null;
+
   const fullHeight = heightPerBar + spacingBetweenBars;
   const durPerMeasure8n = song.timeSigChanges.defaultVal.getDurPerMeasure8n();
   const numBars = Math.ceil(song.getEnd8n().over(durPerMeasure8n).toFloat());
@@ -257,6 +262,31 @@ function genChordSvg(part, currTime8n, time8nInSong, {
       }, change.val.toString());
     });
     svg.append(...textElts);
+  } else if (displayMelody) {
+    // Use the melody voice (i.e. using melodyIdx), and render the notes (in A, B ..., G)
+    // in the same y-position as displayTactics, and with x-position based on start8n of the note.
+    if (melodyIdx !== null && song.voices[melodyIdx]) {
+      const melodyVoice = song.voices[melodyIdx];
+      const noteElts = melodyVoice.noteGps
+        .filter(noteGp => noteGp.start8n.geq(0) && noteGp.midiNotes.length > 0)
+        .map(noteGp => {
+          const note = noteGp.midiNotes[0];
+          const {x, yBottom} = time8nToPos(noteGp.start8n);
+          // Convert MIDI pitch to note name (C, D, E, F, G, A, B)
+          // C = 0, D = 2, E = 4, F = 5, G = 7, A = 9, B = 11
+          // MIDI note 60 = C4
+            const noteNames = ['C', 'C♯', 'D', 'E♭', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'B♭', 'B'];
+          const noteName = noteNames[note.noteNum % 12];
+          return makeSvgElt('text', {
+            x: x,
+            y: yBottom,
+            'dominant-baseline': 'hanging',
+            'font-size': fontSize * 0.75,
+            fill: 'blue'
+          }, noteName);
+        });
+      svg.append(...noteElts);
+    }
   }
 
   return {

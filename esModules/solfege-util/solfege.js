@@ -38,6 +38,9 @@ let spellingToSolfege;
 
 export function toSpelling(str) {
   const res = solfegeToSpelling[str.toLowerCase()];
+  if (!res) {
+    console.log("Bad solfege: ", str.toLowerCase());
+  }
   // Cloning in case the caller modifies it.
   return new Spelling(res);
 }

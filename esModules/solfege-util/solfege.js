@@ -13,7 +13,7 @@ const solfegeToSpelling = {
   mu: makeSpelling('E', -1),
   mi: makeSpelling('E', 0),
   ma: makeSpelling('E', 1),
-  faw: makeSpelling('F', 2),
+  fu: makeSpelling('F', 2),
   fi: makeSpelling('F', -1),
   fa: makeSpelling('F', 0),
   fe: makeSpelling('F', 1),

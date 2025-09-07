@@ -7,7 +7,7 @@ export class RenderMgr {
     this._canvasDiv = canvasDiv;
   }
 
-  render(song) {
+  render(song, displayComping=false) {
     const stateMgr = new state.StateMgr(this._eBanner);
     stateMgr.doc.timeSigNumer = song.timeSigChanges.defaultVal.upperNumeral;
     stateMgr.doc.timeSigDenom = song.timeSigChanges.defaultVal.lowerNumeral;
@@ -18,7 +18,8 @@ export class RenderMgr {
     stateMgr.doc.keySigSp = song.keySigChanges.defaultVal;
     
     stateMgr.doc.voices = [];
-    song.getVisibleVoices().forEach((voice, idx) => {
+    const displayedVoices = displayComping ? song.getInvisibleVoices() : song.getVisibleVoices();
+    displayedVoices.forEach((voice, idx) => {
       if (idx >= stateMgr.doc.voices.length) {
         stateMgr.addVoice(new state.Voice(null, voice.clef.toLowerCase()));
       }

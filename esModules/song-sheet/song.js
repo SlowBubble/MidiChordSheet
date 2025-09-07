@@ -47,6 +47,9 @@ export class Song {
   getVisibleVoices() {
     return this.voices.filter(voice => !voice.settings.hide)
   }
+  getInvisibleVoices() {
+    return this.voices.filter(voice => voice.settings.hide)
+  }
   getStart8n() {
     return this.pickup8n;
   }

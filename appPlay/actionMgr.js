@@ -24,6 +24,7 @@ export class ActionMgr {
     this.lyricsDisplayer = lyricsDisplayer;
     this.chordSvgMgr = new ChordSvgMgr({});
     this.displayChordsOnly = true;
+    this.displayCompingVoicesOnly = false;
     this.displayRomanNumeral = false;
     this.displayTactics = false;
     this.chordsCanvas = document.getElementById('chords-canvas');
@@ -77,7 +78,7 @@ export class ActionMgr {
       this.renderMgr.clear();
       this.renderChordsCanvas();
     } else {
-      this.renderMgr.render(this.song);
+      this.renderMgr.render(this.song, this.displayCompingVoicesOnly);
       this.clearChordsCanvas();
     }
   }
@@ -86,7 +87,16 @@ export class ActionMgr {
     this.render();
   }
   toggleChordView() {
-    this.displayChordsOnly = !this.displayChordsOnly;
+    if (this.displayChordsOnly) {
+      this.displayChordsOnly = false;
+    } else {
+      if (this.displayCompingVoicesOnly) {
+        this.displayChordsOnly = true;
+        this.displayCompingVoicesOnly = false;
+      } else {
+        this.displayCompingVoicesOnly = true;
+      }
+    }
     this.render();
   }
   toggleRomanNumeralView() {

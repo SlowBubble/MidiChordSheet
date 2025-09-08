@@ -30,6 +30,9 @@ class KeyToDebouncedKeyFilter {
       if (evt.altKey || evt.ctrlKey || evt.metaKey || evt.shiftKey) {
         return;
       }
+      if (evt.key === 'PageUp' || evt.key === 'PageDown') {
+        return;
+      }
       evt.preventDefault();
       const now = Date.now();
       keyDownPub(evt, now);

@@ -39,3 +39,17 @@ Others:
 - Specify "Key: D" to specify that the song is in the key of D.
 - Specify "Meter: 3/4" to specify that the song is has 3 quarter notes in each measure.
 - Specify "Swing: Medium" to specify that the song has a medium (triplet) swing feel.
+
+# Work in progress
+## Doing
+
+## TODO
+- Freeze the current arrangement
+- Add different arrangement styles
+- How to fix legacy melody format?
+
+## Style design
+
+### Melody-independent
+
+### Melody-dependent

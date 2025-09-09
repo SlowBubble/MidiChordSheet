@@ -196,6 +196,7 @@ export class ActionMgr {
     }
     this.initialHeaders[HeaderType.TransposedNum] || 0;
     document.getElementById('subdivision-display').textContent = subdivisions;
+    document.getElementById('syncopation-display').textContent = this.initialHeaders[HeaderType.Syncopation];
     document.getElementById('tempo-display').textContent = Math.floor(this.initialHeaders[HeaderType.Tempo] * (this.initialHeaders[HeaderType.TempoMultiplier] || 100) / 100);
     document.getElementById('swing-display').textContent = swingStr;
     document.getElementById('key-display').textContent = key;
@@ -331,7 +332,7 @@ export class ActionMgr {
   }
   increaseOffbeatSyncopation() {
     const syncopationPct = this.initialHeaders[HeaderType.Syncopation];
-    (HeaderType.Syncopation, syncopationPct + 3);
+    setUrlParam(HeaderType.Syncopation, syncopationPct + 3);
   }
 
   decreaseDensity() {

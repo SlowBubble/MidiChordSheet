@@ -109,6 +109,7 @@ function setupInteraction(actionMgr) {
   hotkeysDoc('shift+-', _ => actionMgr.decreaseTempoMultiplier());
   hotkeysDoc('shift+=', _ => actionMgr.increaseTempoMultiplier());
   hotkeysDoc('shift+h', _ => actionMgr.toggleMuteHarmony());
+  hotkeysDoc('shift+g', _ => actionMgr.gamify());
   hotkeysDoc('shift+t', _ => actionMgr.toggleMuteMelody());
   
   hotkeysDoc('alt+shift+`', _ => actionMgr.setTransposedKey('C'));

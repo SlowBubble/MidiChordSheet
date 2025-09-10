@@ -35,9 +35,6 @@ export class ActionMgr {
     // Initialize these lazily.
     this.filePaths = null;
     this.reloadOnHashChange = true;
-    if (getUrlKeyVals()['displayNotes']) {
-      this.displayChordsOnly = false;
-    }
 
     metronomeBeatSub(beat => {
       this.setCurrTime8n(beat.time8n);
@@ -205,6 +202,10 @@ export class ActionMgr {
     document.getElementById('repeat-display').textContent = this.initialHeaders[HeaderType.Repeat];
     document.getElementById('upper-numeral-display').textContent = this.initialHeaders[HeaderType.Meter].upperNumeral;
 
+    if (urlKeyVals['DisplayComping']) {
+      this.displayChordsOnly = false;
+      this.displayCompingVoicesOnly = true;
+    }
     this.gameMgr.resetGame(this.song);
 
     this.lyricsDisplayer.setVoice(this.song.getVoice(0));
@@ -249,7 +250,8 @@ export class ActionMgr {
 
   moveToStart() {
     this.actAndResume(_ => {
-      this.setCurrTime8n(null)
+      this.setCurrTime8n(null);
+      this.gameMgr.resetGame(this.song);
       this.render();
     });
   }
@@ -418,6 +420,10 @@ export class ActionMgr {
     } else {
       setUrlParam('MuteHarmony', '1');
     }
+  }
+  gamify() {
+    setUrlParam('MuteHarmony', '1');
+    setUrlParam('DisplayComping', '1');
   }
   toggleMuteMelody() {
     const urlKeyVals = getUrlKeyVals();

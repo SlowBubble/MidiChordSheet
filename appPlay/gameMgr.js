@@ -31,6 +31,21 @@ export class GameMgr {
     return this.pressedKeys.has(key);
   }
 
+  _findActiveNoteGpsForNoteNum(noteNum) {
+    const noteGps = [];
+    for (const [key, noteGp] of this.evtKeyToLeftHandNoteGp) {
+      if (noteGp.midiNotes.some(note => note.noteNum === noteNum)) {
+        noteGps.push(noteGp);
+      }
+    }
+    for (const [key, noteGp] of this.evtKeyToRightHandNoteGp) {
+      if (noteGp.midiNotes.some(note => note.noteNum === noteNum)) {
+        noteGps.push(noteGp);
+      }
+    }
+    return noteGps;
+  }
+
   /*
   Rules:
   - When the "Tab" key is pressed down (make sure to debounce so only one event per key press):
@@ -45,12 +60,16 @@ export class GameMgr {
         const noteGp = this.evtKeyToLeftHandNoteGp.get(evt.key);
         if (noteGp) {
           noteGp.midiNotes.forEach(note => {
-            this.soundPub(new midiEvent.NoteOffEvt({
-              noteNum: note.noteNum,
-              velocity: note.velocity,
-              channelNum: note.channelNum || 0,
-              time: Date.now(),
-            }));
+            // Only send NoteOff if this is the last key playing this note
+            const activeNoteGps = this._findActiveNoteGpsForNoteNum(note.noteNum);
+            if (activeNoteGps.length === 1) {
+              this.soundPub(new midiEvent.NoteOffEvt({
+                noteNum: note.noteNum,
+                velocity: note.velocity,
+                channelNum: note.channelNum || 0,
+                time: Date.now(),
+              }));
+            }
           });
           this.evtKeyToLeftHandNoteGp.delete(evt.key);
         }
@@ -60,12 +79,16 @@ export class GameMgr {
         const noteGp = this.evtKeyToRightHandNoteGp.get(evt.key);
         if (noteGp) {
           noteGp.midiNotes.forEach(note => {
-            this.soundPub(new midiEvent.NoteOffEvt({
-              noteNum: note.noteNum,
-              velocity: note.velocity,
-              channelNum: note.channelNum || 0,
-              time: Date.now(),
-            }));
+            // Only send NoteOff if this is the last key playing this note
+            const activeNoteGps = this._findActiveNoteGpsForNoteNum(note.noteNum);
+            if (activeNoteGps.length === 1) {
+              this.soundPub(new midiEvent.NoteOffEvt({
+                noteNum: note.noteNum,
+                velocity: note.velocity,
+                channelNum: note.channelNum || 0,
+                time: Date.now(),
+              }));
+            }
           });
           this.evtKeyToRightHandNoteGp.delete(evt.key);
         }

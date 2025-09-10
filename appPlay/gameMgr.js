@@ -148,4 +148,4 @@ export class GameMgr {
 }
 
 const leftHandKeys = new Set(['a', 's', 'd', 'f', '1', '2', '3', '4', '5', 'q', 'w', 'e', 'r', 't', 'z', 'x', 'c', 'v', 'g', 'b']);
-const rightHandKeys = new Set(['j', 'k', 'l', ';', '7', '8', '9', '0', '-', '=', 'u', 'i', 'o', 'p', '[', ']', "'", 'n', 'm', ',', '.', '/']);
+const rightHandKeys = new Set(['j', 'k', 'l', ';', '7', '8', '9', '0', '-', '=', 'u', 'i', 'o', 'p', '[', ']', "'", 'n', 'm', ',', '.', '/', '6', 'y', 'h']);

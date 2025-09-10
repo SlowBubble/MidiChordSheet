@@ -9,6 +9,8 @@ export class GameMgr {
     this.rightHandNoteGps = [];
     this.lastLeftHandNoteGp = null;
     this.lastRightHandNoteGp = null;
+    this.evtKeyToLeftHandNoteGp = new Map();
+    this.evtKeyToRightHandNoteGp = new Map();
     this._oneTimeSetup();
   }
   
@@ -21,6 +23,8 @@ export class GameMgr {
     const leftHandVoice = song.getVoice(2);
     this.rightHandNoteGps = rightHandVoice.noteGps.filter(gp => !gp.isRest);
     this.leftHandNoteGps = leftHandVoice.noteGps.filter(gp => !gp.isRest);
+    this.evtKeyToLeftHandNoteGp.clear();
+    this.evtKeyToRightHandNoteGp.clear();
   }
 
   isKeyPressed(key) {
@@ -37,28 +41,34 @@ export class GameMgr {
     */
   _oneTimeSetup() {
     document.addEventListener('keyup', evt => {
-      if (leftHandKeys.has(evt.key) && this.lastLeftHandNoteGp) {
-        this.lastLeftHandNoteGp.midiNotes.forEach(note => {
-          this.soundPub(new midiEvent.NoteOffEvt({
-            noteNum: note.noteNum,
-            velocity: note.velocity,
-            channelNum: note.channelNum || 0,
-            time: Date.now(),
-          }));
-        });
-        this.lastLeftHandNoteGp = null;
+      if (leftHandKeys.has(evt.key)) {
+        const noteGp = this.evtKeyToLeftHandNoteGp.get(evt.key);
+        if (noteGp) {
+          noteGp.midiNotes.forEach(note => {
+            this.soundPub(new midiEvent.NoteOffEvt({
+              noteNum: note.noteNum,
+              velocity: note.velocity,
+              channelNum: note.channelNum || 0,
+              time: Date.now(),
+            }));
+          });
+          this.evtKeyToLeftHandNoteGp.delete(evt.key);
+        }
       }
       
-      if (rightHandKeys.has(evt.key) && this.lastRightHandNoteGp) {
-        this.lastRightHandNoteGp.midiNotes.forEach(note => {
-          this.soundPub(new midiEvent.NoteOffEvt({
-            noteNum: note.noteNum,
-            velocity: note.velocity,
-            channelNum: note.channelNum || 0,
-            time: Date.now(),
-          }));
-        });
-        this.lastRightHandNoteGp = null;
+      if (rightHandKeys.has(evt.key)) {
+        const noteGp = this.evtKeyToRightHandNoteGp.get(evt.key);
+        if (noteGp) {
+          noteGp.midiNotes.forEach(note => {
+            this.soundPub(new midiEvent.NoteOffEvt({
+              noteNum: note.noteNum,
+              velocity: note.velocity,
+              channelNum: note.channelNum || 0,
+              time: Date.now(),
+            }));
+          });
+          this.evtKeyToRightHandNoteGp.delete(evt.key);
+        }
       }
       
       this.pressedKeys.delete(evt.key);
@@ -76,7 +86,7 @@ export class GameMgr {
           return;
         }
         const noteGp = this.leftHandNoteGps[this.leftHandIdx];
-        this.lastLeftHandNoteGp = noteGp;
+        this.evtKeyToLeftHandNoteGp.set(evt.key, noteGp);
         noteGp.midiNotes.forEach(note => {
           this.soundPub(new midiEvent.NoteOnEvt({
             noteNum: note.noteNum,
@@ -95,7 +105,7 @@ export class GameMgr {
           return;
         }
         const noteGp = this.rightHandNoteGps[this.rightHandIdx];
-        this.lastRightHandNoteGp = noteGp;
+        this.evtKeyToRightHandNoteGp.set(evt.key, noteGp);
         noteGp.midiNotes.forEach(note => {
           this.soundPub(new midiEvent.NoteOnEvt({
             noteNum: note.noteNum,

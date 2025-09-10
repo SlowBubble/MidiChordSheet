@@ -43,6 +43,8 @@ Others:
 # Work in progress
 ## Doing
 
+- Add harmony game
+
 ## TODO
 - Freeze the current arrangement
 - Add different arrangement styles

@@ -7,8 +7,8 @@ import * as pubSub from '../esModules/pub-sub/pubSub.js';
 import { ActionMgr } from "./actionMgr.js";
 import { hotkeysDoc } from "../esModules/hotkeys-doc/hotkeysDoc.js";
 import { LyricsDisplayer } from "../esModules/lyrics-display/lyricsDisplayer.js";
-import { setupKeyboard } from "../esModules/keyboard-to-midi-evt/index.js";
-
+// import { setupKeyboard } from "../esModules/keyboard-to-midi-evt/index.js";
+import { GameMgr } from "./gameMgr.js";
 
 setup()
 
@@ -27,7 +27,6 @@ async function setup() {
     midiJs: window.MIDI, soundSub: soundSub, 
     eBanner: eBanner, readyPub: readyPub
   });
-  setupKeyboard(soundPub);
   const lyricsDisplayer = new LyricsDisplayer({
     currTimeSub: currTimeSub,
     eBanner: eBanner,
@@ -38,6 +37,9 @@ async function setup() {
     playEndedPub: playEndedPub,
     currTimePub: currTimePub,
   });
+  // setupKeyboard(soundPub);
+  const gameMgr = new GameMgr({soundPub: soundPub});
+
   const actionMgr = new ActionMgr({
     songReplayer: songReplayer,
     eBanner: eBanner,
@@ -46,6 +48,7 @@ async function setup() {
     metronomeBeatSub: metronomeBeatSub,
     playEndedSub: playEndedSub,
     lyricsDisplayer: lyricsDisplayer,
+    gameMgr: gameMgr,
   });
   await actionMgr.reloadSong();
   setupInteraction(actionMgr);

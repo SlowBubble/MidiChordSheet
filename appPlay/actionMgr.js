@@ -14,7 +14,9 @@ export class ActionMgr {
     metronomeBeatSub,
     playEndedSub,
     lyricsDisplayer,
+    gameMgr,
   }) {
+    this.gameMgr = gameMgr;
     this.songReplayer = songReplayer;
     this.eBanner = eBanner;
     this.renderMgr = renderMgr;
@@ -202,6 +204,8 @@ export class ActionMgr {
     document.getElementById('key-display').textContent = key;
     document.getElementById('repeat-display').textContent = this.initialHeaders[HeaderType.Repeat];
     document.getElementById('upper-numeral-display').textContent = this.initialHeaders[HeaderType.Meter].upperNumeral;
+
+    this.gameMgr.resetGame(this.song);
 
     this.lyricsDisplayer.setVoice(this.song.getVoice(0));
     this.chordSvgMgr = new ChordSvgMgr({

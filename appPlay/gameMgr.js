@@ -1,17 +1,50 @@
+import { makeFrac } from '../esModules/fraction/fraction.js';
 import * as midiEvent from '../esModules/midi-data/midiEvent.js';
 
 export class GameMgr {
   constructor({
     soundPub,
+    currTimeSub,
+    smartMode = true,
   }) {
     this.soundPub = soundPub;
+    /*
+    Smart mode will move the indexes smartly between key down and NoteOn  
+    - First, chunk the noteGps for each hand by chord change
+    - On key down for a hand, before creating a NoteOn event
+      - If currTime > nextChordChangeTime - (ms of a 16th note), update the index to the next chunk.
+        - Estimate ms of a 16th note via this.msPer8n / 2
+        - TODO debug if this is implemented correctly
+      - Then create the NoteOn event
+      - Then increment the index (but looping within the chunk).
+    */
+    this.smartMode = smartMode;
     this.leftHandNoteGps = [];
     this.rightHandNoteGps = [];
-    this.lastLeftHandNoteGp = null;
-    this.lastRightHandNoteGp = null;
+    this.leftHandChunks = [];
+    this.rightHandChunks = [];
+    this.leftHandChunkIdx = 0;
+    this.rightHandChunkIdx = 0;
+    this.leftHandIdxInChunk = 0;
+    this.rightHandIdxInChunk = 0;
     this.evtKeyToLeftHandNoteGp = new Map();
     this.evtKeyToRightHandNoteGp = new Map();
+
+    this.currTime8n = makeFrac(0);
+    this.timeOfLastBeat = Date.now();
+    this.msPer8n = null;
+    currTimeSub((time8n) => {
+      this.currTime8n = time8n;
+      this.msPer8n = (Date.now() - this.timeOfLastBeat);
+      this.timeOfLastBeat = Date.now();
+    });
     this._oneTimeSetup();
+  }
+  _getCurrTime8nInFloat() {
+    if (this.msPer8n === null) {
+      return this.currTime8n.toFloat();
+    }
+    return this.currTime8n.toFloat() + (Date.now() - this.timeOfLastBeat) / this.msPer8n;
   }
   
   resetGame(song) {
@@ -25,6 +58,35 @@ export class GameMgr {
     this.leftHandNoteGps = leftHandVoice.noteGps.filter(gp => !gp.isRest);
     this.evtKeyToLeftHandNoteGp.clear();
     this.evtKeyToRightHandNoteGp.clear();
+
+    this.leftHandChunkIdx = 0;
+    this.rightHandChunkIdx = 0;
+    this.leftHandIdxInChunk = 0;
+    this.rightHandIdxInChunk = 0;
+    this.leftHandChunkFinished = false;
+    this.rightHandChunkFinished = false;
+    if (this.smartMode) {
+      this.leftHandChunks = this._chunkNoteGpsByChord(song, this.leftHandNoteGps);
+      this.rightHandChunks = this._chunkNoteGpsByChord(song, this.rightHandNoteGps);
+    }
+  }
+
+  _chunkNoteGpsByChord(song, noteGps) {
+    const chordChanges = song.chordChanges.getChanges();
+    if (!chordChanges.length) return [{ chord: null, chunk: noteGps, start8n: noteGps.length ? noteGps[0].start8n : null }];
+    const chunks = [];
+    for (let i = 0; i < chordChanges.length; i++) {
+      const start8n = chordChanges[i].start8n;
+      const end8n = chordChanges[i + 1] ? chordChanges[i + 1].start8n : null;
+      const chunk = noteGps.filter(gp => {
+        if (end8n) {
+          return gp.start8n.geq(start8n) && gp.start8n.lessThan(end8n);
+        }
+        return gp.start8n.geq(start8n);
+      });
+      chunks.push({ chord: chordChanges[i].val, chunk, start8n });
+    }
+    return chunks;
   }
 
   isKeyPressed(key) {
@@ -101,43 +163,123 @@ export class GameMgr {
       if (evt.altKey || evt.ctrlKey || evt.metaKey || evt.shiftKey) {
         return;
       }
-      
+      // Smart mode logic for left hand
       if (leftHandKeys.has(evt.key) && !this.isKeyPressed(evt.key)) {
         evt.preventDefault();
         this.pressedKeys.add(evt.key);
-        if (this.leftHandIdx >= this.leftHandNoteGps.length) {
-          return;
+
+        if (this.smartMode) {
+          const chunks = this.leftHandChunks;
+          if (!chunks.length) return;
+          let currChunkIdx = this.leftHandChunkIdx;
+          let margin8n = 0.5;
+          if (this.leftHandChunkFinished) {
+            margin8n = 1.2;
+          }
+          while (
+            currChunkIdx + 1 < chunks.length &&
+            this._getCurrTime8nInFloat() > chunks[currChunkIdx + 1].start8n.toFloat() - margin8n
+          ) {
+            currChunkIdx++;
+            this.leftHandIdxInChunk = 0;
+            this.leftHandChunkFinished = false;
+          }
+          this.leftHandChunkIdx = currChunkIdx;
+          const currChunkObj = chunks[currChunkIdx];
+          const currChunk = currChunkObj.chunk;
+          if (!currChunk || !currChunk.length) return;
+          const currIdxInChunk = this.leftHandIdxInChunk;
+          const noteGp = currChunk[currIdxInChunk];
+          if (!noteGp) return;
+          console.log('LeftHand:', this.leftHandChunkIdx, currChunkObj.chord ? currChunkObj.chord.toString() : '(no chord)');
+          this.evtKeyToLeftHandNoteGp.set(evt.key, noteGp);
+          noteGp.midiNotes.forEach(note => {
+            this.soundPub(new midiEvent.NoteOnEvt({
+              noteNum: note.noteNum,
+              velocity: note.velocity,
+              channelNum: note.channelNum || 0,
+              time: Date.now(),
+            }));
+          });
+          this.leftHandIdxInChunk = (currIdxInChunk + 1) % currChunk.length;
+          if (this.leftHandIdxInChunk === 0) {
+            this.leftHandChunkFinished = true;
+          }
+        } else {
+          if (this.leftHandIdx >= this.leftHandNoteGps.length) {
+            return;
+          }
+          const noteGp = this.leftHandNoteGps[this.leftHandIdx];
+          this.evtKeyToLeftHandNoteGp.set(evt.key, noteGp);
+          noteGp.midiNotes.forEach(note => {
+            this.soundPub(new midiEvent.NoteOnEvt({
+              noteNum: note.noteNum,
+              velocity: note.velocity,
+              channelNum: note.channelNum || 0,
+              time: Date.now(),
+            }));
+          });
+          this.leftHandIdx++;
         }
-        const noteGp = this.leftHandNoteGps[this.leftHandIdx];
-        this.evtKeyToLeftHandNoteGp.set(evt.key, noteGp);
-        noteGp.midiNotes.forEach(note => {
-          this.soundPub(new midiEvent.NoteOnEvt({
-            noteNum: note.noteNum,
-            velocity: note.velocity,
-            channelNum: note.channelNum || 0,
-            time: Date.now(),
-          }));
-        });
-        this.leftHandIdx++;
       }
-      
+      // Smart mode logic for right hand
       if (rightHandKeys.has(evt.key) && !this.isKeyPressed(evt.key)) {
         evt.preventDefault();
         this.pressedKeys.add(evt.key);
-        if (this.rightHandIdx >= this.rightHandNoteGps.length) {
-          return;
+
+        if (this.smartMode) {
+          const chunks = this.rightHandChunks;
+          if (!chunks.length) return;
+          let currChunkIdx = this.rightHandChunkIdx;
+          let margin8n = 0.5;
+          if (this.rightHandChunkFinished) {
+            margin8n = 1.2;
+          }
+          while (
+            currChunkIdx + 1 < chunks.length &&
+            this._getCurrTime8nInFloat() > chunks[currChunkIdx + 1].start8n.toFloat() - margin8n
+          ) {
+            currChunkIdx++;
+            this.rightHandIdxInChunk = 0;
+            this.rightHandChunkFinished = false;
+          }
+          this.rightHandChunkIdx = currChunkIdx;
+          const currChunkObj = chunks[currChunkIdx];
+          const currChunk = currChunkObj.chunk;
+          if (!currChunk || !currChunk.length) return;
+          const currIdxInChunk = this.rightHandIdxInChunk;
+          const noteGp = currChunk[currIdxInChunk];
+          if (!noteGp) return;
+          console.log('RightHand:', this.rightHandChunkIdx, currChunkObj.chord ? currChunkObj.chord.toString() : '(no chord)');
+          this.evtKeyToRightHandNoteGp.set(evt.key, noteGp);
+          noteGp.midiNotes.forEach(note => {
+            this.soundPub(new midiEvent.NoteOnEvt({
+              noteNum: note.noteNum,
+              velocity: note.velocity,
+              channelNum: note.channelNum || 0,
+              time: Date.now(),
+            }));
+          });
+          this.rightHandIdxInChunk = (currIdxInChunk + 1) % currChunk.length;
+          if (this.rightHandIdxInChunk === 0) {
+            this.rightHandChunkFinished = true;
+          }
+        } else {
+          if (this.rightHandIdx >= this.rightHandNoteGps.length) {
+            return;
+          }
+          const noteGp = this.rightHandNoteGps[this.rightHandIdx];
+          this.evtKeyToRightHandNoteGp.set(evt.key, noteGp);
+          noteGp.midiNotes.forEach(note => {
+            this.soundPub(new midiEvent.NoteOnEvt({
+              noteNum: note.noteNum,
+              velocity: note.velocity,
+              channelNum: note.channelNum || 0,
+              time: Date.now(),
+            }));
+          });
+          this.rightHandIdx++;
         }
-        const noteGp = this.rightHandNoteGps[this.rightHandIdx];
-        this.evtKeyToRightHandNoteGp.set(evt.key, noteGp);
-        noteGp.midiNotes.forEach(note => {
-          this.soundPub(new midiEvent.NoteOnEvt({
-            noteNum: note.noteNum,
-            velocity: note.velocity,
-            channelNum: note.channelNum || 0,
-            time: Date.now(),
-          }));
-        });
-        this.rightHandIdx++;
       }
     });
     

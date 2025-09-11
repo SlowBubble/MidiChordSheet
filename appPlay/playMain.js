@@ -1,4 +1,3 @@
-
 import { RenderMgr } from "../esModules/sheet-to-song/render.js";
 import { SongReplayer } from "../esModules/song-replay/songReplay.js";
 import * as banner from '../esModules/ephemeral-banner/index.js';
@@ -38,7 +37,7 @@ async function setup() {
     currTimePub: currTimePub,
   });
   // setupKeyboard(soundPub);
-  const gameMgr = new GameMgr({soundPub: soundPub});
+  const gameMgr = new GameMgr({soundPub: soundPub, currTimeSub: currTimeSub});
 
   const actionMgr = new ActionMgr({
     songReplayer: songReplayer,
@@ -129,4 +128,5 @@ function setupInteraction(actionMgr) {
   hotkeysDoc('down', _ => actionMgr.moveDown());
   hotkeysDoc('left', _ => actionMgr.moveLeft());
   hotkeysDoc('right', _ => actionMgr.moveRight());
+  hotkeysDoc('shift+x', _ => actionMgr.toggleSmartMode());
 }

@@ -433,6 +433,10 @@ export class ActionMgr {
       setUrlParam('MuteMelody', '1');
     }
   }
+  toggleSmartMode() {
+    this.gameMgr.smartMode = !this.gameMgr.smartMode;
+    this.eBanner.success(`Smart mode: ${this.gameMgr.smartMode ? 'ON' : 'OFF'}`);
+  }
 }
 
 // Note that this will trigger a song reload.

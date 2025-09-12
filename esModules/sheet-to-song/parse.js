@@ -23,7 +23,7 @@ export function genChunkedLocs(gridData) {
 }
 
 export function genChordOnlySongForm(chunkedLocsWithPickup, initialHeaders, keyVals) {
-  const songParts = genChordOnlySongParts(chunkedLocsWithPickup, initialHeaders);
+  const songParts = genChordOnlySongParts(chunkedLocsWithPickup, initialHeaders, keyVals);
   const possIntro = songParts.find(part => part.song.title.trim().toLowerCase() === 'intro');
   const possOutro = songParts.find(part => part.song.title.trim().toLowerCase() === 'outro');
   const body = songParts.filter(
@@ -111,7 +111,9 @@ function getInitialTransposedNum(headers) {
 // Currently, some local headers are confused as global header because they
 // are usually only set once in the beginning,
 // e.g. Meter, Key, Tempo, Subdivision, Swing
-function genChordOnlySongParts(chunkedLocsWithPickup, initialHeader) {
+
+// New issue: the initialHeaders from url params (i.e. keyVals) should take precendence over the first part's headers.
+function genChordOnlySongParts(chunkedLocsWithPickup, initialHeader, keyVals) {
   const partNameToPart = {};
   const partNameToInitialHeader = {};
   const initialTranposedNum = getInitialTransposedNum(initialHeader);
@@ -142,7 +144,8 @@ function genChordOnlySongParts(chunkedLocsWithPickup, initialHeader) {
     } else {
       for (const [key, value] of Object.entries(initialHeader)) {
         // for idx > 0, only apply the global header types.
-        if (!(key in headers) && (idx == 0 || GlobalHeaderType.has(key))) {
+        const globalAndUnset = !(key in headers) && (idx == 0 || GlobalHeaderType.has(key));
+        if (globalAndUnset || keyVals[key] !== undefined) {
           headers[key] = value;
         }
       }

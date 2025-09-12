@@ -4,7 +4,7 @@ import * as midiEvent from '../esModules/midi-data/midiEvent.js';
 export class GameMgr {
   constructor({
     soundPub,
-    currTimeSub,
+    metronomeBeatSub,
     smartMode = true,
   }) {
     this.soundPub = soundPub;
@@ -14,7 +14,7 @@ export class GameMgr {
     - On key down for a hand, before creating a NoteOn event
       - If currTime > nextChordChangeTime - (ms of a 16th note), update the index to the next chunk.
         - Estimate ms of a 16th note via this.msPer8n / 2
-        - TODO debug if this is implemented correctly
+        - Do something special for songs that swings.
       - Then create the NoteOn event
       - Then increment the index (but looping within the chunk).
     */
@@ -32,19 +32,21 @@ export class GameMgr {
 
     this.currTime8n = makeFrac(0);
     this.timeOfLastBeat = Date.now();
-    this.msPer8n = null;
-    currTimeSub((time8n) => {
-      this.currTime8n = time8n;
-      this.msPer8n = (Date.now() - this.timeOfLastBeat);
-      this.timeOfLastBeat = Date.now();
-    });
+    this.msPer4n = null;
+    metronomeBeatSub(beat => {
+      this.currTime8n = beat.time8n;
+      // 4n because each beat is a quarter note
+      this.msPer4n = (beat.time - this.timeOfLastBeat);
+      this.timeOfLastBeat = beat.time;
+    })
     this._oneTimeSetup();
   }
   _getCurrTime8nInFloat() {
-    if (this.msPer8n === null) {
+    if (this.msPer4n === null) {
       return this.currTime8n.toFloat();
     }
-    return this.currTime8n.toFloat() + (Date.now() - this.timeOfLastBeat) / this.msPer8n;
+    // Multiply by 2 because ms * msPer4n = quarter notes, but we want to convert to eighth notes.
+    return this.currTime8n.toFloat() + (Date.now() - this.timeOfLastBeat) / this.msPer4n * 2;
   }
   
   resetGame(song) {

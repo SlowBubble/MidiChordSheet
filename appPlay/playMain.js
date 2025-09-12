@@ -37,7 +37,7 @@ async function setup() {
     currTimePub: currTimePub,
   });
   // setupKeyboard(soundPub);
-  const gameMgr = new GameMgr({soundPub: soundPub, currTimeSub: currTimeSub});
+  const gameMgr = new GameMgr({soundPub: soundPub, metronomeBeatSub: metronomeBeatSub});
 
   const actionMgr = new ActionMgr({
     songReplayer: songReplayer,

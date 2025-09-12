@@ -112,7 +112,7 @@ function getInitialTransposedNum(headers) {
 // are usually only set once in the beginning,
 // e.g. Meter, Key, Tempo, Subdivision, Swing
 
-// New issue: the initialHeaders from url params (i.e. keyVals) should take precendence over the first part's headers.
+// Fixed: the initialHeaders from url params (i.e. keyVals) should take precendence over the first part's headers.
 function genChordOnlySongParts(chunkedLocsWithPickup, initialHeader, keyVals) {
   const partNameToPart = {};
   const partNameToInitialHeader = {};

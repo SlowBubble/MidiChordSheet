@@ -121,7 +121,7 @@ function genChordOnlySongParts(chunkedLocsWithPickup, initialHeader, keyVals) {
   let currTimeSig;
   let currTempo;
   let currSwing;
-  let currSyncopation;
+  let currSyncopationPct;
   let currDensity;
 
   let prevSong;
@@ -191,7 +191,7 @@ function genChordOnlySongParts(chunkedLocsWithPickup, initialHeader, keyVals) {
     song.swingChanges.defaultVal = currSwing;
 
     if (headers[HeaderType.Syncopation] !== undefined) {
-      currSyncopation = headers[HeaderType.Syncopation];
+      currSyncopationPct = headers[HeaderType.Syncopation];
     }
 
     if (headers[HeaderType.Density] !== undefined) {
@@ -246,7 +246,7 @@ function genChordOnlySongParts(chunkedLocsWithPickup, initialHeader, keyVals) {
     })];
 
     const part = new SongPart({
-      song: song, syncopationPct: currSyncopation,
+      song: song, syncopationFactor: currSyncopationPct / 100,
       densityPct: currDensity, transpose: transpose,
     });
     const turnAroundLoc = chunk.chordHeaderLocs.find(loc => loc.chordType === ChordInfoType.TurnAroundStart);

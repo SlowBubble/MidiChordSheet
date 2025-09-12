@@ -14,14 +14,14 @@ export class SongPart {
     song = {}, // Song, which can have a melody or rest. Comping will be added in SongForm.
     turnaroundStart8n = undefined, // Frac, time after which chord changes should be discarded when used as the final part.
     compingStyle = CompingStyle.default,
-    syncopationPct = 20,
+    syncopationFactor = 0.2,
     densityPct = 20,
     transpose = 0,
   }) {
     this.song = new Song(song);
     this.turnaroundStart8n = turnaroundStart8n;
     this.compingStyle = compingStyle;
-    this.syncopationFactor = syncopationPct / 100;
+    this.syncopationFactor = syncopationFactor;
     this.densityFactor = densityPct / 100;
     this.transpose = transpose;
   }

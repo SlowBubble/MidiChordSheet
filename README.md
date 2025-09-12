@@ -43,10 +43,13 @@ Others:
 # Work in progress
 ## Doing
 
-- Smart mode issue: does not work for swing because the margin is way too small 0.5 is really 0.5 * 1/3
-
+- Fixing Syncopation issue: miss-named a field
+- Scoring
 
 ## TODO
+- Smart mode issue
+  - TODO for swing ratio 2, need to multiply via 0.5 * 2/3 = 0.33
+  - TODO for swing ratio 2, need to multiply via 1 * 2/3 + 0.2 * 4/3 = 0.933
 - Freeze the current arrangement
 - Add different arrangement styles
 - How to fix legacy melody format?

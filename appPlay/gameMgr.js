@@ -174,8 +174,10 @@ export class GameMgr {
           const chunks = this.leftHandChunks;
           if (!chunks.length) return;
           let currChunkIdx = this.leftHandChunkIdx;
+          // TODO for swing ratio 2, need to multiply via 0.5 * 2/3 = 0.33
           let margin8n = 0.5;
           if (this.leftHandChunkFinished) {
+            // TODO for swing ratio 2, need to multiply via 1 * 2/3 + 0.2 * 4/3 = 0.933
             margin8n = 1.2;
           }
           if (currChunkIdx + 1 < chunks.length) {

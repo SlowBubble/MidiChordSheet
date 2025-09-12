@@ -43,15 +43,7 @@ Others:
 # Work in progress
 ## Doing
 
-Smart mode will move the indexes smartly between key down and note on
-- First, chunk the noteGps for each hand by chord change
-- On key down for a hand, before creating a NoteOn event
-  - If chunkFinished (i.e. all the noteGps for that hand has played)
-    - If currTime > nextChordChangeTime - (1/8 + 1/16), update the index to the next chunk and set chunkFinished to false.
-  - Else
-    - If currTime > nextChordChangeTime - (1/16), update the index to the next chunk and set chunkFinished to false.
-  - Then create the NoteOn event
-  - Then increment the index (but looping within the chunk) and set chunkFinished to true if completing the loop.
+- Smart mode issue: does not work for swing because the margin is way too small 0.5 is really 0.5 * 1/3
 
 
 ## TODO

@@ -176,6 +176,12 @@ export class GameMgr {
           if (this.leftHandChunkFinished) {
             margin8n = 1.2;
           }
+          if (currChunkIdx + 1 < chunks.length) {
+            const actualMargin = (chunks[currChunkIdx + 1].start8n.toFloat() - this._getCurrTime8nInFloat()).toFixed(2);
+            if (margin8n <= actualMargin) {
+              console.log('[L] same chord because margin8n <= actualMargin:', margin8n, actualMargin);
+            }
+          }
           while (
             currChunkIdx + 1 < chunks.length &&
             this._getCurrTime8nInFloat() > chunks[currChunkIdx + 1].start8n.toFloat() - margin8n
@@ -191,7 +197,7 @@ export class GameMgr {
           const currIdxInChunk = this.leftHandIdxInChunk;
           const noteGp = currChunk[currIdxInChunk];
           if (!noteGp) return;
-          console.log('LeftHand:', this.leftHandChunkIdx, currChunkObj.chord ? currChunkObj.chord.toString() : '(no chord)');
+          console.log('[L]', this.leftHandChunkIdx, currChunkObj.chord ? currChunkObj.chord.toString() : '(no chord)');
           this.evtKeyToLeftHandNoteGp.set(evt.key, noteGp);
           noteGp.midiNotes.forEach(note => {
             this.soundPub(new midiEvent.NoteOnEvt({
@@ -235,6 +241,12 @@ export class GameMgr {
           if (this.rightHandChunkFinished) {
             margin8n = 1.2;
           }
+          if (currChunkIdx + 1 < chunks.length) {
+            const actualMargin = (chunks[currChunkIdx + 1].start8n.toFloat() - this._getCurrTime8nInFloat()).toFixed(2);
+            if (margin8n <= actualMargin) {
+              console.log('[R] same chord because margin8n <= actualMargin:', margin8n, actualMargin);
+            }
+          }
           while (
             currChunkIdx + 1 < chunks.length &&
             this._getCurrTime8nInFloat() > chunks[currChunkIdx + 1].start8n.toFloat() - margin8n
@@ -250,7 +262,7 @@ export class GameMgr {
           const currIdxInChunk = this.rightHandIdxInChunk;
           const noteGp = currChunk[currIdxInChunk];
           if (!noteGp) return;
-          console.log('RightHand:', this.rightHandChunkIdx, currChunkObj.chord ? currChunkObj.chord.toString() : '(no chord)');
+          console.log('[R]', this.rightHandChunkIdx, currChunkObj.chord ? currChunkObj.chord.toString() : '(no chord)');
           this.evtKeyToRightHandNoteGp.set(evt.key, noteGp);
           noteGp.midiNotes.forEach(note => {
             this.soundPub(new midiEvent.NoteOnEvt({

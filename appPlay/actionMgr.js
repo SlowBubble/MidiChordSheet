@@ -316,10 +316,14 @@ export class ActionMgr {
 
   toggleSwing() {
       const swing = this.initialHeaders[HeaderType.Swing];
-      if (swing.ratio.greaterThan(1)) {
-        setUrlParam(HeaderType.Swing);
-      } else {
+      if (swing.ratio.leq(makeFrac(1))) {
+        setUrlParam(HeaderType.Swing, 'Light');
+      } else if (swing.ratio.leq(makeFrac(3, 2))) {
         setUrlParam(HeaderType.Swing, 'Medium');
+      } else if (swing.ratio.leq(makeFrac(2))) {
+        setUrlParam(HeaderType.Swing, 'Hard');
+      } else {
+        setUrlParam(HeaderType.Swing, 'No');
       }
   }
 

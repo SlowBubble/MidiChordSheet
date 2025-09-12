@@ -421,15 +421,18 @@ export function processKeyVal(key, valStr, warnError) {
         value: new TimeSig({upperNumeral: parseInt(upper), upperNulowerNumeralmeral: parseInt(lower)}),
       };
     case 'swing':
-      // Light swing by default.
-      let ratio = makeFrac(3, 2);
+      // No swing by default.
+      let ratio = makeFrac(1, 1);
       valStr = valStr.toLowerCase();
       if (valStr === 'heavy' || valStr === 'hard') {
         ratio = makeFrac(5, 2);
       } else if (valStr === 'medium' || valStr === 'triplet') {
         ratio = makeFrac(2);
+      } else if (valStr === 'light') {
+        ratio = makeFrac(3, 2);
+      } else if (valStr === 'no') {
+        ratio = makeFrac(1);
       }
-      // TODO think of whether user need to control what type of note (8th note, quarter note, etc.) to swing using dur8n.
       return {
         type: HeaderType.Swing,
         value: new Swing({ratio: ratio})

@@ -258,6 +258,7 @@ export class ActionMgr {
 
   moveLeft() {
     this.move(-1);
+    this.gameMgr.resetGame(this.song);
   }
   moveRight() {
     this.move(1);
@@ -267,6 +268,7 @@ export class ActionMgr {
   }
   moveUp() {
     this.move(-4);
+    this.gameMgr.resetGame(this.song);
   }
 
   async actAndResume(action) {

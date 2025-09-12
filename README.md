@@ -43,8 +43,11 @@ Others:
 # Work in progress
 ## Doing
 
-- Fixing Syncopation issue: miss-named a field
+- Remove things from the sheet music (renderMgr) as the song goes by looking at the time. 
 - Scoring
+
+## Done
+- Removed solfege lyrics by default (obstructing the game)
 
 ## TODO
 - Smart mode issue

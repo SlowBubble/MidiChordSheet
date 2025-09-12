@@ -15,7 +15,8 @@ export class LyricsDisplayer {
       if (!this.enabled) {
         return;
       }
-      const lines = this.displaySolfege  || this._lyricsLines.length === 0 ? this._solfegeLines : this._lyricsLines;
+      // Don't display solfege if instructed even if there are no lyrics.
+      const lines = this.displaySolfege ? this._solfegeLines : this._lyricsLines;
       let lastLineIdx;
       lines.forEach((line, idx) => {
         if (line[0].time8n.leq(time8n)) {

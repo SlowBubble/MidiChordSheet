@@ -43,7 +43,6 @@ Others:
 # Work in progress
 ## Doing
 - Improve the score
-  - Call the current score "Nitpicker's score". Call the other score "Connoisseur's score".
   - (easier if I record all the times and compute when the music stops, even partially)
   - 0/1 if the note is not struck near an 8th note
   - 1/1 if the note is struck near an 8th note
@@ -52,8 +51,7 @@ Others:
   - 0/1 if the first RH note is not struck within [-1, 2]
 
 ## Done
-- Add score history in console log.
-- Remove things from the sheet music (renderMgr) as the song goes by looking at the time. 
+- Impl "Nitpicker's score" and "Connoisseur's score".
 
 ## TODO
 - Smart mode issue

@@ -6,16 +6,20 @@ class GameScore {
   constructor() {
     this.numAttemptedLeftHandNotes = 0;
     this.numAttemptedLeftHandNotesOnTime = 0;
+    this.numAttemptedLeftHandNotesOnBeat = 0;
     this.numAttemptedRightHandNotes = 0;
     this.numAttemptedRightHandNotesOnTime = 0;
+    this.numAttemptedRightHandNotesOnBeat = 0;
     // this.numRequiredBassNotes = 0;
     // this.numRequiredBassNotesOnTime = 0;
   }
   reset() {
     this.numAttemptedLeftHandNotes = 0;
     this.numAttemptedLeftHandNotesOnTime = 0;
+    this.numAttemptedLeftHandNotesOnBeat = 0;
     this.numAttemptedRightHandNotes = 0;
     this.numAttemptedRightHandNotesOnTime = 0;
+    this.numAttemptedRightHandNotesOnBeat = 0;
     // this.numRequiredBassNotes = 0;
     // this.numRequiredBassNotesOnTime = 0;
   }
@@ -54,6 +58,10 @@ export class GameMgr {
     this.gameScore = new GameScore();
     // TODO decide if ms is easier to work with especially for swing.
     this.onTimeMargin8nFloat = 0.25; // i.e. a 32-th note.
+    this.onTimeTightMargin8nFloat = 0.25; 
+    this.onTimeLooseMargin8nFloat = 0.35;
+    this.onBeatTightMargin8nFloat = 0.2; // smaller margin to make sure I'm on beat??
+    this.onBeatLooseMargin8nFloat = 0.3; // looser margin
 
     this.currTime8n = makeFrac(0);
     this.timeOfLastBeat = Date.now();
@@ -230,27 +238,35 @@ export class GameMgr {
           const currIdxInChunk = this.leftHandIdxInChunk;
           const noteGp = currChunk[currIdxInChunk];
           if (!noteGp) return;
-          if (!this.leftHandChunkFinished) {
-            this.gameScore.numAttemptedLeftHandNotes++;
-            const diff = this._getCurrTime8nInFloat() - noteGp.start8n.toFloat();
-            let logColor = 'red';
-            let mistake = '';
-            if (Math.abs(diff) <= this.onTimeMargin8nFloat) {
-              this.gameScore.numAttemptedLeftHandNotesOnTime++;
-              logColor = 'green';
-            } else {
-              mistake = diff > 0 ? ' (too late)' : ' (too early)';
-            }
-            console.log(
-              `%c [L] score: ${this.gameScore.numAttemptedLeftHandNotesOnTime} / ${this.gameScore.numAttemptedLeftHandNotes} ${mistake}`,
-              `background: ${logColor}; color: white;`);
+
+          // Scoring
+          // TODO handle swing
+          this.gameScore.numAttemptedLeftHandNotes++;
+          const diff = this._getCurrTime8nInFloat() - noteGp.start8n.toFloat();
+          if (Math.abs(diff) <= this.onTimeTightMargin8nFloat) {
+            this.gameScore.numAttemptedLeftHandNotesOnTime++;
+          } else if (Math.abs(diff) <= this.onTimeLooseMargin8nFloat) {
+            this.gameScore.numAttemptedLeftHandNotesOnTime += 0.5;
           }
+
+          const diffModulo = diff - Math.round(diff);
+          let logColor = 'red';
+          let mistake = '';
+          if (Math.abs(diffModulo) <= this.onBeatTightMargin8nFloat) {
+            this.gameScore.numAttemptedLeftHandNotesOnBeat++;
+            logColor = 'green';
+          } else if (Math.abs(diffModulo) <= this.onBeatLooseMargin8nFloat) {
+            this.gameScore.numAttemptedLeftHandNotesOnBeat += 0.5;
+            logColor = 'orange';
+          } {
+            mistake = diff > 0 ? ' (too late)' : ' (too early)';
+          }
+          console.log(
+            `%c [L] score: ${this.gameScore.numAttemptedLeftHandNotesOnBeat} / ${this.gameScore.numAttemptedLeftHandNotes} ${mistake}`,
+            `background: ${logColor}; color: white; font-size: 14px;`);
           if (currChunkIdx + 1 === chunks.length) {
             window.setTimeout(() => {
-              console.log(
-                `%c Nitpicker's score:\n[L] ${(this.gameScore.numAttemptedLeftHandNotesOnTime / this.leftHandNoteGps.length * 100).toFixed(0)}% | [R] ${(this.gameScore.numAttemptedRightHandNotesOnTime / this.rightHandNoteGps.length * 100).toFixed(0)}%`,
-                `background: black; color: white;`
-              );
+              this.renderFinalScore();
             }, 1000);
           }
           // console.log('[L]', this.leftHandChunkIdx, currChunkObj.chord ? currChunkObj.chord.toString() : '(no chord)');
@@ -281,6 +297,34 @@ export class GameMgr {
               time: Date.now(),
             }));
           });
+
+          // Scoring
+          this.gameScore.numAttemptedLeftHandNotes++;
+          const diff = this._getCurrTime8nInFloat() - noteGp.start8n.toFloat();
+          let logColor = 'red';
+          let mistake = '';
+          if (Math.abs(diff) <= this.onTimeTightMargin8nFloat) {
+            this.gameScore.numAttemptedLeftHandNotesOnTime++;
+            logColor = 'green';
+          } else if (Math.abs(diff) <= this.onTimeLooseMargin8nFloat) {
+            this.gameScore.numAttemptedLeftHandNotesOnTime += 0.5;
+            logColor = 'orange';
+          } else {
+            mistake = diff > 0 ? ' (too late)' : ' (too early)';
+          }
+          console.log(
+            `%c [L] score: ${this.gameScore.numAttemptedLeftHandNotesOnTime} / ${this.gameScore.numAttemptedLeftHandNotes} ${mistake}`,
+            `background: ${logColor}; color: white; font-size: 14px;`);
+
+          if (this.leftHandIdx >= this.leftHandNoteGps.length - 1) {
+            window.setTimeout(() => {
+              console.log(
+                `%c Nitpicker's score:\n[L] ${(this.gameScore.numAttemptedLeftHandNotesOnTime / this.leftHandNoteGps.length * 100).toFixed(0)}% | [R] ${(this.gameScore.numAttemptedRightHandNotesOnTime / this.rightHandNoteGps.length * 100).toFixed(0)}%`,
+                `background: black; color: white;  font-size: 18px;`
+              );
+            }, 1000);
+          }
+
           this.leftHandIdx++;
         }
       }
@@ -318,21 +362,32 @@ export class GameMgr {
           const currIdxInChunk = this.rightHandIdxInChunk;
           const noteGp = currChunk[currIdxInChunk];
           if (!noteGp) return;
-          if (!this.rightHandChunkFinished) {
-            this.gameScore.numAttemptedRightHandNotes++;
-            const diff = this._getCurrTime8nInFloat() - noteGp.start8n.toFloat();
-            let logColor = 'red';
-            let mistake = '';
-            if (Math.abs(diff) <= this.onTimeMargin8nFloat) {
-              this.gameScore.numAttemptedRightHandNotesOnTime++;
-              logColor = 'green';
-            } else {
-              mistake = diff > 0 ? ' (too late)' : ' (too early)';
-            }
-            console.log(
-              `%c [R] score: ${this.gameScore.numAttemptedRightHandNotesOnTime} / ${this.gameScore.numAttemptedRightHandNotes} ${mistake}`,
-              `color: ${logColor};`);
+
+          // Scoring
+          // TODO handle swing
+          this.gameScore.numAttemptedRightHandNotes++;
+          const diff = this._getCurrTime8nInFloat() - noteGp.start8n.toFloat();
+          if (Math.abs(diff) <= this.onTimeTightMargin8nFloat) {
+            this.gameScore.numAttemptedRightHandNotesOnTime++;
+          } else if (Math.abs(diff) <= this.onTimeLooseMargin8nFloat) {
+            this.gameScore.numAttemptedRightHandNotesOnTime += 0.5;
           }
+
+          const diffModulo = diff - Math.round(diff);
+          let logColor = 'red';
+          let mistake = '';
+          if (Math.abs(diffModulo) <= this.onBeatTightMargin8nFloat) {
+            this.gameScore.numAttemptedRightHandNotesOnBeat++;
+            logColor = 'green';
+          } else if (Math.abs(diffModulo) <= this.onBeatLooseMargin8nFloat) {
+            this.gameScore.numAttemptedRightHandNotesOnBeat += 0.5;
+            logColor = 'orange';
+          } {
+            mistake = diff > 0 ? ' (too late)' : ' (too early)';
+          }
+          console.log(
+            `%c [R] score: ${this.gameScore.numAttemptedRightHandNotesOnBeat} / ${this.gameScore.numAttemptedRightHandNotes} ${mistake}`,
+            `color: ${logColor}; font-size: 14px;`);
           // console.log('[R]', this.rightHandChunkIdx, currChunkObj.chord ? currChunkObj.chord.toString() : '(no chord)');
           this.evtKeyToRightHandNoteGp.set(evt.key, noteGp);
           noteGp.midiNotes.forEach(note => {
@@ -361,6 +416,25 @@ export class GameMgr {
               time: Date.now(),
             }));
           });
+
+          // Scoring
+          this.gameScore.numAttemptedRightHandNotes++;
+          const diff = this._getCurrTime8nInFloat() - noteGp.start8n.toFloat();
+          let logColor = 'red';
+          let mistake = '';
+          if (Math.abs(diff) <= this.onTimeTightMargin8nFloat) {
+            this.gameScore.numAttemptedRightHandNotesOnTime++;
+            logColor = 'green';
+          } else if (Math.abs(diff) <= this.onTimeLooseMargin8nFloat) {
+            this.gameScore.numAttemptedRightHandNotesOnTime += 0.5;
+            logColor = 'orange';
+          } else {
+            mistake = diff > 0 ? ' (too late)' : ' (too early)';
+          }
+          console.log(
+            `%c [R] score: ${this.gameScore.numAttemptedRightHandNotesOnTime} / ${this.gameScore.numAttemptedRightHandNotes} ${mistake}`,
+            `color: ${logColor}; font-size: 14px;`);
+          
           this.rightHandIdx++;
         }
       }
@@ -369,6 +443,22 @@ export class GameMgr {
     window.addEventListener('blur', () => {
       this.pressedKeys.clear();
     });
+  }
+  renderFinalScore() {
+    if (this.gameScore.numAttemptedLeftHandNotes == 0 && this.gameScore.numAttemptedRightHandNotes == 0) {
+      return;
+    }
+    const res0 = `Nitpicker's score:\n[L] ${(this.gameScore.numAttemptedLeftHandNotesOnTime / this.leftHandNoteGps.length * 100).toFixed(0)}% | [R] ${(this.gameScore.numAttemptedRightHandNotesOnTime / this.rightHandNoteGps.length * 100).toFixed(0)}%`;
+    console.log(
+      `%c ${res0}`,
+      `background: black; color: white; font-size: 18px;`
+    );
+    const res1 = `Connoisseur's score:\n[L] ${(this.gameScore.numAttemptedLeftHandNotesOnBeat / this.gameScore.numAttemptedLeftHandNotes * 100).toFixed(0)}% | [R] ${(this.gameScore.numAttemptedRightHandNotesOnBeat / this.gameScore.numAttemptedRightHandNotes * 100).toFixed(0)}%`;
+    console.log(
+      `%c ${res1}`,
+      `background: black; color: white; font-size: 18px;`
+    );
+    this.eBanner.success(`${res0}\n${res1}`);
   }
 }
 

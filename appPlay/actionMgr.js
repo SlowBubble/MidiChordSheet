@@ -244,6 +244,7 @@ export class ActionMgr {
   playOrPause() {
     if (this.songReplayer.isPlaying()) {
       this.songReplayer.stop();
+      this.gameMgr.renderFinalScore();
     } else {
       this.play();
     }

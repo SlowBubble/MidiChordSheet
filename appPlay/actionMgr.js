@@ -51,8 +51,8 @@ export class ActionMgr {
         if (num8nPerMeasure.isWhole()) {
           const num8nBeforeRerendering = num8nPerMeasure.getNumer() * numMeasurePerLine * numLinesBeforeRerendering;
           if (time8nInt > 0 && time8nInt % num8nBeforeRerendering === 0) {
+            this.eBanner.inProgress('Look up!');
             this.renderMgr.render(this.song, this.displayCompingVoicesOnly, beat.time8n);
-            // TODO display the score as well.
           }
         } else {
           console.log('Not rendering because num8nPerMeasure is not whole:', num8nPerMeasure)

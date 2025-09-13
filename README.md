@@ -42,9 +42,15 @@ Others:
 
 # Work in progress
 ## Doing
-- Score display every time the sheet re-renders
+- Improve the score:
+  - 0/1 if the note is not struck near an 8th note
+  - 1/1 if the note is struck near an 8th note
+  - 0/1 if the first bass is not struck within [-1, 1]
+    - Make an exception for bass note that repeat across chord change
+  - 0/1 if the first RH note is not struck within [-1, 2]
 
 ## Done
+- Add score history in console log.
 - Remove things from the sheet music (renderMgr) as the song goes by looking at the time. 
 
 ## TODO

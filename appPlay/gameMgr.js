@@ -1,13 +1,35 @@
 import { makeFrac } from '../esModules/fraction/fraction.js';
 import * as midiEvent from '../esModules/midi-data/midiEvent.js';
 
+// For debugging, log: console.log('[L] diff', diff.toFixed(2));
+class GameScore {
+  constructor() {
+    this.numAttemptedLeftHandNotes = 0;
+    this.numAttemptedLeftHandNotesOnTime = 0;
+    this.numAttemptedRightHandNotes = 0;
+    this.numAttemptedRightHandNotesOnTime = 0;
+    // this.numRequiredBassNotes = 0;
+    // this.numRequiredBassNotesOnTime = 0;
+  }
+  reset() {
+    this.numAttemptedLeftHandNotes = 0;
+    this.numAttemptedLeftHandNotesOnTime = 0;
+    this.numAttemptedRightHandNotes = 0;
+    this.numAttemptedRightHandNotesOnTime = 0;
+    // this.numRequiredBassNotes = 0;
+    // this.numRequiredBassNotesOnTime = 0;
+  }
+}
+
 export class GameMgr {
   constructor({
     soundPub,
     metronomeBeatSub,
+    eBanner,
     smartMode = true,
   }) {
     this.soundPub = soundPub;
+    this.eBanner = eBanner;
     /*
     Smart mode will move the indexes smartly between key down and NoteOn  
     - First, chunk the noteGps for each hand by chord change
@@ -29,6 +51,9 @@ export class GameMgr {
     this.rightHandIdxInChunk = 0;
     this.evtKeyToLeftHandNoteGp = new Map();
     this.evtKeyToRightHandNoteGp = new Map();
+    this.gameScore = new GameScore();
+    // TODO decide if ms is easier to work with especially for swing.
+    this.onTimeMargin8nFloat = 0.25; // i.e. a 32-th note.
 
     this.currTime8n = makeFrac(0);
     this.timeOfLastBeat = Date.now();
@@ -71,8 +96,12 @@ export class GameMgr {
       this.leftHandChunks = this._chunkNoteGpsByChord(song, this.leftHandNoteGps);
       this.rightHandChunks = this._chunkNoteGpsByChord(song, this.rightHandNoteGps);
     }
+    this.gameScore.reset();
   }
 
+  getScoreLine() {
+    return `${this.gameScore.numAttemptedLeftHandNotesOnTime} / ${this.gameScore.numAttemptedLeftHandNotes}`;
+  }
   _chunkNoteGpsByChord(song, noteGps) {
     const chordChanges = song.chordChanges.getChanges();
     if (!chordChanges.length) return [{ chord: null, chunk: noteGps, start8n: noteGps.length ? noteGps[0].start8n : null }];
@@ -180,12 +209,12 @@ export class GameMgr {
             // TODO for swing ratio 2, need to multiply via 1 * 2/3 + 0.2 * 4/3 = 0.933
             margin8n = 1.2;
           }
-          if (currChunkIdx + 1 < chunks.length) {
-            const actualMargin = (chunks[currChunkIdx + 1].start8n.toFloat() - this._getCurrTime8nInFloat()).toFixed(2);
-            if (margin8n <= actualMargin) {
-              console.log('[L] same chord because margin8n <= actualMargin:', margin8n, actualMargin);
-            }
-          }
+          // if (currChunkIdx + 1 < chunks.length) {
+          //   const actualMargin = (chunks[currChunkIdx + 1].start8n.toFloat() - this._getCurrTime8nInFloat()).toFixed(2);
+          //   if (margin8n <= actualMargin) {
+          //     console.log('[L] same chord because margin8n <= actualMargin:', margin8n, actualMargin);
+          //   }
+          // }
           while (
             currChunkIdx + 1 < chunks.length &&
             this._getCurrTime8nInFloat() > chunks[currChunkIdx + 1].start8n.toFloat() - margin8n
@@ -201,7 +230,30 @@ export class GameMgr {
           const currIdxInChunk = this.leftHandIdxInChunk;
           const noteGp = currChunk[currIdxInChunk];
           if (!noteGp) return;
-          console.log('[L]', this.leftHandChunkIdx, currChunkObj.chord ? currChunkObj.chord.toString() : '(no chord)');
+          if (!this.leftHandChunkFinished) {
+            this.gameScore.numAttemptedLeftHandNotes++;
+            const diff = this._getCurrTime8nInFloat() - noteGp.start8n.toFloat();
+            let logColor = 'red';
+            let mistake = '';
+            if (Math.abs(diff) <= this.onTimeMargin8nFloat) {
+              this.gameScore.numAttemptedLeftHandNotesOnTime++;
+              logColor = 'green';
+            } else {
+              mistake = diff > 0 ? ' (too late)' : ' (too early)';
+            }
+            console.log(
+              `%c [L] score: ${this.gameScore.numAttemptedLeftHandNotesOnTime} / ${this.gameScore.numAttemptedLeftHandNotes} ${mistake}`,
+              `background: ${logColor}; color: white;`);
+          }
+          if (currChunkIdx + 1 === chunks.length) {
+            window.setTimeout(() => {
+              console.log(
+                `%c Final score:\n[L] ${(this.gameScore.numAttemptedLeftHandNotesOnTime / this.leftHandNoteGps.length * 100).toFixed(0)}% | [R] ${(this.gameScore.numAttemptedRightHandNotesOnTime / this.rightHandNoteGps.length * 100).toFixed(0)}%`,
+                `background: black; color: white;`
+              );
+            }, 1000);
+          }
+          // console.log('[L]', this.leftHandChunkIdx, currChunkObj.chord ? currChunkObj.chord.toString() : '(no chord)');
           this.evtKeyToLeftHandNoteGp.set(evt.key, noteGp);
           noteGp.midiNotes.forEach(note => {
             this.soundPub(new midiEvent.NoteOnEvt({
@@ -245,12 +297,12 @@ export class GameMgr {
           if (this.rightHandChunkFinished) {
             margin8n = 1.2;
           }
-          if (currChunkIdx + 1 < chunks.length) {
-            const actualMargin = (chunks[currChunkIdx + 1].start8n.toFloat() - this._getCurrTime8nInFloat()).toFixed(2);
-            if (margin8n <= actualMargin) {
-              console.log('[R] same chord because margin8n <= actualMargin:', margin8n, actualMargin);
-            }
-          }
+          // if (currChunkIdx + 1 < chunks.length) {
+          //   const actualMargin = (chunks[currChunkIdx + 1].start8n.toFloat() - this._getCurrTime8nInFloat()).toFixed(2);
+          //   if (margin8n <= actualMargin) {
+          //     console.log('[R] same chord because margin8n <= actualMargin:', margin8n, actualMargin);
+          //   }
+          // }
           while (
             currChunkIdx + 1 < chunks.length &&
             this._getCurrTime8nInFloat() > chunks[currChunkIdx + 1].start8n.toFloat() - margin8n
@@ -266,7 +318,22 @@ export class GameMgr {
           const currIdxInChunk = this.rightHandIdxInChunk;
           const noteGp = currChunk[currIdxInChunk];
           if (!noteGp) return;
-          console.log('[R]', this.rightHandChunkIdx, currChunkObj.chord ? currChunkObj.chord.toString() : '(no chord)');
+          if (!this.rightHandChunkFinished) {
+            this.gameScore.numAttemptedRightHandNotes++;
+            const diff = this._getCurrTime8nInFloat() - noteGp.start8n.toFloat();
+            let logColor = 'red';
+            let mistake = '';
+            if (Math.abs(diff) <= this.onTimeMargin8nFloat) {
+              this.gameScore.numAttemptedRightHandNotesOnTime++;
+              logColor = 'green';
+            } else {
+              mistake = diff > 0 ? ' (too late)' : ' (too early)';
+            }
+            console.log(
+              `%c [R] score: ${this.gameScore.numAttemptedRightHandNotesOnTime} / ${this.gameScore.numAttemptedRightHandNotes} ${mistake}`,
+              `color: ${logColor};`);
+          }
+          // console.log('[R]', this.rightHandChunkIdx, currChunkObj.chord ? currChunkObj.chord.toString() : '(no chord)');
           this.evtKeyToRightHandNoteGp.set(evt.key, noteGp);
           noteGp.midiNotes.forEach(note => {
             this.soundPub(new midiEvent.NoteOnEvt({

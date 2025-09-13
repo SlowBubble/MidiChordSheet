@@ -42,12 +42,10 @@ Others:
 
 # Work in progress
 ## Doing
-
-- Remove things from the sheet music (renderMgr) as the song goes by looking at the time. 
-- Scoring
+- Score display every time the sheet re-renders
 
 ## Done
-- Removed solfege lyrics by default (obstructing the game)
+- Remove things from the sheet music (renderMgr) as the song goes by looking at the time. 
 
 ## TODO
 - Smart mode issue

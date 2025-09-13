@@ -40,6 +40,23 @@ export class ActionMgr {
       this.setCurrTime8n(beat.time8n);
       if (this.displayChordsOnly) {
         this.renderChordsCanvas();
+      } else if (beat.time8n.isWhole()){
+        const time8nInt = beat.time8n.getNumer();
+        // TODO double check that numMeasurePerLine is always 4.
+        const numMeasurePerLine = 4;
+        const num8nPerMeasure = makeFrac(
+          this.song.timeSigChanges.defaultVal.upperNumeral * 8,
+          this.song.timeSigChanges.defaultVal.lowerNumeral);
+        const numLinesBeforeRerendering = 2;
+        if (num8nPerMeasure.isWhole()) {
+          const num8nBeforeRerendering = num8nPerMeasure.getNumer() * numMeasurePerLine * numLinesBeforeRerendering;
+          if (time8nInt > 0 && time8nInt % num8nBeforeRerendering === 0) {
+            this.renderMgr.render(this.song, this.displayCompingVoicesOnly, beat.time8n);
+            // TODO display the score as well.
+          }
+        } else {
+          console.log('Not rendering because num8nPerMeasure is not whole:', num8nPerMeasure)
+        }
       }
     });
 

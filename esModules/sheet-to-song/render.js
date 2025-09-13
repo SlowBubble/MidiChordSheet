@@ -7,7 +7,7 @@ export class RenderMgr {
     this._canvasDiv = canvasDiv;
   }
 
-  render(song, displayComping=false) {
+  render(song, displayComping=false, currTime8n=null) {
     const stateMgr = new state.StateMgr(this._eBanner);
     stateMgr.doc.timeSigNumer = song.timeSigChanges.defaultVal.upperNumeral;
     stateMgr.doc.timeSigDenom = song.timeSigChanges.defaultVal.lowerNumeral;
@@ -26,15 +26,19 @@ export class RenderMgr {
       stateMgr.disableChordMode();
       stateMgr.setVoiceIdx(idx);
       stateMgr.navHead();
-      voice.noteGps.forEach(qng => {
+      voice.noteGps.filter(qng => !currTime8n || qng.start8n.geq(currTime8n)).forEach(qng => {
         const noteNums = qng.getNoteNums();
         stateMgr.upsertByDur(noteNums.length ? qng.getNoteNums() : [null], qng.end8n.minus(qng.start8n).over(8));
       });
     });
 
     stateMgr.enableChordMode();
-    song.chordChanges.getChanges().forEach(chordChange => {
-      stateMgr.setCursorTimeSyncPointer(chordChange.start8n.over(8));
+    song.chordChanges.getChanges().filter(chordChange => !currTime8n || chordChange.start8n.geq(currTime8n)).forEach(chordChange => {
+      let cursorTime = chordChange.start8n.over(8);
+      if (currTime8n) {
+        cursorTime = cursorTime.minus(currTime8n.over(8));
+      }
+      stateMgr.setCursorTimeSyncPointer(cursorTime);
       stateMgr.insertChord(chordChange.val.toString().replace('maj', 'M'));
     });
 

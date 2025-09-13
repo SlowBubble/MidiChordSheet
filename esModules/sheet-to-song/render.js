@@ -12,7 +12,9 @@ export class RenderMgr {
     stateMgr.doc.timeSigNumer = song.timeSigChanges.defaultVal.upperNumeral;
     stateMgr.doc.timeSigDenom = song.timeSigChanges.defaultVal.lowerNumeral;
     stateMgr.setTitle(song.title);
-    stateMgr.setPickup(song.pickup8n.over(8).negative());
+    if (!currTime8n) {
+      stateMgr.setPickup(song.pickup8n.over(8).negative());
+    }
     stateMgr.setTempo(song.tempo8nPerMinChanges.defaultVal);
     stateMgr.doc.tempoStr = song.swingChanges.defaultVal.ratio.toFloat() > 1 ? 'Swing' : '';
     stateMgr.doc.keySigSp = song.keySigChanges.defaultVal;

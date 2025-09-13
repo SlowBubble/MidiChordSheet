@@ -246,6 +246,7 @@ export class ActionMgr {
       this.songReplayer.stop();
       this.gameMgr.renderFinalScore();
     } else {
+      this.gameMgr.resetGame(this.song);
       this.play();
     }
   }

@@ -53,6 +53,8 @@ export class GameMgr {
     this.rightHandChunkIdx = 0;
     this.leftHandIdxInChunk = 0;
     this.rightHandIdxInChunk = 0;
+    this.leftHandExpectedNumNoteGpsPassed = 0;
+    this.rightHandExpectedNumNoteGpsPassed = 0;
     this.evtKeyToLeftHandNoteGp = new Map();
     this.evtKeyToRightHandNoteGp = new Map();
     this.gameScore = new GameScore();
@@ -98,6 +100,8 @@ export class GameMgr {
     this.rightHandChunkIdx = 0;
     this.leftHandIdxInChunk = 0;
     this.rightHandIdxInChunk = 0;
+    this.leftHandExpectedNumNoteGpsPassed = 0;
+    this.rightHandExpectedNumNoteGpsPassed = 0;
     this.leftHandChunkFinished = false;
     this.rightHandChunkFinished = false;
     if (this.smartMode) {
@@ -227,6 +231,10 @@ export class GameMgr {
             currChunkIdx + 1 < chunks.length &&
             this._getCurrTime8nInFloat() > chunks[currChunkIdx + 1].start8n.toFloat() - margin8n
           ) {
+            // Don't count moving across chunks if it's the first attempt in the game.
+            if (this.gameScore.numAttemptedLeftHandNotes > 0) {
+              this.leftHandExpectedNumNoteGpsPassed += chunks[currChunkIdx].chunk.length;
+            }
             currChunkIdx++;
             this.leftHandIdxInChunk = 0;
             this.leftHandChunkFinished = false;
@@ -258,7 +266,7 @@ export class GameMgr {
           } else if (Math.abs(diffModulo) <= this.onBeatLooseMargin8nFloat) {
             this.gameScore.numAttemptedLeftHandNotesOnBeat += 0.5;
             logColor = 'orange';
-          } {
+          } else {
             mistake = diff > 0 ? ' (too late)' : ' (too early)';
           }
           console.log(
@@ -318,10 +326,7 @@ export class GameMgr {
 
           if (this.leftHandIdx >= this.leftHandNoteGps.length - 1) {
             window.setTimeout(() => {
-              console.log(
-                `%c Nitpicker's score:\n[L] ${(this.gameScore.numAttemptedLeftHandNotesOnTime / this.leftHandNoteGps.length * 100).toFixed(0)}% | [R] ${(this.gameScore.numAttemptedRightHandNotesOnTime / this.rightHandNoteGps.length * 100).toFixed(0)}%`,
-                `background: black; color: white;  font-size: 18px;`
-              );
+              this.renderFinalScore();
             }, 1000);
           }
 
@@ -351,6 +356,10 @@ export class GameMgr {
             currChunkIdx + 1 < chunks.length &&
             this._getCurrTime8nInFloat() > chunks[currChunkIdx + 1].start8n.toFloat() - margin8n
           ) {
+            // Don't count moving across chunks if it's the first attempt in the game.
+            if (this.gameScore.numAttemptedRightHandNotes > 0) {
+              this.rightHandExpectedNumNoteGpsPassed += chunks[currChunkIdx].chunk.length;
+            }
             currChunkIdx++;
             this.rightHandIdxInChunk = 0;
             this.rightHandChunkFinished = false;
@@ -382,7 +391,7 @@ export class GameMgr {
           } else if (Math.abs(diffModulo) <= this.onBeatLooseMargin8nFloat) {
             this.gameScore.numAttemptedRightHandNotesOnBeat += 0.5;
             logColor = 'orange';
-          } {
+          } else {
             mistake = diff > 0 ? ' (too late)' : ' (too early)';
           }
           console.log(
@@ -448,7 +457,19 @@ export class GameMgr {
     if (this.gameScore.numAttemptedLeftHandNotes == 0 && this.gameScore.numAttemptedRightHandNotes == 0) {
       return;
     }
-    const res0 = `Nitpicker's score:\n[L] ${(this.gameScore.numAttemptedLeftHandNotesOnTime / this.leftHandNoteGps.length * 100).toFixed(0)}% | [R] ${(this.gameScore.numAttemptedRightHandNotesOnTime / this.rightHandNoteGps.length * 100).toFixed(0)}%`;
+    // Update leftHandExpectedNumNoteGpsPassed because the last chunk may not be counted yet.
+    this.leftHandExpectedNumNoteGpsPassed += this.leftHandChunks[this.leftHandChunkIdx].chunk.length;
+    this.rightHandExpectedNumNoteGpsPassed += this.rightHandChunks[this.rightHandChunkIdx].chunk.length;
+    let leftScore = 0;
+    let rightScore = 0;
+    if (this.smartMode) {
+      leftScore = (this.gameScore.numAttemptedLeftHandNotesOnTime / this.leftHandExpectedNumNoteGpsPassed * 100).toFixed(0);
+      rightScore = (this.gameScore.numAttemptedRightHandNotesOnTime / this.rightHandExpectedNumNoteGpsPassed * 100).toFixed(0);
+    } else {
+      leftScore = (this.gameScore.numAttemptedLeftHandNotesOnTime / this.leftHandNoteGps.length * 100).toFixed(0);
+      rightScore = (this.gameScore.numAttemptedRightHandNotesOnTime / this.rightHandNoteGps.length * 100).toFixed(0);
+    }
+    const res0 = `Nitpicker's score:\n[L] ${leftScore}% | [R] ${rightScore}%`;
     console.log(
       `%c ${res0}`,
       `background: black; color: white; font-size: 18px;`

@@ -248,7 +248,7 @@ export class GameMgr {
           if (currChunkIdx + 1 === chunks.length) {
             window.setTimeout(() => {
               console.log(
-                `%c Final score:\n[L] ${(this.gameScore.numAttemptedLeftHandNotesOnTime / this.leftHandNoteGps.length * 100).toFixed(0)}% | [R] ${(this.gameScore.numAttemptedRightHandNotesOnTime / this.rightHandNoteGps.length * 100).toFixed(0)}%`,
+                `%c Nitpicker's score:\n[L] ${(this.gameScore.numAttemptedLeftHandNotesOnTime / this.leftHandNoteGps.length * 100).toFixed(0)}% | [R] ${(this.gameScore.numAttemptedRightHandNotesOnTime / this.rightHandNoteGps.length * 100).toFixed(0)}%`,
                 `background: black; color: white;`
               );
             }, 1000);

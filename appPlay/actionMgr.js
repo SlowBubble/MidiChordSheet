@@ -228,6 +228,8 @@ export class ActionMgr {
     if (urlKeyVals['DisplayComping']) {
       this.displayChordsOnly = false;
       this.displayCompingVoicesOnly = true;
+      // Needed for the game score display to work.
+      this.lyricsDisplayer.enabled = false;
     }
     this.gameMgr.resetGame(this.song);
 

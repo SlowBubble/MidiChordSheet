@@ -100,7 +100,6 @@ export class ActionMgr {
         }
       }
       const cursorTime8n = sheetStart8n ? this.currTime8n : null;
-      console.log('Rerendering from', sheetStart8n, 'to', cursorTime8n);
       this.renderMgr.render(this.song, this.displayCompingVoicesOnly, sheetStart8n, cursorTime8n);
       this.clearChordsCanvas();
     }

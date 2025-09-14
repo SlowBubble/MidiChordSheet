@@ -41,21 +41,13 @@ export class ActionMgr {
       if (this.displayChordsOnly) {
         this.renderChordsCanvas();
       } else if (beat.time8n.isWhole()){
+        // Re-render every measure.
         const time8nInt = beat.time8n.getNumer();
-        // TODO double check that numMeasurePerLine is always 4.
-        const numMeasurePerLine = 4;
         const num8nPerMeasure = makeFrac(
           this.song.timeSigChanges.defaultVal.upperNumeral * 8,
           this.song.timeSigChanges.defaultVal.lowerNumeral);
-        const numLinesBeforeRerendering = 2;
-        if (num8nPerMeasure.isWhole()) {
-          const num8nBeforeRerendering = num8nPerMeasure.getNumer() * numMeasurePerLine * numLinesBeforeRerendering;
-          if (time8nInt > 0 && time8nInt % num8nBeforeRerendering === 0) {
-            this.eBanner.inProgress('Look up!');
-            this.renderMgr.render(this.song, this.displayCompingVoicesOnly, beat.time8n);
-          }
-        } else {
-          console.log('Not rendering because num8nPerMeasure is not whole:', num8nPerMeasure)
+        if (time8nInt % num8nPerMeasure.getNumer() === 0) {
+          this.render();
         }
       }
     });
@@ -94,7 +86,22 @@ export class ActionMgr {
       this.renderMgr.clear();
       this.renderChordsCanvas();
     } else {
-      this.renderMgr.render(this.song, this.displayCompingVoicesOnly);
+      // Find the closest time8n to the left that is a multiple of 2 lines of measures.
+      let sheetStart8n = null;
+      if (this.currTime8n) {
+        const numMeasurePerLine = 4;
+        const num8nPerMeasure = makeFrac(
+          this.song.timeSigChanges.defaultVal.upperNumeral * 8,
+          this.song.timeSigChanges.defaultVal.lowerNumeral);
+        const num8nInWindow = num8nPerMeasure.toFloat() * numMeasurePerLine * 2;
+        const numMultiples =  Math.floor(this.currTime8n.toFloat() / num8nInWindow);
+        if (numMultiples >= 0) {
+          sheetStart8n = makeFrac(num8nInWindow * numMultiples);
+        }
+      }
+      const cursorTime8n = sheetStart8n ? this.currTime8n : null;
+      console.log('Rerendering from', sheetStart8n, 'to', cursorTime8n);
+      this.renderMgr.render(this.song, this.displayCompingVoicesOnly, sheetStart8n, cursorTime8n);
       this.clearChordsCanvas();
     }
   }

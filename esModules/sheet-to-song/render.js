@@ -7,12 +7,12 @@ export class RenderMgr {
     this._canvasDiv = canvasDiv;
   }
 
-  render(song, displayComping=false, currTime8n=null) {
+  render(song, displayComping=false, sheetStart8n=null, cursorTime8n=null) {
     const stateMgr = new state.StateMgr(this._eBanner);
     stateMgr.doc.timeSigNumer = song.timeSigChanges.defaultVal.upperNumeral;
     stateMgr.doc.timeSigDenom = song.timeSigChanges.defaultVal.lowerNumeral;
     stateMgr.setTitle(song.title);
-    if (!currTime8n) {
+    if (!sheetStart8n) {
       stateMgr.setPickup(song.pickup8n.over(8).negative());
     }
     stateMgr.setTempo(song.tempo8nPerMinChanges.defaultVal);
@@ -28,23 +28,28 @@ export class RenderMgr {
       stateMgr.disableChordMode();
       stateMgr.setVoiceIdx(idx);
       stateMgr.navHead();
-      voice.noteGps.filter(qng => !currTime8n || qng.start8n.geq(currTime8n)).forEach(qng => {
+      voice.noteGps.filter(qng => !sheetStart8n || qng.start8n.geq(sheetStart8n)).forEach(qng => {
         const noteNums = qng.getNoteNums();
         stateMgr.upsertByDur(noteNums.length ? qng.getNoteNums() : [null], qng.end8n.minus(qng.start8n).over(8));
       });
     });
 
     stateMgr.enableChordMode();
-    song.chordChanges.getChanges().filter(chordChange => !currTime8n || chordChange.start8n.geq(currTime8n)).forEach(chordChange => {
+    song.chordChanges.getChanges().filter(chordChange => !sheetStart8n || chordChange.start8n.geq(sheetStart8n)).forEach(chordChange => {
       let cursorTime = chordChange.start8n.over(8);
-      if (currTime8n) {
-        cursorTime = cursorTime.minus(currTime8n.over(8));
+      if (sheetStart8n) {
+        cursorTime = cursorTime.minus(sheetStart8n.over(8));
       }
       stateMgr.setCursorTimeSyncPointer(cursorTime);
       stateMgr.insertChord(chordChange.val.toString().replace('maj', 'M'));
     });
 
-    stateMgr.viewMode = true;
+    // Configure the cursor.
+    stateMgr.viewMode = false;
+    stateMgr.editor.cursorOnChords = true;
+    if (cursorTime8n && sheetStart8n) {
+      stateMgr.editor.cursorTime = cursorTime8n.minus(sheetStart8n).over(8);
+    }
 
     const params = {};
     const moreParams = {};

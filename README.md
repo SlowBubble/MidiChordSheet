@@ -51,7 +51,7 @@ Others:
   - 0/1 if the first RH note is not struck within [-1, 2]
 
 ## Done
-- Impl "Nitpicker's score" and "Connoisseur's score".
+- Add cursor
 
 ## TODO
 - Smart mode issue

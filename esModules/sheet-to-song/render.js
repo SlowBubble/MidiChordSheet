@@ -1,5 +1,6 @@
 import * as state from '../fire/state.js';
 import * as banner from '../fire/banner.js';
+import { makeFrac } from '../fraction/fraction.js';
 
 export class RenderMgr {
   constructor(canvasDiv) {
@@ -28,9 +29,14 @@ export class RenderMgr {
       stateMgr.disableChordMode();
       stateMgr.setVoiceIdx(idx);
       stateMgr.navHead();
-      voice.noteGps.filter(qng => !sheetStart8n || qng.start8n.geq(sheetStart8n)).forEach(qng => {
-        const noteNums = qng.getNoteNums();
-        stateMgr.upsertByDur(noteNums.length ? qng.getNoteNums() : [null], qng.end8n.minus(qng.start8n).over(8));
+      const noteGpsInWindow = voice.noteGps.filter(qng => !sheetStart8n || qng.end8n.greaterThan(sheetStart8n));
+      noteGpsInWindow.forEach((qng, idx) => {
+        if (idx === 0 && sheetStart8n && qng.start8n.lessThan(sheetStart8n)) {
+          stateMgr.upsertByDur([null], qng.end8n.minus(sheetStart8n).over(8));
+        } else {
+          const noteNums = qng.getNoteNums();
+          stateMgr.upsertByDur(noteNums.length ? qng.getNoteNums() : [null], qng.end8n.minus(qng.start8n).over(8));
+        }
       });
     });
 

@@ -64,6 +64,9 @@ export class GameMgr {
     this.onTimeLooseMargin8nFloat = 0.35;
     this.onBeatTightMargin8nFloat = 0.2; // smaller margin to make sure I'm on beat??
     this.onBeatLooseMargin8nFloat = 0.3; // looser margin
+    // TODO handle swing
+    this.moveToNextChunkMargin8nWhenCurrChunkDone = 1.2;
+    this.moveToNextChunkMargin8nWhenCurrChunkNotDone = 0.5;
 
     this.currTime8n = makeFrac(0);
     this.timeOfLastBeat = Date.now();
@@ -102,8 +105,8 @@ export class GameMgr {
     this.rightHandIdxInChunk = 0;
     this.leftHandExpectedNumNoteGpsPassed = 0;
     this.rightHandExpectedNumNoteGpsPassed = 0;
-    this.leftHandChunkFinished = false;
-    this.rightHandChunkFinished = false;
+    this.leftHandChunkDone = false;
+    this.rightHandChunkDone = false;
     if (this.smartMode) {
       this.leftHandChunks = this._chunkNoteGpsByChord(song, this.leftHandNoteGps);
       this.rightHandChunks = this._chunkNoteGpsByChord(song, this.rightHandNoteGps);
@@ -216,17 +219,11 @@ export class GameMgr {
           if (!chunks.length) return;
           let currChunkIdx = this.leftHandChunkIdx;
           // TODO for swing ratio 2, need to multiply via 0.5 * 2/3 = 0.33
-          let margin8n = 0.5;
-          if (this.leftHandChunkFinished) {
+          let margin8n = this.moveToNextChunkMargin8nWhenCurrChunkNotDone;
+          if (this.leftHandChunkDone) {
             // TODO for swing ratio 2, need to multiply via 1 * 2/3 + 0.2 * 4/3 = 0.933
-            margin8n = 1.2;
+            margin8n = this.moveToNextChunkMargin8nWhenCurrChunkDone;
           }
-          // if (currChunkIdx + 1 < chunks.length) {
-          //   const actualMargin = (chunks[currChunkIdx + 1].start8n.toFloat() - this._getCurrTime8nInFloat()).toFixed(2);
-          //   if (margin8n <= actualMargin) {
-          //     console.log('[L] same chord because margin8n <= actualMargin:', margin8n, actualMargin);
-          //   }
-          // }
           while (
             currChunkIdx + 1 < chunks.length &&
             this._getCurrTime8nInFloat() > chunks[currChunkIdx + 1].start8n.toFloat() - margin8n
@@ -237,7 +234,9 @@ export class GameMgr {
             }
             currChunkIdx++;
             this.leftHandIdxInChunk = 0;
-            this.leftHandChunkFinished = false;
+            // Set variables about being unfinished back to the default for the next while loop condition
+            this.leftHandChunkDone = false;
+            margin8n = this.moveToNextChunkMargin8nWhenCurrChunkNotDone;
           }
           this.leftHandChunkIdx = currChunkIdx;
           const currChunkObj = chunks[currChunkIdx];
@@ -289,7 +288,7 @@ export class GameMgr {
           });
           this.leftHandIdxInChunk = (currIdxInChunk + 1) % currChunk.length;
           if (this.leftHandIdxInChunk === 0) {
-            this.leftHandChunkFinished = true;
+            this.leftHandChunkDone = true;
           }
         } else {
           if (this.leftHandIdx >= this.leftHandNoteGps.length) {
@@ -342,14 +341,16 @@ export class GameMgr {
           const chunks = this.rightHandChunks;
           if (!chunks.length) return;
           let currChunkIdx = this.rightHandChunkIdx;
-          let margin8n = 0.5;
-          if (this.rightHandChunkFinished) {
-            margin8n = 1.2;
+          let margin8n = this.moveToNextChunkMargin8nWhenCurrChunkNotDone;
+          if (this.rightHandChunkDone) {
+            margin8n = this.moveToNextChunkMargin8nWhenCurrChunkDone;
           }
           // if (currChunkIdx + 1 < chunks.length) {
           //   const actualMargin = (chunks[currChunkIdx + 1].start8n.toFloat() - this._getCurrTime8nInFloat()).toFixed(2);
-          //   if (margin8n <= actualMargin) {
-          //     console.log('[R] same chord because margin8n <= actualMargin:', margin8n, actualMargin);
+          //   if (margin8n > actualMargin) {
+          //     console.log('[R] move to next chord because margin8n > actualMargin:', margin8n);
+          //   } else {
+          //     console.log('[R] same chord because margin8n <= actualMargin:', margin8n);
           //   }
           // }
           while (
@@ -362,7 +363,9 @@ export class GameMgr {
             }
             currChunkIdx++;
             this.rightHandIdxInChunk = 0;
-            this.rightHandChunkFinished = false;
+            // Set variables about being unfinished back to the default for the next while loop condition
+            this.rightHandChunkDone = false;
+            margin8n = this.moveToNextChunkMargin8nWhenCurrChunkNotDone;
           }
           this.rightHandChunkIdx = currChunkIdx;
           const currChunkObj = chunks[currChunkIdx];
@@ -409,7 +412,7 @@ export class GameMgr {
           });
           this.rightHandIdxInChunk = (currIdxInChunk + 1) % currChunk.length;
           if (this.rightHandIdxInChunk === 0) {
-            this.rightHandChunkFinished = true;
+            this.rightHandChunkDone = true;
           }
         } else {
           if (this.rightHandIdx >= this.rightHandNoteGps.length) {

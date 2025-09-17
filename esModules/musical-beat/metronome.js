@@ -89,11 +89,11 @@ function genStrongBeats(numBeats) {
   const strongBeats = []
   for (let idx = 0; idx < numBeats; idx++) {
     if (idx == 0) {
-      strongBeats.push([{noteNum: 36, velocity: 90}, {noteNum: 42, velocity: 30}]);
+      strongBeats.push([{noteNum: 35, velocity: 110}, {noteNum: 42, velocity: 80}]);
       continue;
     }
     if (idx == numBeats - 1) {
-      strongBeats.push([{noteNum: 37, velocity: 30}, {noteNum: 42, velocity: 30}]);
+      strongBeats.push([{noteNum: 37, velocity: 60}, {noteNum: 42, velocity: 30}]);
       continue;
     }
     if (math.mod(idx, 2) == 0) {

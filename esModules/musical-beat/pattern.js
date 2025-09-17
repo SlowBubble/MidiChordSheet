@@ -42,18 +42,18 @@ function genStrongBeats(numBeats) {
   const strongBeats = []
   for (let idx = 0; idx < numBeats; idx++) {
     if (idx == 0) {
-      strongBeats.push([{noteNum: 35, velocity: 110}, {noteNum: 42, velocity: 80}]);
+      strongBeats.push([{noteNum: 35, velocity: 120}, {noteNum: 36, velocity: 120}, {noteNum: 42, velocity: 90}]);
       continue;
     }
     if (idx == numBeats - 1) {
-      strongBeats.push([{noteNum: 37, velocity: 60}, {noteNum: 42, velocity: 30}]);
+      strongBeats.push([{noteNum: 37, velocity: 90}, {noteNum: 42, velocity: 60}]);
       continue;
     }
     if (math.mod(idx, 2) == 0) {
-      strongBeats.push([{noteNum: 36, velocity: 30}, {noteNum: 42, velocity: 30}]);
+      strongBeats.push([{noteNum: 36, velocity: 50}, {noteNum: 42, velocity: 50}]);
       continue;
     }
-    strongBeats.push([{noteNum: 36, velocity: 30}, {noteNum: 44, velocity: 60}]);
+    strongBeats.push([{noteNum: 36, velocity: 50}, {noteNum: 44, velocity: 80}]);
   }
   strongBeats.forEach(strongBeat => strongBeat.forEach(evt => evt.isStrongBeat = true));
   return strongBeats;

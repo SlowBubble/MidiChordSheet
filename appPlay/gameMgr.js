@@ -258,15 +258,14 @@ export class GameMgr {
 
           const diffModulo = diff - Math.round(diff);
           let logColor = 'red';
-          let mistake = '';
+          let mistake = diff > 0 ? ' (too late)' : ' (too early)';
           if (Math.abs(diffModulo) <= this.onBeatTightMargin8nFloat) {
             this.gameScore.numAttemptedLeftHandNotesOnBeat++;
             logColor = 'green';
+            mistake = '';
           } else if (Math.abs(diffModulo) <= this.onBeatLooseMargin8nFloat) {
             this.gameScore.numAttemptedLeftHandNotesOnBeat += 0.5;
             logColor = 'orange';
-          } else {
-            mistake = diff > 0 ? ' (too late)' : ' (too early)';
           }
           console.log(
             `%c [L] score: ${this.gameScore.numAttemptedLeftHandNotesOnBeat} / ${this.gameScore.numAttemptedLeftHandNotes} ${mistake}`,
@@ -309,15 +308,14 @@ export class GameMgr {
           this.gameScore.numAttemptedLeftHandNotes++;
           const diff = this._getCurrTime8nInFloat() - noteGp.start8n.toFloat();
           let logColor = 'red';
-          let mistake = '';
+          let mistake = diff > 0 ? ' (too late)' : ' (too early)';
           if (Math.abs(diff) <= this.onTimeTightMargin8nFloat) {
             this.gameScore.numAttemptedLeftHandNotesOnTime++;
             logColor = 'green';
+            mistake = '';
           } else if (Math.abs(diff) <= this.onTimeLooseMargin8nFloat) {
             this.gameScore.numAttemptedLeftHandNotesOnTime += 0.5;
             logColor = 'orange';
-          } else {
-            mistake = diff > 0 ? ' (too late)' : ' (too early)';
           }
           console.log(
             `%c [L] score: ${this.gameScore.numAttemptedLeftHandNotesOnTime} / ${this.gameScore.numAttemptedLeftHandNotes} ${mistake}`,
@@ -387,15 +385,14 @@ export class GameMgr {
 
           const diffModulo = diff - Math.round(diff);
           let logColor = 'red';
-          let mistake = '';
+          let mistake = diff > 0 ? ' (too late)' : ' (too early)';
           if (Math.abs(diffModulo) <= this.onBeatTightMargin8nFloat) {
             this.gameScore.numAttemptedRightHandNotesOnBeat++;
             logColor = 'green';
+            mistake = '';
           } else if (Math.abs(diffModulo) <= this.onBeatLooseMargin8nFloat) {
             this.gameScore.numAttemptedRightHandNotesOnBeat += 0.5;
             logColor = 'orange';
-          } else {
-            mistake = diff > 0 ? ' (too late)' : ' (too early)';
           }
           console.log(
             `%c [R] score: ${this.gameScore.numAttemptedRightHandNotesOnBeat} / ${this.gameScore.numAttemptedRightHandNotes} ${mistake}`,
@@ -433,15 +430,14 @@ export class GameMgr {
           this.gameScore.numAttemptedRightHandNotes++;
           const diff = this._getCurrTime8nInFloat() - noteGp.start8n.toFloat();
           let logColor = 'red';
-          let mistake = '';
+          let mistake = diff > 0 ? ' (too late)' : ' (too early)';
           if (Math.abs(diff) <= this.onTimeTightMargin8nFloat) {
             this.gameScore.numAttemptedRightHandNotesOnTime++;
             logColor = 'green';
+            mistake = '';
           } else if (Math.abs(diff) <= this.onTimeLooseMargin8nFloat) {
             this.gameScore.numAttemptedRightHandNotesOnTime += 0.5;
             logColor = 'orange';
-          } else {
-            mistake = diff > 0 ? ' (too late)' : ' (too early)';
           }
           console.log(
             `%c [R] score: ${this.gameScore.numAttemptedRightHandNotesOnTime} / ${this.gameScore.numAttemptedRightHandNotes} ${mistake}`,

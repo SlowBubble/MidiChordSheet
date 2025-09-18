@@ -53,7 +53,7 @@ function genStrongBeats(numBeats) {
       strongBeats.push([{noteNum: 36, velocity: 50}, {noteNum: 42, velocity: 50}]);
       continue;
     }
-    strongBeats.push([{noteNum: 36, velocity: 50}, {noteNum: 44, velocity: 80}]);
+    strongBeats.push([{noteNum: 54, velocity: 30}, {noteNum: 44, velocity: 80}]);
   }
   strongBeats.forEach(strongBeat => strongBeat.forEach(evt => evt.isStrongBeat = true));
   return strongBeats;

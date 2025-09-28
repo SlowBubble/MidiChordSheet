@@ -131,4 +131,7 @@ function setupInteraction(actionMgr) {
   hotkeysDoc('left', _ => actionMgr.moveLeft());
   hotkeysDoc('right', _ => actionMgr.moveRight());
   hotkeysDoc('shift+x', _ => actionMgr.toggleSmartMode());
+
+  // Add shortcut to toggle WeirdSheet and reload
+  hotkeysDoc('shift+w', _ => actionMgr.toggleWeirdSheet());
 }

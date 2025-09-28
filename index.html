@@ -26,7 +26,7 @@
     <script src="lib/midi.js/js/util/dom_request_script.js" type="text/javascript"></script>
 
     <script src="./lib/hotkeys.js"></script>
-    <script src="./lib/abcjs-basic.js" type="text/javascript"></script>
+    <!-- <script src="./lib/abcjs-basic.js" type="text/javascript"></script> -->
     <!-- <script src="./lib/abcjs-weird.js" type="text/javascript"></script> -->
 
     <!-- Parsing melody -->
@@ -35,6 +35,28 @@
 
     <script src="./esModules/chord/chordParser.js"></script>
     
+    <script>
+      // Dynamically load abcjs-basic.js or abcjs-weird.js based on url param WeirdSheet=1
+      (function() {
+        function getUrlKeyVals() {
+          const url = new URL(window.location.href.replace('#','?'));
+          const keyVals = {};
+          url.searchParams.forEach(function(value, key) {
+            keyVals[key] = value;
+          });
+          return keyVals;
+        }
+        const urlKeyVals = getUrlKeyVals();
+        const script = document.createElement('script');
+        script.type = 'text/javascript';
+        if (urlKeyVals.WeirdSheet === '1') {
+          script.src = './lib/abcjs-weird.js';
+        } else {
+          script.src = './lib/abcjs-basic.js';
+        }
+        document.head.appendChild(script);
+      })();
+    </script>
     <script type='module' src='./appPlay/playMain.js'></script>
   </head>
   <body>

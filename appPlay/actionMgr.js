@@ -470,6 +470,16 @@ export class ActionMgr {
     this.gameMgr.smartMode = !this.gameMgr.smartMode;
     this.eBanner.success(`Smart mode: ${this.gameMgr.smartMode ? 'ON' : 'OFF'}`);
   }
+
+  toggleWeirdSheet() {
+    const urlKeyVals = getUrlKeyVals();
+    if (urlKeyVals['WeirdSheet'] === '1') {
+      setUrlParam('WeirdSheet');
+    } else {
+      setUrlParam('WeirdSheet', '1');
+    }
+    window.location.reload();
+  }
 }
 
 // Note that this will trigger a song reload.

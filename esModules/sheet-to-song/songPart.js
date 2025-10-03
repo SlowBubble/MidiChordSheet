@@ -88,11 +88,9 @@ export class SongPart {
         }
       }
       if ((isDenseBaseForLongDur || isDenseBass) && !isFinalNote) {
-        let syncopateBass = dur8n.geq(8) ? Math.random() < this.syncopationFactor : Math.random() < this.syncopationFactor / 1.5;
-        if (dur8n.equals(durFor3Beats)) {
-          syncopateBass = false;
-        }
-        const dur8nFromEnd = syncopateBass ? 1 : 2;
+        const syncopateBass = dur8n.geq(8) ? Math.random() < this.syncopationFactor * 1.3 : Math.random() < this.syncopationFactor / 1.3;
+        const earlySyncopatedBass = syncopateBass && dur8n.geq(6) ? Math.random() < 0.6 : false;
+        const dur8nFromEnd = syncopateBass ? (earlySyncopatedBass ? 3 : 1) : 2;
         bassQngs.push(makeSimpleQng(change.start8n, end8n.minus(dur8nFromEnd), [bassNoteNum]));
         bassQngs.push(makeSimpleQng(end8n.minus(dur8nFromEnd), end8n, [bassNoteNum2]));
         prevBassNoteNum = bassNoteNum2;

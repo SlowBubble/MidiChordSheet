@@ -1,7 +1,6 @@
 import { Song } from "../song-sheet/song.js";
 import { SongPart } from "./songPart.js";
-import { Voice, clefType } from "../song-sheet/voice.js";
-import { genComping } from "../music-comping/comping.js";
+import { addComping, updateTacticChanges } from "../music-comping/comping.js";
 import { orchestrate } from "./orchestrate.js";
 import { fromNoteNumWithFlat } from "../chord/spell.js";
 
@@ -76,8 +75,8 @@ export class SongForm {
       if (idx === parts.length - 1 && part.turnaroundStart8n) {
         part.song.chordChanges.removeWithinInterval(part.turnaroundStart8n);
       }
-      part.updateComping();
-      part.updateTacticChanges();
+      addComping(part);
+      updateTacticChanges(part);
     });
     
     // Must be done after comping is done.
@@ -119,15 +118,6 @@ function transposeSongParts(songParts) {
       change.val = fromNoteNumWithFlat(change.val.toNoteNum() + part.transpose);
     })
   });
-}
-
-
-function addComping(song, parts) {
-  const {bassQngs, trebleQngs} = genComping(parts);
-  song.voices = [
-    new Voice({noteGps: trebleQngs, clef: clefType.Treble}),
-    new Voice({noteGps: bassQngs, clef: clefType.Bass}),
-  ];
 }
 
 function appendToSong(song, part, title) {

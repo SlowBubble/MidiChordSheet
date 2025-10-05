@@ -134,4 +134,8 @@ function setupInteraction(actionMgr) {
 
   // Add shortcut to toggle WeirdSheet and reload
   hotkeysDoc('shift+w', _ => actionMgr.toggleWeirdSheet());
+
+  // Add shortcut to set compingStyle to syncopatedBass1
+  hotkeysDoc('shift+`', _ => actionMgr.setCompingStyle('default'));
+  hotkeysDoc('shift+1', _ => actionMgr.setCompingStyle('syncopatedBass1'));
 }

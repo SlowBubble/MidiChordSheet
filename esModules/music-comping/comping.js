@@ -4,9 +4,10 @@ import { makeSimpleQng } from "../song-sheet/quantizedNoteGp.js";
 import { clefType, Voice } from "../song-sheet/voice.js";
 import { Intervals } from "../chord/interval.js";
 import { TacticChanges, toTactic } from "../solo-tactics/tactics.js";
+import { CompingStyle } from "../sheet-to-song/songPart.js";
 
 const num8nPerBeat = 2;
-const skipProbability = 0.25;
+const skipProbability = 1;
 
 export function updateTacticChanges(part) {
   part.song.tacticChanges = new TacticChanges({});
@@ -17,10 +18,145 @@ export function updateTacticChanges(part) {
 }
 
 export function addComping(part) {
+  let {bassQngs, trebleQngs} = genNewComping(part);
+  if (part.compingStyle === CompingStyle.default) {
+    ({bassQngs, trebleQngs} = genDefaultComping(part));
+  }
+  const trebleVoice = new Voice({
+    noteGps: trebleQngs, clef: clefType.Treble,
+  });
+  const bassVoice = new Voice({noteGps: bassQngs, clef: clefType.Bass});
+  trebleVoice.settings.hide = true;
+  bassVoice.settings.hide = true;
+  part.song.addVoice(trebleVoice);
+  part.song.addVoice(bassVoice);
+}
+
+function genNewComping(part) {
   const changes = part.song.getChordChangesAcrossBars(skipProbability);
   const bassQngs = [];
   const trebleQngs = [];
 
+  const durFor8Beats = 8 * num8nPerBeat;
+  const durFor4Beats = 4 * num8nPerBeat;
+  const maxBass = 56;
+  const minBass = 40;
+  const maxTreble = 76;
+  let prevBassNoteNum = 50;
+  let prevTrebleNoteNums = [66];
+  changes.forEach((change, idx) => {
+    const isFinalNote = idx + 1 === changes.length;
+    if (idx === 0 && part.song.pickup8n.lessThan(change.start8n)) {
+      bassQngs.push(makeSimpleQng(part.song.pickup8n, change.start8n, []));
+      trebleQngs.push(makeSimpleQng(part.song.pickup8n, change.start8n, []));
+    }
+    // Bass
+    const end8n = isFinalNote ? part.song.getEnd8n() : changes[idx + 1].start8n;
+    const chord = change.val;
+    const bass = chord.bass || chord.root;
+    const bassNoteNum = genNearestNums([bass.toNoteNum()], [prevBassNoteNum], minBass, maxBass);
+    const dur8n = end8n.minus(change.start8n);
+    // Make this higher than bassNoteNum unless it's higher than maxBass
+    let bassNoteNum2 = chord.root.toNoteNum(4);
+    if (chord.bass) {
+      if (bassNoteNum2 > maxBass) {
+        bassNoteNum2 -= 12;
+      }
+    } else {
+      bassNoteNum2 = chord.root.toNoteNum(3) + chord.getFifthInterval();
+      if (bassNoteNum2 < bassNoteNum && bassNoteNum2 + 12 < maxBass) {
+        bassNoteNum2 += 12;
+      }
+    }
+
+    function time(num8n) {
+      return change.start8n.plus(num8n);
+    }
+    // Creating notes
+    const choice1 = Math.random() < 0.5;
+    const choice2 = Math.random() < 0.5;
+    const note2StartFor4Beats = choice2 ? 4 : 6;
+    const note2StartFor8Beats = choice2 ? time(5) : time(6);
+    if (dur8n.equals(durFor4Beats) && !isFinalNote) {
+      bassQngs.push(makeSimpleQng(time(0), time(note2StartFor4Beats - 1), [bassNoteNum]));
+      bassQngs.push(makeSimpleQng(time(note2StartFor4Beats - 1), time(note2StartFor4Beats + 1), [bassNoteNum]));
+      bassQngs.push(makeSimpleQng(time(note2StartFor4Beats + 1), time(8), [bassNoteNum2]));
+    } else if (dur8n.equals(durFor8Beats) && !isFinalNote) {
+      if (choice1) {
+        bassQngs.push(makeSimpleQng(time(0), time(7), [bassNoteNum]));
+        bassQngs.push(makeSimpleQng(time(7), time(9), [bassNoteNum]));
+        bassQngs.push(makeSimpleQng(time(9), time(16), [bassNoteNum2]));
+      } else {
+        bassQngs.push(makeSimpleQng(time(0), note2StartFor8Beats, [bassNoteNum]));
+        bassQngs.push(makeSimpleQng(note2StartFor8Beats, time(11), [bassNoteNum]));
+        bassQngs.push(makeSimpleQng(time(11), time(13), [bassNoteNum]));
+        bassQngs.push(makeSimpleQng(time(13), time(16), [bassNoteNum2]));
+      }
+    } else {
+      bassQngs.push(makeSimpleQng(change.start8n, end8n, [bassNoteNum]));
+    }
+    
+    const minTreble = Math.max(bassNoteNum, bassNoteNum2, 51) + 1;
+    // Treble
+    const specifiedColorNoteNums = chord.getSpecifiedColorNoteNums();
+    const trebleNoteNums = genNearestNums(specifiedColorNoteNums, prevTrebleNoteNums, minTreble, maxTreble);
+    // Tuned for the 3/4 meter song, "Someday My Prince Will Come"
+    const isSimpleMinorFour = (
+      chord.isMinor() && !chord.hasExtension() &&
+      Math.abs(chord.root.toNoteNum() - part.song.keySigChanges.defaultVal.toNoteNum()) === Intervals.P4);
+    const third = chord.root.toNoteNum() + chord.getThirdInterval();
+    const seventh = chord.root.toNoteNum() + chord.getSeventhInterval();
+    const fifth = chord.root.toNoteNum() + chord.getFifthInterval();
+    const interval9Or11 = chord.isMinor() || chord.isDiminished() ? Intervals.P4 :  Intervals.M2;
+    const ninthOr11th = chord.root.toNoteNum() + interval9Or11;
+    const interval6Or9Or11 = Math.random() < 0.6 ? Intervals.M6 : (Math.random() < 0.5 ? Intervals.M2 : Intervals.P4);
+    const useFifth = Math.random() < 0.6;
+    const color = useFifth ? fifth : ninthOr11th;
+    const intervalsToUse = isSimpleMinorFour ? [third, fifth, chord.root.toNoteNum() + interval6Or9Or11] : [third, seventh, color];
+    let trebleNoteNums2 = genNearestNums(intervalsToUse, trebleNoteNums, minTreble, maxTreble);
+    // For this to work, we need to unavoid clusters of 3 notes, in particular, if 11th or 13th is involved,
+    // move them up and octave or move the 3 or 5 or 7 down an octave.
+    // const colorNoteNums2 = shuffle(
+    //   chord.getSpecifiedColorNoteNums(/* includeAll= */true, part.song.keySigChanges.defaultVal)).slice(0, 3);
+    // let trebleNoteNums2 = genNearestNums(colorNoteNums2, trebleNoteNums, minTreble, maxTreble);
+    const topTrebleNoteNum = Math.max(...trebleNoteNums);
+    const topTrebleNoteNum2 = Math.max(...trebleNoteNums2);
+    if (topTrebleNoteNum === topTrebleNoteNum2) {
+      if (Math.random() < 0.4) {
+        trebleNoteNums2 = moveUp(trebleNoteNums2);
+        if (Math.random() < 0.6) {
+          trebleNoteNums2 = moveUp(trebleNoteNums2);
+        }
+      } else {
+        trebleNoteNums2 = moveDown(trebleNoteNums2);
+      }
+    }
+    if (dur8n.equals(durFor4Beats) && !isFinalNote) {
+      trebleQngs.push(makeSimpleQng(time(0), time(note2StartFor4Beats), trebleNoteNums));
+      trebleQngs.push(makeSimpleQng(time(note2StartFor4Beats), time(8), trebleNoteNums2));
+    } else if (dur8n.equals(durFor8Beats) && !isFinalNote) {
+      if (choice1) {
+        trebleQngs.push(makeSimpleQng(time(0), time(8), trebleNoteNums));
+        trebleQngs.push(makeSimpleQng(time(8), time(12), trebleNoteNums2));
+        trebleQngs.push(makeSimpleQng(time(12), time(16), trebleNoteNums2));
+      } else {
+        trebleQngs.push(makeSimpleQng(time(0), note2StartFor8Beats, trebleNoteNums));
+        trebleQngs.push(makeSimpleQng(note2StartFor8Beats, time(12), trebleNoteNums2));
+        trebleQngs.push(makeSimpleQng(time(12), time(16), trebleNoteNums2));
+      }
+    } else {
+      trebleQngs.push(makeSimpleQng(change.start8n, end8n, trebleNoteNums));
+    }
+  });
+  return {bassQngs, trebleQngs};
+}
+
+function genDefaultComping(part) {
+  const changes = part.song.getChordChangesAcrossBars(skipProbability);
+  const bassQngs = [];
+  const trebleQngs = [];
+
+  const durFor8Beats = 8 * num8nPerBeat;
   const durFor4Beats = 4 * num8nPerBeat;
   const durFor3Beats = 3 * num8nPerBeat;
   const durFor2Beats = 2 * num8nPerBeat;
@@ -68,6 +204,8 @@ export function addComping(part) {
         bassNoteNum2 += 12;
       }
     }
+
+    // Creating notes
     if ((isDenseBaseForLongDur || isDenseBass) && !isFinalNote) {
       const syncopateBass = dur8n.geq(8) ? Math.random() < part.syncopationFactor * 1.3 : Math.random() < part.syncopationFactor / 1.3;
       const earlySyncopatedBass = syncopateBass && dur8n.geq(6) ? Math.random() < 0.6 : false;
@@ -169,16 +307,8 @@ export function addComping(part) {
       prevTrebleNoteNums = trebleNoteNums;
     }
   });
-  const trebleVoice = new Voice({
-    noteGps: trebleQngs, clef: clefType.Treble,
-  });
-  const bassVoice = new Voice({noteGps: bassQngs, clef: clefType.Bass});
-  trebleVoice.settings.hide = true;
-  bassVoice.settings.hide = true;
-  part.song.addVoice(trebleVoice);
-  part.song.addVoice(bassVoice);
+  return {bassQngs, trebleQngs};
 }
-
 function moveUp(noteNums) {
   const bottom = Math.min(...noteNums);
   const res = noteNums.filter(num => num !== bottom);
@@ -227,15 +357,8 @@ function fixNoteNum(noteNum, min, max) {
   return noteNum;
 }
 
-// function addComping(song, parts) {
-//   const {bassQngs, trebleQngs} = genComping(parts);
-//   song.voices = [
-//     new Voice({noteGps: trebleQngs, clef: clefType.Treble}),
-//     new Voice({noteGps: bassQngs, clef: clefType.Bass}),
-//   ];
-// }
 
-export function genComping(songParts) {
-  const rhythms = songParts.map(part => genRhythms(part));
-  return addNotesToRhythms(rhythms, songParts);
-}
+// export function genComping(songParts) {
+//   const rhythms = songParts.map(part => genRhythms(part));
+//   return addNotesToRhythms(rhythms, songParts);
+// }

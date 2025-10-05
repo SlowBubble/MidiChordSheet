@@ -480,6 +480,11 @@ export class ActionMgr {
     }
     window.location.reload();
   }
+
+  // Add method to set compingStyle
+  setCompingStyle(style) {
+    setUrlParam('CompingStyle', style);
+  }
 }
 
 // Note that this will trigger a song reload.

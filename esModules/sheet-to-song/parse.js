@@ -69,9 +69,9 @@ export function createInitialHeaders(chunkedLocsWithPickup, keyVals) {
     const res = processKeyVal(
       key.trim().toLowerCase(),
       val.trim());
-    if (!res) {
-      return;
-    }
+      if (!res) {
+        return;
+      }
     headers[res.type] = res.value;
   });
 
@@ -248,6 +248,8 @@ function genChordOnlySongParts(chunkedLocsWithPickup, initialHeader, keyVals) {
     const part = new SongPart({
       song: song, syncopationFactor: currSyncopationPct / 100,
       densityPct: currDensity, transpose: transpose,
+      // propagate compingStyle from headers if present
+      compingStyle: headers[HeaderType.CompingStyle] || CompingStyle.default,
     });
     const turnAroundLoc = chunk.chordHeaderLocs.find(loc => loc.chordType === ChordInfoType.TurnAroundStart);
     if (turnAroundLoc) {
@@ -519,7 +521,7 @@ export function processKeyVal(key, valStr, warnError) {
         type: HeaderType.Copy,
         value: valStr,
       };
-    case 'style':
+    case 'compingstyle':
       return {
         type: HeaderType.CompingStyle,
         value: CompingStyle[valStr] || CompingStyle.default,

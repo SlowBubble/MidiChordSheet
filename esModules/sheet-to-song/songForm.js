@@ -47,7 +47,15 @@ export class SongForm {
     if (this.outro) {
       sequence.push(this.outro);
     }
-    return sequence.map(name => new SongPart(nameToPart[name]));
+    // Propagate compingStyle from the original part
+    return sequence.map(name => {
+      const origPart = nameToPart[name];
+      // Clone with compingStyle
+      return new SongPart({
+        ...origPart,
+        compingStyle: origPart.compingStyle
+      });
+    });
   }
 
   getRepeatPartIndices() {

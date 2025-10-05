@@ -23,4 +23,5 @@ export class SongPart {
 // TODO move this to comping.js?
 export const CompingStyle = Object.freeze({
   default: 'default',
+  syncopatedBass1: 'syncopatedBass1',
 })

@@ -7,7 +7,8 @@ import { TacticChanges, toTactic } from "../solo-tactics/tactics.js";
 import { CompingStyle } from "../sheet-to-song/songPart.js";
 
 const num8nPerBeat = 2;
-const skipProbability = 1;
+const skipProbability = 0.5;
+const alwaysSkip = 1;
 
 export function updateTacticChanges(part) {
   part.song.tacticChanges = new TacticChanges({});
@@ -33,7 +34,7 @@ export function addComping(part) {
 }
 
 function genNewComping(part) {
-  const changes = part.song.getChordChangesAcrossBars(skipProbability);
+  const changes = part.song.getChordChangesAcrossBars(alwaysSkip);
   const bassQngs = [];
   const trebleQngs = [];
 
@@ -75,20 +76,25 @@ function genNewComping(part) {
     // Creating notes
     const choice1 = Math.random() < 0.5;
     const choice2 = Math.random() < 0.5;
+    const choice3 = Math.random() < 0.5;
     const note2StartFor4Beats = choice2 ? 4 : 6;
     const note2StartFor8Beats = choice2 ? time(5) : time(6);
     if (dur8n.equals(durFor4Beats) && !isFinalNote) {
-      bassQngs.push(makeSimpleQng(time(0), time(note2StartFor4Beats - 1), [bassNoteNum]));
-      bassQngs.push(makeSimpleQng(time(note2StartFor4Beats - 1), time(note2StartFor4Beats + 1), [bassNoteNum]));
-      bassQngs.push(makeSimpleQng(time(note2StartFor4Beats + 1), time(8), [bassNoteNum2]));
+      if (choice2) {
+      bassQngs.push(makeSimpleQng(time(0), time(3), [bassNoteNum]));
+        bassQngs.push(makeSimpleQng(time(3), time(5), [bassNoteNum]));
+        bassQngs.push(makeSimpleQng(time(5), time(8), [bassNoteNum2]));
+      } else {
+      bassQngs.push(makeSimpleQng(time(0), time(5), [bassNoteNum]));
+        bassQngs.push(makeSimpleQng(time(5), time(8), [bassNoteNum2]));
+      }
     } else if (dur8n.equals(durFor8Beats) && !isFinalNote) {
       if (choice1) {
         bassQngs.push(makeSimpleQng(time(0), time(7), [bassNoteNum]));
         bassQngs.push(makeSimpleQng(time(7), time(9), [bassNoteNum]));
         bassQngs.push(makeSimpleQng(time(9), time(16), [bassNoteNum2]));
       } else {
-        bassQngs.push(makeSimpleQng(time(0), note2StartFor8Beats, [bassNoteNum]));
-        bassQngs.push(makeSimpleQng(note2StartFor8Beats, time(11), [bassNoteNum]));
+        bassQngs.push(makeSimpleQng(time(0), time(11), [bassNoteNum]));
         bassQngs.push(makeSimpleQng(time(11), time(13), [bassNoteNum]));
         bassQngs.push(makeSimpleQng(time(13), time(16), [bassNoteNum2]));
       }
@@ -136,9 +142,10 @@ function genNewComping(part) {
       trebleQngs.push(makeSimpleQng(time(note2StartFor4Beats), time(8), trebleNoteNums2));
     } else if (dur8n.equals(durFor8Beats) && !isFinalNote) {
       if (choice1) {
+        const lastStart = choice3 ? 12 : 13;
         trebleQngs.push(makeSimpleQng(time(0), time(8), trebleNoteNums));
-        trebleQngs.push(makeSimpleQng(time(8), time(12), trebleNoteNums2));
-        trebleQngs.push(makeSimpleQng(time(12), time(16), trebleNoteNums2));
+        trebleQngs.push(makeSimpleQng(time(8), time(lastStart), trebleNoteNums2));
+        trebleQngs.push(makeSimpleQng(time(lastStart), time(16), trebleNoteNums2));
       } else {
         trebleQngs.push(makeSimpleQng(time(0), note2StartFor8Beats, trebleNoteNums));
         trebleQngs.push(makeSimpleQng(note2StartFor8Beats, time(12), trebleNoteNums2));

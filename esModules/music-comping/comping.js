@@ -41,6 +41,10 @@ function genNewComping(part) {
 
   const durFor8Beats = 8 * num8nPerBeat;
   const durFor4Beats = 4 * num8nPerBeat;
+  // // TODO add 16n syncopation for durFor2Beats and durFor3Beats
+  // const durFor2Beats = 2 * num8nPerBeat;
+  // const durFor3Beats = 3 * num8nPerBeat;
+
   const maxBass = 56;
   const minBass = 40;
   const maxTreble = 76;

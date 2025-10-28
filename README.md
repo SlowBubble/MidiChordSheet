@@ -53,7 +53,11 @@ Others:
 ## Done
 - Add cursor
 
+- Fix sus2 voicing (it is treated as 7sus2, i.e. using b7 accidentally)
+
 ## TODO
+
+
 - Smart mode issue
   - TODO for swing ratio 2, need to multiply via 0.5 * 2/3 = 0.33
   - TODO for swing ratio 2, need to multiply via 1 * 2/3 + 0.2 * 4/3 = 0.933

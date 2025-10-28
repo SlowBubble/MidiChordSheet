@@ -111,6 +111,9 @@ export class Chord {
     if (this.quality == 'dim') {
       return Intervals.M6;
     }
+    if (this.suspension == 2) {
+      return Intervals.M6;
+    }
     if (this.suspension) {
       return Intervals.m7;
     }

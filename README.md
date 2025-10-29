@@ -57,8 +57,10 @@ Others:
 
 ## TODO
 
+- Render fewer lines for mobile devices
+- Add tsv export
 
-- Smart mode issue
+- Smart mode issue in the comping game
   - TODO for swing ratio 2, need to multiply via 0.5 * 2/3 = 0.33
   - TODO for swing ratio 2, need to multiply via 1 * 2/3 + 0.2 * 4/3 = 0.933
 - Freeze the current arrangement

@@ -140,11 +140,7 @@ export class ActionMgr {
     this.chordsCanvas.innerHTML = '';
     const svgInfo = this.chordSvgMgr.getSvgInfo(this.displayTactics, this.displayRomanNumeral);
     this.chordsCanvas.append(svgInfo.svg);
-    svgInfo.currentSvg.scrollIntoView({
-      // This causes jerking motion for narrow screens when moving.
-      // behavior: "smooth",
-      block: "center",
-    });
+    // TODO explore scrolling to the highlighted line - 1 line at the top.
   }
   clearChordsCanvas() {
     this.chordsCanvas.innerHTML = '';

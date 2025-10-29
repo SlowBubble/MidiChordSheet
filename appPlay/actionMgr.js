@@ -5,6 +5,8 @@ import { makeFrac } from "../esModules/fraction/fraction.js";
 import { parseKeyValsToSongInfo } from "../esModules/sheet-to-song/parseV2.js";
 import { shuffle, range } from "../esModules/array-util/arrayUtil.js";
 
+const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
 export class ActionMgr {
   constructor({
     songReplayer,
@@ -88,19 +90,24 @@ export class ActionMgr {
     } else {
       // Find the closest time8n to the left that is a multiple of 2 lines of measures.
       let sheetStart8n = null;
-      if (this.currTime8n) {
+      let sheetEnd8n = null;
+      if (this.currTime8n && this.currTime8n.geq(makeFrac(0))) {
         const numMeasurePerLine = 4;
         const num8nPerMeasure = makeFrac(
           this.song.timeSigChanges.defaultVal.upperNumeral * 8,
           this.song.timeSigChanges.defaultVal.lowerNumeral);
-        const num8nInWindow = num8nPerMeasure.toFloat() * numMeasurePerLine * 2;
-        const numMultiples =  Math.floor(this.currTime8n.toFloat() / num8nInWindow);
+        const num8nPerLine = num8nPerMeasure.toFloat() * numMeasurePerLine;
+        const num8nInCursorWindow = num8nPerLine * (isMobile ? 1 : 2);
+        const numMultiples =  Math.floor(this.currTime8n.toFloat() / num8nInCursorWindow);
         if (numMultiples >= 0) {
-          sheetStart8n = makeFrac(num8nInWindow * numMultiples);
+          sheetStart8n = makeFrac(num8nInCursorWindow * numMultiples);
         }
+        const num8nInViewableWindow = 32;
+        const currTimeFloat = this.currTime8n.toFloat();
+        sheetEnd8n = makeFrac(Math.floor(currTimeFloat / num8nInViewableWindow + 2) * num8nInViewableWindow, 1);
       }
       const cursorTime8n = sheetStart8n ? this.currTime8n : null;
-      this.renderMgr.render(this.song, this.displayCompingVoicesOnly, sheetStart8n, cursorTime8n);
+      this.renderMgr.render(this.song, this.displayCompingVoicesOnly, sheetStart8n, cursorTime8n, sheetEnd8n);
       this.clearChordsCanvas();
     }
   }

@@ -42,6 +42,15 @@ Others:
 
 # Work in progress
 ## Doing
+
+- Add tsv export
+
+## Done
+
+- Render fewer lines for mobile devices
+
+## TODO
+
 - Improve the score
   - (easier if I record all the times and compute when the music stops, even partially)
   - 0/1 if the note is not struck near an 8th note
@@ -49,16 +58,6 @@ Others:
   - 0/1 if the first bass is not struck within [-1, 1]
     - Make an exception for bass note that repeat across chord change
   - 0/1 if the first RH note is not struck within [-1, 2]
-
-## Done
-- Add cursor
-
-- Fix sus2 voicing (it is treated as 7sus2, i.e. using b7 accidentally)
-
-## TODO
-
-- Render fewer lines for mobile devices
-- Add tsv export
 
 - Smart mode issue in the comping game
   - TODO for swing ratio 2, need to multiply via 0.5 * 2/3 = 0.33

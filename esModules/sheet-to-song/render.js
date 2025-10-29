@@ -1,6 +1,5 @@
 import * as state from '../fire/state.js';
 import * as banner from '../fire/banner.js';
-import { makeFrac } from '../fraction/fraction.js';
 
 export class RenderMgr {
   constructor(canvasDiv) {
@@ -8,7 +7,7 @@ export class RenderMgr {
     this._canvasDiv = canvasDiv;
   }
 
-  render(song, displayComping=false, sheetStart8n=null, cursorTime8n=null) {
+  render(song, displayComping=false, sheetStart8n=null, cursorTime8n=null, sheetEnd8n=null) {
     const stateMgr = new state.StateMgr(this._eBanner);
     stateMgr.doc.timeSigNumer = song.timeSigChanges.defaultVal.upperNumeral;
     stateMgr.doc.timeSigDenom = song.timeSigChanges.defaultVal.lowerNumeral;
@@ -29,7 +28,13 @@ export class RenderMgr {
       stateMgr.disableChordMode();
       stateMgr.setVoiceIdx(idx);
       stateMgr.navHead();
-      const noteGpsInWindow = voice.noteGps.filter(qng => !sheetStart8n || qng.end8n.greaterThan(sheetStart8n));
+      const noteGpsInWindow = voice.noteGps.filter(qng => {
+        let inWindow = !sheetStart8n || qng.end8n.greaterThan(sheetStart8n);
+        if (sheetEnd8n) {
+          inWindow = inWindow && qng.start8n.lessThan(sheetEnd8n);
+        }
+        return inWindow;
+      });
       noteGpsInWindow.forEach((qng, idx) => {
         if (idx === 0 && sheetStart8n && qng.start8n.lessThan(sheetStart8n)) {
           stateMgr.upsertByDur([null], qng.end8n.minus(sheetStart8n).over(8));
@@ -41,7 +46,13 @@ export class RenderMgr {
     });
 
     stateMgr.enableChordMode();
-    song.chordChanges.getChanges().filter(chordChange => !sheetStart8n || chordChange.start8n.geq(sheetStart8n)).forEach(chordChange => {
+    song.chordChanges.getChanges().filter(chordChange => {
+      let inWindow = !sheetStart8n || chordChange.start8n.geq(sheetStart8n);
+      if (sheetEnd8n) {
+        inWindow = inWindow && chordChange.start8n.lessThan(sheetEnd8n);
+      }
+      return inWindow;
+    }).forEach(chordChange => {
       let cursorTime = chordChange.start8n.over(8);
       if (sheetStart8n) {
         cursorTime = cursorTime.minus(sheetStart8n.over(8));

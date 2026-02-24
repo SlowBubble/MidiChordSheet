@@ -1,195 +1,210 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, user-scalable=no">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
-    <title>Midi Chord Sheet</title>
-    <link rel="stylesheet" href="appPlay/play.css">
-    <!-- <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"> -->
 
-    <!-- shims for midi.js package -->
-    <script src="lib/midi.js/inc/shim/Base64.js" type="text/javascript"></script>
-    <script src="lib/midi.js/inc/shim/Base64binary.js" type="text/javascript"></script>
-    <script src="lib/midi.js/inc/shim/WebAudioAPI.js" type="text/javascript"></script>
-    <!-- midi.js package -->
-    <script src="lib/midi.js/js/midi/audioDetect.js" type="text/javascript"></script>
-    <script src="lib/midi.js/js/midi/gm.js" type="text/javascript"></script>
-    <script src="lib/midi.js/js/midi/loader.js" type="text/javascript"></script>
-    <script src="lib/midi.js/js/midi/plugin.audiotag.js" type="text/javascript"></script>
-    <script src="lib/midi.js/js/midi/plugin.webaudio.js" type="text/javascript"></script>
-    <script src="lib/midi.js/js/midi/plugin.webmidi.js" type="text/javascript"></script>
-    <!-- utils -->
-    <script src="lib/midi.js/js/util/dom_request_xhr.js" type="text/javascript"></script>
-    <script src="lib/midi.js/js/util/dom_request_script.js" type="text/javascript"></script>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, user-scalable=no">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Midi Chord Sheet</title>
+  <link rel="stylesheet" href="appPlay/play.css">
+  <!-- <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"> -->
 
-    <script src="./lib/hotkeys.js"></script>
-    <!-- <script src="./lib/abcjs-basic.js" type="text/javascript"></script> -->
-    <!-- <script src="./lib/abcjs-weird.js" type="text/javascript"></script> -->
+  <!-- shims for midi.js package -->
+  <script src="lib/midi.js/inc/shim/Base64.js" type="text/javascript"></script>
+  <script src="lib/midi.js/inc/shim/Base64binary.js" type="text/javascript"></script>
+  <script src="lib/midi.js/inc/shim/WebAudioAPI.js" type="text/javascript"></script>
+  <!-- midi.js package -->
+  <script src="lib/midi.js/js/midi/audioDetect.js" type="text/javascript"></script>
+  <script src="lib/midi.js/js/midi/gm.js" type="text/javascript"></script>
+  <script src="lib/midi.js/js/midi/loader.js" type="text/javascript"></script>
+  <script src="lib/midi.js/js/midi/plugin.audiotag.js" type="text/javascript"></script>
+  <script src="lib/midi.js/js/midi/plugin.webaudio.js" type="text/javascript"></script>
+  <script src="lib/midi.js/js/midi/plugin.webmidi.js" type="text/javascript"></script>
+  <!-- utils -->
+  <script src="lib/midi.js/js/util/dom_request_xhr.js" type="text/javascript"></script>
+  <script src="lib/midi.js/js/util/dom_request_script.js" type="text/javascript"></script>
 
-    <!-- Parsing melody -->
-    <script src="./esModules/sheet-melody/nearley.js"></script>
-    <script src="./esModules/sheet-melody/melodicCell.js"></script>
+  <script src="./lib/hotkeys.js"></script>
+  <!-- <script src="./lib/abcjs-basic.js" type="text/javascript"></script> -->
+  <!-- <script src="./lib/abcjs-weird.js" type="text/javascript"></script> -->
 
-    <script src="./esModules/chord/chordParser.js"></script>
-    
-    <script>
-      // Dynamically load abcjs-basic.js or abcjs-weird.js based on url param WeirdSheet=1
-      (function() {
-        function getUrlKeyVals() {
-          const url = new URL(window.location.href.replace('#','?'));
-          const keyVals = {};
-          url.searchParams.forEach(function(value, key) {
-            keyVals[key] = value;
-          });
-          return keyVals;
-        }
-        const urlKeyVals = getUrlKeyVals();
-        const script = document.createElement('script');
-        script.type = 'text/javascript';
-        if (urlKeyVals.WeirdSheet === '1') {
-          script.src = './lib/abcjs-weird.js';
-        } else {
-          script.src = './lib/abcjs-basic.js';
-        }
-        document.head.appendChild(script);
-      })();
-    </script>
-    <script type='module' src='./appPlay/playMain.js'></script>
-  </head>
-  <body>
-    <div id='container'>
-      <div id='main'>
-        <div>
-          <button id='menu-btn'>Menu</button>
-          <button id='play-btn'>▶</button>
-        </div>
-        <div id='chords-canvas'></div>
-        <div id="canvas-div"></div>
+  <!-- Parsing melody -->
+  <script src="./esModules/sheet-melody/nearley.js"></script>
+  <script src="./esModules/sheet-melody/melodicCell.js"></script>
+
+  <script src="./esModules/chord/chordParser.js"></script>
+
+  <script>
+    // Dynamically load abcjs-basic.js or abcjs-weird.js based on url param WeirdSheet=1
+    (function () {
+      function getUrlKeyVals() {
+        const url = new URL(window.location.href.replace('#', '?'));
+        const keyVals = {};
+        url.searchParams.forEach(function (value, key) {
+          keyVals[key] = value;
+        });
+        return keyVals;
+      }
+      const urlKeyVals = getUrlKeyVals();
+      const script = document.createElement('script');
+      script.type = 'text/javascript';
+      if (urlKeyVals.WeirdSheet === '1') {
+        script.src = './lib/abcjs-weird.js';
+      } else {
+        script.src = './lib/abcjs-basic.js';
+      }
+      document.head.appendChild(script);
+    })();
+  </script>
+  <script type='module' src='./appPlay/playMain.js'></script>
+</head>
+
+<body>
+  <div id='container'>
+    <div id='main'>
+      <div>
+        <button id='menu-btn'>Menu</button>
+        <button id='play-btn'>▶</button>
       </div>
-      <div id='menu' style='display: none'>
-        <div>
-          <button id='toggle-roman-numeral-btn'>Roman Numeral View</button>
-        </div>
-        <table id='menu-table'>
-          <tr>
-            <td>
-              Tempo
-            </td>
-            <td id='tempo-display'>
-              180
-            </td>
-            <td>
-              <div>
-                <button id='incr-tempo-btn'>▲</button>
-              </div>
-              <div>
-                <button id='decr-tempo-btn'>▼</button>
-              </div>
-            </td>
-          </tr>
-          <tr>
-            <td>
-              # of Repeat
-            </td>
-            <td id='repeat-display'>
-              2
-            </td>
-            <td>
-              <div>
-                <button id='incr-repeats-btn'>▲</button>
-              </div>
-              <div>
-                <button id='decr-repeats-btn'>▼</button>
-              </div>
-            </td>
-          </tr>
-          <tr>
-            <td>
-              Swing
-            </td>
-            <td id='swing-display'>
-              Medium
-            </td>
-            <td>
-              <div>
-                <button id='incr-swing-btn'>▲</button>
-              </div>
-              <div>
-                <button id='decr-swing-btn'>▼</button>
-              </div>
-            </td>
-          </tr>
-          <tr>
-            <td>
-              Key
-            </td>
-            <td id='key-display'>
-              C
-            </td>
-            <td>
-              <div>
-                <button id='transpose-up-btn'>▲</button>
-              </div>
-              <div>
-                <button id='transpose-down-btn'>▼</button>
-              </div>
-            </td>
-          </tr>
-          <tr>
-            <td>
-              Beats per bar
-            </td>
-            <td id='upper-numeral-display'>
-              4
-            </td>
-            <td>
-             <div>
-               <button id='incr-upper-numeral-btn'>▲</button>
-             </div>
-             <div>
-               <button id='decr-upper-numeral-btn'>▼</button>
-             </div>
-           </td>
-          </tr>
-          <!-- TODO separate this into a new table for Comping-->
-          <tr>
-            <td>
-              Syncopation
-            </td>
-            <td id='syncopation-display'>
-              20
-            </td>
-            <td>
-              <div>
-                <button id='incr-syncopation-btn'>▲</button>
-              </div>
-              <div>
-                <button id='decr-syncopation-btn'>▼</button>
-              </div>
-            </td>
-          </tr>
-          <tr>
-            <td>
-              Drum beats
-            </td>
-            <td id='subdivision-display'>
-              20
-            </td>
-            <td>
-              <div>
-                <button id='incr-subdivision-btn'>▲</button>
-              </div>
-              <div>
-                <button id='decr-subdivision-btn'>▼</button>
-              </div>
-            </td>
-          </tr>
-        </table>
+      <div id='chords-canvas'></div>
+      <div id="canvas-div"></div>
+    </div>
+    <div id='menu' style='display: none'>
+      <table id='menu-table'>
+        <tr>
+          <td>
+            Tempo
+          </td>
+          <td id='tempo-display'>
+            180
+          </td>
+          <td>
+            <div>
+              <button id='incr-tempo-btn'>▲</button>
+            </div>
+            <div>
+              <button id='decr-tempo-btn'>▼</button>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            # of Repeat
+          </td>
+          <td id='repeat-display'>
+            2
+          </td>
+          <td>
+            <div>
+              <button id='incr-repeats-btn'>▲</button>
+            </div>
+            <div>
+              <button id='decr-repeats-btn'>▼</button>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            Swing
+          </td>
+          <td id='swing-display'>
+            Medium
+          </td>
+          <td>
+            <div>
+              <button id='incr-swing-btn'>▲</button>
+            </div>
+            <div>
+              <button id='decr-swing-btn'>▼</button>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            Key
+          </td>
+          <td id='key-display'>
+            C
+          </td>
+          <td>
+            <div>
+              <button id='transpose-up-btn'>▲</button>
+            </div>
+            <div>
+              <button id='transpose-down-btn'>▼</button>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            Beats per bar
+          </td>
+          <td id='upper-numeral-display'>
+            4
+          </td>
+          <td>
+            <div>
+              <button id='incr-upper-numeral-btn'>▲</button>
+            </div>
+            <div>
+              <button id='decr-upper-numeral-btn'>▼</button>
+            </div>
+          </td>
+        </tr>
+        <!-- TODO separate this into a new table for Comping-->
+        <tr>
+          <td>
+            Syncopation
+          </td>
+          <td id='syncopation-display'>
+            20
+          </td>
+          <td>
+            <div>
+              <button id='incr-syncopation-btn'>▲</button>
+            </div>
+            <div>
+              <button id='decr-syncopation-btn'>▼</button>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            Drum beats
+          </td>
+          <td id='subdivision-display'>
+            20
+          </td>
+          <td>
+            <div>
+              <button id='incr-subdivision-btn'>▲</button>
+            </div>
+            <div>
+              <button id='decr-subdivision-btn'>▼</button>
+            </div>
+          </td>
+        </tr>
+      </table>
+      <div class="menu-actions">
+        <button id='toggle-chord-view-btn'>Sheet View</button>
+        <button id='toggle-weird-sheet-btn'>Weird Sheet</button>
+        <button id='toggle-roman-numeral-btn'>I, II, III</button>
+      </div>
+      <div class="menu-actions">
+        <button id='toggle-mute-harmony-btn'>Mute Harmony</button>
+        <button id='toggle-mute-melody-btn'>Mute Melody</button>
+        <button id='gamify-btn'>Gamify</button>
+        <button id='toggle-improv-btn'>Improv Tactics</button>
+      </div>
+      <div class="menu-actions">
+        <button id='comping-default-btn'>Comping: Default</button>
+        <button id='comping-sync-btn'>Comping: Syncopated</button>
       </div>
     </div>
+  </div>
 
-  </body>
+</body>
+
 </html>

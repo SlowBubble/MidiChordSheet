@@ -23,7 +23,7 @@ async function setup() {
 
   const eBanner = banner.setup();
   const musicalSound = new sound.MusicalSound({
-    midiJs: window.MIDI, soundSub: soundSub, 
+    midiJs: window.MIDI, soundSub: soundSub,
     eBanner: eBanner, readyPub: readyPub
   });
   const lyricsDisplayer = new LyricsDisplayer({
@@ -31,7 +31,7 @@ async function setup() {
     eBanner: eBanner,
   });
   const songReplayer = new SongReplayer({
-    musicalSound: musicalSound, 
+    musicalSound: musicalSound,
     metronomeBeatPub: metronomeBeatPub,
     playEndedPub: playEndedPub,
     currTimePub: currTimePub,
@@ -86,7 +86,7 @@ function setupInteraction(actionMgr) {
   document.getElementById("transpose-down-btn").onclick = _ => actionMgr.transposeKeyDown();
 
   hotkeysDoc('shift+o', _ => actionMgr.increaseOffbeatSyncopation());
-  hotkeysDoc('alt+shift+o', _ => actionMgr.decreaseDensity());
+  hotkeysDoc('alt+shift+o', _ => actionMgr.decreaseOffbeatSyncopation());
   document.getElementById("incr-syncopation-btn").onclick = _ => actionMgr.increaseOffbeatSyncopation();
   document.getElementById("decr-syncopation-btn").onclick = _ => actionMgr.decreaseOffbeatSyncopation();
 
@@ -96,23 +96,32 @@ function setupInteraction(actionMgr) {
   hotkeysDoc('shift+n', _ => actionMgr.startNextSong());
 
   hotkeysDoc('shift+b', _ => actionMgr.incrementBeatSubdivision());
-  hotkeysDoc('alt+shift+b', _ => actionMgr.decreaseOffbeatSyncopation());
+  hotkeysDoc('alt+shift+b', _ => actionMgr.decrementBeatSubdivision());
   document.getElementById("incr-subdivision-btn").onclick = _ => actionMgr.incrementBeatSubdivision();
   document.getElementById("decr-subdivision-btn").onclick = _ => actionMgr.decrementBeatSubdivision();
 
   hotkeysDoc('shift+l', _ => actionMgr.toggleLyrics());
   hotkeysDoc('alt+shift+l', _ => actionMgr.toggleSolfegeLyrics());
+
   hotkeysDoc('shift+c', _ => actionMgr.toggleChordView());
+  document.getElementById("toggle-chord-view-btn").onclick = _ => actionMgr.toggleChordView();
+
   hotkeysDoc('shift+a', _ => actionMgr.toggleRomanNumeralView());
   document.getElementById("toggle-roman-numeral-btn").onclick = _ => actionMgr.toggleRomanNumeralView();
 
   hotkeysDoc('shift+i', _ => actionMgr.toggleImprovTactics());
+  document.getElementById("toggle-improv-btn").onclick = _ => actionMgr.toggleImprovTactics();
+
   hotkeysDoc('shift+-', _ => actionMgr.decreaseTempoMultiplier());
   hotkeysDoc('shift+=', _ => actionMgr.increaseTempoMultiplier());
+
   hotkeysDoc('shift+h', _ => actionMgr.toggleMuteHarmony());
+  document.getElementById("toggle-mute-harmony-btn").onclick = _ => actionMgr.toggleMuteHarmony();
   hotkeysDoc('shift+g', _ => actionMgr.gamify());
+  document.getElementById("gamify-btn").onclick = _ => actionMgr.gamify();
   hotkeysDoc('shift+t', _ => actionMgr.toggleMuteMelody());
-  
+  document.getElementById("toggle-mute-melody-btn").onclick = _ => actionMgr.toggleMuteMelody();
+
   hotkeysDoc('alt+shift+`', _ => actionMgr.setTransposedKey('C'));
   hotkeysDoc('alt+shift+1', _ => actionMgr.setTransposedKey('Db'));
   hotkeysDoc('alt+shift+2', _ => actionMgr.setTransposedKey('D'));
@@ -130,12 +139,16 @@ function setupInteraction(actionMgr) {
   hotkeysDoc('down', _ => actionMgr.moveDown());
   hotkeysDoc('left', _ => actionMgr.moveLeft());
   hotkeysDoc('right', _ => actionMgr.moveRight());
+
   hotkeysDoc('shift+x', _ => actionMgr.toggleSmartMode());
 
   // Add shortcut to toggle WeirdSheet and reload
   hotkeysDoc('shift+w', _ => actionMgr.toggleWeirdSheet());
+  document.getElementById("toggle-weird-sheet-btn").onclick = _ => actionMgr.toggleWeirdSheet();
 
   // Add shortcut to set compingStyle to syncopatedBass1
   hotkeysDoc('shift+`', _ => actionMgr.setCompingStyle('default'));
+  document.getElementById("comping-default-btn").onclick = _ => actionMgr.setCompingStyle('default');
   hotkeysDoc('shift+1', _ => actionMgr.setCompingStyle('syncopatedBass1'));
+  document.getElementById("comping-sync-btn").onclick = _ => actionMgr.setCompingStyle('syncopatedBass1');
 }

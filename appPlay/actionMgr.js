@@ -42,7 +42,7 @@ export class ActionMgr {
       this.setCurrTime8n(beat.time8n);
       if (this.displayChordsOnly) {
         this.renderChordsCanvas();
-      } else if (beat.time8n.isWhole()){
+      } else if (beat.time8n.isWhole()) {
         // Re-render every measure.
         const time8nInt = beat.time8n.getNumer();
         const num8nPerMeasure = makeFrac(
@@ -60,7 +60,7 @@ export class ActionMgr {
       }
       const waitMs = 2500;
       this.eBanner.success('Starting next song soon.')
-      window.setTimeout( _ => this.startNextSong(), waitMs);
+      window.setTimeout(_ => this.startNextSong(), waitMs);
     });
     window.onhashchange = _ => {
       if (this.reloadOnHashChange) {
@@ -98,7 +98,7 @@ export class ActionMgr {
           this.song.timeSigChanges.defaultVal.lowerNumeral);
         const num8nPerLine = num8nPerMeasure.toFloat() * numMeasurePerLine;
         const num8nInCursorWindow = num8nPerLine * (isMobile ? 1 : 2);
-        const numMultiples =  Math.floor(this.currTime8n.toFloat() / num8nInCursorWindow);
+        const numMultiples = Math.floor(this.currTime8n.toFloat() / num8nInCursorWindow);
         if (numMultiples >= 0) {
           sheetStart8n = makeFrac(num8nInCursorWindow * numMultiples);
         }
@@ -139,7 +139,7 @@ export class ActionMgr {
   }
 
   toggleLyrics() {
-    this.lyricsDisplayer.enabled = ! this.lyricsDisplayer.enabled;
+    this.lyricsDisplayer.enabled = !this.lyricsDisplayer.enabled;
     this.eBanner.success(this.lyricsDisplayer.enabled ? 'Lyrics' : 'Disabling lyrics');
   }
 
@@ -195,14 +195,14 @@ export class ActionMgr {
         const multiplier = 0.9 + Math.random() * 0.2;
         this.song.tempo8nPerMinChanges.defaultVal *= multiplier;
         this.song.tempo8nPerMinChanges.defaultVal = Math.floor(this.song.tempo8nPerMinChanges.defaultVal);
-        this.initialHeaders[HeaderType.Tempo] = this.song.tempo8nPerMinChanges.defaultVal; 
+        this.initialHeaders[HeaderType.Tempo] = this.song.tempo8nPerMinChanges.defaultVal;
       }
     }
 
     const subdivisions = this.initialHeaders[HeaderType.Subdivision];
     const swingRatio = this.initialHeaders[HeaderType.Swing].ratio.toFloat();
     let swingStr = 'No';
-    if (swingRatio >= 5/2) {
+    if (swingRatio >= 5 / 2) {
       swingStr = 'Hard';
     } else if (swingRatio >= 2) {
       swingStr = 'Medium';
@@ -321,7 +321,7 @@ export class ActionMgr {
       const unroundedBarNum = currTime.over(durPerMeasure8n).toFloat();
       let barNum = numBars > 0 ? Math.ceil(unroundedBarNum) : Math.floor(unroundedBarNum);
       barNum += numBars;
-  
+
       let newTime8n = null;
       if (barNum >= 0) {
         newTime8n = durPerMeasure8n.times(barNum);
@@ -345,16 +345,16 @@ export class ActionMgr {
   }
 
   toggleSwing() {
-      const swing = this.initialHeaders[HeaderType.Swing];
-      if (swing.ratio.leq(makeFrac(1))) {
-        setUrlParam(HeaderType.Swing, 'Light');
-      } else if (swing.ratio.leq(makeFrac(3, 2))) {
-        setUrlParam(HeaderType.Swing, 'Medium');
-      } else if (swing.ratio.leq(makeFrac(2))) {
-        setUrlParam(HeaderType.Swing, 'Hard');
-      } else {
-        setUrlParam(HeaderType.Swing, 'No');
-      }
+    const swing = this.initialHeaders[HeaderType.Swing];
+    if (swing.ratio.leq(makeFrac(1))) {
+      setUrlParam(HeaderType.Swing, 'Light');
+    } else if (swing.ratio.leq(makeFrac(3, 2))) {
+      setUrlParam(HeaderType.Swing, 'Medium');
+    } else if (swing.ratio.leq(makeFrac(2))) {
+      setUrlParam(HeaderType.Swing, 'Hard');
+    } else {
+      setUrlParam(HeaderType.Swing, 'No');
+    }
   }
 
   transposeKeyDown() {
@@ -503,19 +503,19 @@ function setUrlParam(key, val) {
 }
 
 function toInternalUrl(externalUrlStr) {
-  return new URL(externalUrlStr.replace('#','?'));
+  return new URL(externalUrlStr.replace('#', '?'));
 }
 
 function toExternalUrlStr(internalUrl) {
   // This causes data= to come last because the rest of the param keys are upper cases, which has a smaller unicode code point.
   internalUrl.searchParams.sort();
-  return internalUrl.href.replace('?','#');
+  return internalUrl.href.replace('?', '#');
 }
 
 function getUrlKeyVals() {
   const url = toInternalUrl(document.URL);
   const keyVals = {};
-  url.searchParams.forEach(function(value, key) {
+  url.searchParams.forEach(function (value, key) {
     keyVals[key] = value;
   });
   return keyVals;
@@ -534,9 +534,9 @@ async function fetchFilePaths(keyVals) {
       files = ['https://unpkg.com/@clubfest/kids-tunes/index.json'];
     } else if (keyVals.genre === 'pop') {
       files = ['https://unpkg.com/@clubfest/pop-tunes/index.json'];
-    }  else if (keyVals.genre === 'cantopop') {
+    } else if (keyVals.genre === 'cantopop') {
       files = ['https://unpkg.com/@clubfest/cantopop-tunes/index.json'];
-    }  else if (keyVals.genre === 'all') {
+    } else if (keyVals.genre === 'all') {
       files = ['https://unpkg.com/@clubfest/tunes/index.json'];
     } else {
       files = ['https://unpkg.com/@clubfest/jazz-tunes/index.json'];

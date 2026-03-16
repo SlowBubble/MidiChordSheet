@@ -255,6 +255,9 @@ export class ActionMgr {
     this.gameMgr.resetGame(this.song);
 
     this.lyricsDisplayer.setVoice(this.song.getVoice(0));
+    if (urlKeyVals['Start8n'] !== undefined) {
+      this.setCurrTime8n(makeFrac(Number(urlKeyVals['Start8n'])));
+    }
     this.chordSvgMgr = new ChordSvgMgr({
       songTitle: songInfo.songForm.title,
       sequencedParts: songInfo.songForm.getSequencedParts(),
@@ -335,10 +338,16 @@ export class ActionMgr {
       let disableResume = false;
       numBars = numBars || 1;
       const durPerMeasure8n = this.song.timeSigChanges.defaultVal.getDurPerMeasure8n();
-      const currTime = this.currTime8n || makeFrac(0);
-      const unroundedBarNum = currTime.over(durPerMeasure8n).toFloat();
-      let barNum = numBars > 0 ? Math.ceil(unroundedBarNum) : Math.floor(unroundedBarNum);
-      barNum += numBars;
+      let barNum;
+      if (this.currTime8n === null) {
+        // Cursor is hidden; first right/down move lands on bar 0, left/up stays hidden.
+        if (numBars < 0) return false;
+        barNum = 0;
+      } else {
+        const unroundedBarNum = this.currTime8n.over(durPerMeasure8n).toFloat();
+        barNum = numBars > 0 ? Math.ceil(unroundedBarNum) : Math.floor(unroundedBarNum);
+        barNum += numBars;
+      }
 
       let newTime8n = null;
       if (barNum >= 0) {

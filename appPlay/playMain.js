@@ -3,7 +3,7 @@ import { SongReplayer } from "../esModules/song-replay/songReplay.js";
 import * as banner from '../esModules/ephemeral-banner/index.js';
 import * as sound from '../esModules/musical-sound/musicalSound.js';
 import * as pubSub from '../esModules/pub-sub/pubSub.js';
-import { ActionMgr } from "./actionMgr.js";
+import { ActionMgr, getUrlKeyVals } from "./actionMgr.js";
 import { hotkeysDoc } from "../esModules/hotkeys-doc/hotkeysDoc.js";
 import { LyricsDisplayer } from "../esModules/lyrics-display/lyricsDisplayer.js";
 // import { setupKeyboard } from "../esModules/keyboard-to-midi-evt/index.js";
@@ -110,7 +110,6 @@ function setupInteraction(actionMgr) {
   document.getElementById("toggle-roman-numeral-btn").onclick = _ => actionMgr.toggleRomanNumeralView();
 
   hotkeysDoc('shift+i', _ => actionMgr.toggleImprovTactics());
-  document.getElementById("toggle-improv-btn").onclick = _ => actionMgr.toggleImprovTactics();
 
   hotkeysDoc('shift+-', _ => actionMgr.decreaseTempoMultiplier());
   hotkeysDoc('shift+=', _ => actionMgr.increaseTempoMultiplier());
@@ -141,6 +140,18 @@ function setupInteraction(actionMgr) {
   hotkeysDoc('right', _ => actionMgr.moveRight());
 
   hotkeysDoc('shift+x', _ => actionMgr.toggleSmartMode());
+
+  // Initialize button labels based on current URL state
+  const urlKeyVals = getUrlKeyVals();
+  if (urlKeyVals['WeirdSheet'] === '1') {
+    document.getElementById("toggle-weird-sheet-btn").textContent = 'Normal Sheet';
+  }
+  if (urlKeyVals['MuteHarmony']) {
+    document.getElementById("toggle-mute-harmony-btn").textContent = 'Unmute Harmony';
+  }
+  if (urlKeyVals['MuteMelody']) {
+    document.getElementById("toggle-mute-melody-btn").textContent = 'Unmute Melody';
+  }
 
   // Add shortcut to toggle WeirdSheet and reload
   hotkeysDoc('shift+w', _ => actionMgr.toggleWeirdSheet());

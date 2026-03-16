@@ -115,14 +115,18 @@ export class ActionMgr {
     this.displayTactics = !this.displayTactics;
     this.render();
   }
+  // Cycles from chord view -->  lead sheet view --> comping view
   toggleChordView() {
     if (this.displayChordsOnly) {
+      // chord view --> lead sheet view
       this.displayChordsOnly = false;
     } else {
       if (this.displayCompingVoicesOnly) {
+        // comping view --> chord view
         this.displayChordsOnly = true;
         this.displayCompingVoicesOnly = false;
       } else {
+        // lead sheet view --> comping view
         this.displayCompingVoicesOnly = true;
       }
     }
@@ -451,11 +455,14 @@ export class ActionMgr {
   }
   toggleMuteHarmony() {
     const urlKeyVals = getUrlKeyVals();
+    const muting = !urlKeyVals['MuteHarmony'];
     if (urlKeyVals['MuteHarmony']) {
       setUrlParam('MuteHarmony');
     } else {
       setUrlParam('MuteHarmony', '1');
     }
+    const btn = document.getElementById('toggle-mute-harmony-btn');
+    if (btn) btn.textContent = muting ? 'Unmute Harmony' : 'Mute Harmony';
   }
   gamify() {
     setUrlParam('MuteHarmony', '1');
@@ -463,11 +470,14 @@ export class ActionMgr {
   }
   toggleMuteMelody() {
     const urlKeyVals = getUrlKeyVals();
+    const muting = !urlKeyVals['MuteMelody'];
     if (urlKeyVals['MuteMelody']) {
       setUrlParam('MuteMelody');
     } else {
       setUrlParam('MuteMelody', '1');
     }
+    const btn = document.getElementById('toggle-mute-melody-btn');
+    if (btn) btn.textContent = muting ? 'Unmute Melody' : 'Mute Melody';
   }
   toggleSmartMode() {
     this.gameMgr.smartMode = !this.gameMgr.smartMode;
@@ -476,7 +486,8 @@ export class ActionMgr {
 
   toggleWeirdSheet() {
     const urlKeyVals = getUrlKeyVals();
-    if (urlKeyVals['WeirdSheet'] === '1') {
+    const activating = urlKeyVals['WeirdSheet'] !== '1';
+    if (!activating) {
       setUrlParam('WeirdSheet');
     } else {
       setUrlParam('WeirdSheet', '1');
@@ -512,7 +523,7 @@ function toExternalUrlStr(internalUrl) {
   return internalUrl.href.replace('?', '#');
 }
 
-function getUrlKeyVals() {
+export function getUrlKeyVals() {
   const url = toInternalUrl(document.URL);
   const keyVals = {};
   url.searchParams.forEach(function (value, key) {

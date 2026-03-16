@@ -162,6 +162,8 @@ function setupInteraction(actionMgr) {
   document.getElementById("toggle-weird-sheet-btn").onclick = _ => actionMgr.toggleWeirdSheet();
 
   // Add shortcut to set compingStyle to syncopatedBass1
+  hotkeysDoc('shift+v', _ => actionMgr.navigateToViola());
+
   hotkeysDoc('shift+`', _ => actionMgr.setCompingStyle('default'));
   document.getElementById("comping-default-btn").onclick = _ => actionMgr.setCompingStyle('default');
   hotkeysDoc('shift+1', _ => actionMgr.setCompingStyle('syncopatedBass1'));

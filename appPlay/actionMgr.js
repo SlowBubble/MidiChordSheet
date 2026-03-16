@@ -523,6 +523,14 @@ export class ActionMgr {
   setCompingStyle(style) {
     setUrlParam('CompingStyle', style);
   }
+
+  navigateToViola() {
+    const urlKeyVals = getUrlKeyVals();
+    const violaId = urlKeyVals['ViolaId'];
+    if (violaId) {
+      window.location.href = `https://viola-1.web.app/music.html?id=${violaId}`;
+    }
+  }
 }
 
 // Note that this will trigger a song reload.

@@ -7,7 +7,7 @@ export class LyricsDisplayer {
     this._lyricsLines = [];
     this._solfegeLines = [];
     this._eBanner = eBanner;
-    this.enabled = true;
+    this.enabled = false;
     this.displaySolfege = false;
 
     // TODO make this more efficient.

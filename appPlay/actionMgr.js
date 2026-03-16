@@ -120,14 +120,18 @@ export class ActionMgr {
     if (this.displayChordsOnly) {
       // chord view --> lead sheet view
       this.displayChordsOnly = false;
+      this.displayCompingVoicesOnly = false;
+      setUrlParam('SheetView', 'leadsheet');
     } else {
       if (this.displayCompingVoicesOnly) {
         // comping view --> chord view
         this.displayChordsOnly = true;
         this.displayCompingVoicesOnly = false;
+        setUrlParam('SheetView', undefined);
       } else {
         // lead sheet view --> comping view
         this.displayCompingVoicesOnly = true;
+        setUrlParam('SheetView', 'comping');
       }
     }
     this.render();
@@ -144,6 +148,9 @@ export class ActionMgr {
 
   toggleLyrics() {
     this.lyricsDisplayer.enabled = !this.lyricsDisplayer.enabled;
+    setUrlParam('DisplayLyrics', this.lyricsDisplayer.enabled ? '1' : undefined);
+    const btn = document.getElementById('toggle-lyrics-btn');
+    if (btn) btn.textContent = this.lyricsDisplayer.enabled ? 'No Lyrics' : 'Lyrics';
     this.eBanner.success(this.lyricsDisplayer.enabled ? 'Lyrics' : 'Disabling lyrics');
   }
 
@@ -232,12 +239,19 @@ export class ActionMgr {
     document.getElementById('repeat-display').textContent = this.initialHeaders[HeaderType.Repeat];
     document.getElementById('upper-numeral-display').textContent = this.initialHeaders[HeaderType.Meter].upperNumeral;
 
-    if (urlKeyVals['DisplayComping']) {
+    const sheetView = urlKeyVals['SheetView'];
+    if (sheetView === 'comping') {
       this.displayChordsOnly = false;
       this.displayCompingVoicesOnly = true;
-      // Needed for the game score display to work.
-      this.lyricsDisplayer.enabled = false;
+    } else if (sheetView === 'leadsheet') {
+      this.displayChordsOnly = false;
+      this.displayCompingVoicesOnly = false;
+    } else {
+      // default: chord view
+      this.displayChordsOnly = true;
+      this.displayCompingVoicesOnly = false;
     }
+    this.lyricsDisplayer.enabled = !!urlKeyVals['DisplayLyrics'];
     this.gameMgr.resetGame(this.song);
 
     this.lyricsDisplayer.setVoice(this.song.getVoice(0));
@@ -466,7 +480,8 @@ export class ActionMgr {
   }
   gamify() {
     setUrlParam('MuteHarmony', '1');
-    setUrlParam('DisplayComping', '1');
+    setUrlParam('SheetView', 'comping');
+    setUrlParam('DisplayLyrics', undefined);
   }
   toggleMuteMelody() {
     const urlKeyVals = getUrlKeyVals();

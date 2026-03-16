@@ -102,6 +102,7 @@ function setupInteraction(actionMgr) {
 
   hotkeysDoc('shift+l', _ => actionMgr.toggleLyrics());
   hotkeysDoc('alt+shift+l', _ => actionMgr.toggleSolfegeLyrics());
+  document.getElementById("toggle-lyrics-btn").onclick = _ => actionMgr.toggleLyrics();
 
   hotkeysDoc('shift+c', _ => actionMgr.toggleChordView());
   document.getElementById("toggle-chord-view-btn").onclick = _ => actionMgr.toggleChordView();
@@ -145,6 +146,9 @@ function setupInteraction(actionMgr) {
   const urlKeyVals = getUrlKeyVals();
   if (urlKeyVals['WeirdSheet'] === '1') {
     document.getElementById("toggle-weird-sheet-btn").textContent = 'Normal Sheet';
+  }
+  if (urlKeyVals['DisplayLyrics']) {
+    document.getElementById("toggle-lyrics-btn").textContent = 'No Lyrics';
   }
   if (urlKeyVals['MuteHarmony']) {
     document.getElementById("toggle-mute-harmony-btn").textContent = 'Unmute Harmony';

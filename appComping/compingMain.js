@@ -8,6 +8,10 @@ const [midiEvtPub, midiEvtSub] = pubSub.make();
 const volume = 120;
 const soundfontUrl = '../lib/midi.js/soundfont/';
 
+// m1f: beats per measure and beat subdivision (user-adjustable)
+let beatsPerMeasure = 4;
+let beatSubdivision = 1;
+
 // m1b: track low notes (noteNum < 60) to compute measure duration
 const lowNoteList = []; // each entry: { noteNum, timeMs }
 
@@ -52,11 +56,11 @@ function playDrumPattern(measureDurMs, measureDurComputedAt) {
   }
 
   // Simple 4/4 time sig object for genMidiPattern
-  const timeSig = { upperNumeral: 4, lowerNumeral: 4, isCompound: () => false };
-  const pattern = genMidiPattern(timeSig, false, 2);
+  const timeSig = { upperNumeral: beatsPerMeasure, lowerNumeral: 4, isCompound: () => false };
+  const pattern = genMidiPattern(timeSig, false, beatSubdivision);
   const numDivisions = pattern.evtsArrs.length;
   const divisionMs = measureDurMs / numDivisions;
-  const beatMs = measureDurMs / 4; // one beat = one quarter note
+  const beatMs = measureDurMs / beatsPerMeasure; // one beat = one quarter note
 
   // An unknown latency likely due to drum start taking some time.
   // TODO: May need to allow user to customize since some computers are slower.
@@ -125,3 +129,26 @@ window.onload = () => {
 };
 
 setupKeyboard(midiEvtPub);
+
+// m1f: beats per measure and subdivision controls
+function updateBeatsDisplay() {
+  document.getElementById('beats-display').textContent = beatsPerMeasure;
+}
+function updateSubdivDisplay() {
+  document.getElementById('subdiv-display').textContent = beatSubdivision;
+}
+
+document.getElementById('incr-beats-btn').onclick = () => {
+  beatsPerMeasure++;
+  updateBeatsDisplay();
+};
+document.getElementById('decr-beats-btn').onclick = () => {
+  if (beatsPerMeasure > 1) { beatsPerMeasure--; updateBeatsDisplay(); }
+};
+document.getElementById('incr-subdiv-btn').onclick = () => {
+  beatSubdivision++;
+  updateSubdivDisplay();
+};
+document.getElementById('decr-subdiv-btn').onclick = () => {
+  if (beatSubdivision > 1) { beatSubdivision--; updateSubdivDisplay(); }
+};

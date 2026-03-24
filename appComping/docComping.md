@@ -8,6 +8,11 @@
 - When a note on event has note number < 60, trigger the following process
   - Add the note number and the timeMs of that event to a list, for all note on event.
 
+# m1f
+- Add a button to increase and decrease number of beats per measure (from 4)
+- Add another button to increase and decrease the subdivision of the beats.
+- Hint: see how appPlay/ does it
+
 # m1e
 - There's a lot of latency between measureDurMs and the first beat of the drum
 - Compensate by computing the latency and if it is > 0 (which should always be the case), then skip it and just do a setTimeout for the second beat (timeout will depend on the computed latency) or third beat (if even the second beat has latency > 0).

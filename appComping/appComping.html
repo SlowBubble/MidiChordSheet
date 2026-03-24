@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Piano Player</title>
-</head>
-<body>
+  <meta name="viewport" content="width=device-width, user-scalable=no">
+  <title>Piano Comping</title>
+  <link rel="stylesheet" href="../appPlay/play.css">
   <script src="../lib/midi.js/inc/shim/Base64.js"></script>
   <script src="../lib/midi.js/inc/shim/Base64binary.js"></script>
   <script src="../lib/midi.js/inc/shim/WebAudioAPI.js"></script>
@@ -17,5 +17,32 @@
   <script src="../lib/midi.js/js/util/dom_request_xhr.js"></script>
   <script src="../lib/midi.js/js/util/dom_request_script.js"></script>
   <script type="module" src="compingMain.js"></script>
+</head>
+<body>
+  <div id="container">
+    <div id="main">
+      <p>Play low notes on the keyboard to set the tempo, then comp away.</p>
+    </div>
+    <div id="menu">
+      <table id="menu-table">
+        <tr>
+          <td>Beats/measure</td>
+          <td id="beats-display">4</td>
+          <td>
+            <div><button id="incr-beats-btn">▲</button></div>
+            <div><button id="decr-beats-btn">▼</button></div>
+          </td>
+        </tr>
+        <tr>
+          <td>Subdivision</td>
+          <td id="subdiv-display">2</td>
+          <td>
+            <div><button id="incr-subdiv-btn">▲</button></div>
+            <div><button id="decr-subdiv-btn">▼</button></div>
+          </td>
+        </tr>
+      </table>
+    </div>
+  </div>
 </body>
 </html>

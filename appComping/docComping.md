@@ -4,9 +4,9 @@
 # Project structure
 - ../lib and ../esModules have tools that can be shared with other apps
 
-# m2
-- When a note on event has note number < 60, trigger the following process
-  - Add the note number and the timeMs of that event to a list, for all note on event.
+
+# m1h
+- Make the note number 60 in m1b to be 64 instead and have it be configurable via buttons in the menu
 
 # m1g
 - Try avoding the hacky latency fix of hard-coding drumStartLatency by using requestAnimationFrame instead.

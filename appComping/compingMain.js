@@ -12,7 +12,10 @@ const soundfontUrl = '../lib/midi.js/soundfont/';
 let beatsPerMeasure = 4;
 let beatSubdivision = 1;
 
-// m1b: track low notes (noteNum < 60) to compute measure duration
+// m1h: configurable low-note threshold (default 64)
+let lowNoteThreshold = 64;
+
+// m1b: track low notes (noteNum < lowNoteThreshold) to compute measure duration
 const lowNoteList = []; // each entry: { noteNum, timeMs }
 
 // m1d: measureDurMs computed once; reset via space
@@ -77,7 +80,7 @@ function playDrumPattern(durMs) {
 
 function handleMeasureTiming(evt) {
   if (evt.type !== midiEvent.midiEvtType.NoteOn) return;
-  if (evt.noteNum >= 60) return;
+  if (evt.noteNum >= lowNoteThreshold) return;
 
   const biggestNoteNum = lowNoteList.length > 0
     ? Math.max(...lowNoteList.map(n => n.noteNum))
@@ -142,4 +145,16 @@ document.getElementById('incr-subdiv-btn').onclick = () => {
 };
 document.getElementById('decr-subdiv-btn').onclick = () => {
   if (beatSubdivision > 1) { beatSubdivision--; updateSubdivDisplay(); }
+};
+
+// m1h: low-note threshold controls
+function updateThresholdDisplay() {
+  document.getElementById('threshold-display').textContent = lowNoteThreshold;
+}
+document.getElementById('incr-threshold-btn').onclick = () => {
+  lowNoteThreshold++;
+  updateThresholdDisplay();
+};
+document.getElementById('decr-threshold-btn').onclick = () => {
+  if (lowNoteThreshold > 1) { lowNoteThreshold--; updateThresholdDisplay(); }
 };

@@ -34,6 +34,17 @@ window.addEventListener('keydown', e => {
   }
 });
 
+function startDrumInterval(pattern, numDivisions, divisionMs, startIdx) {
+  let idx = startIdx;
+  drumIntervalId = setInterval(() => {
+    const notes = pattern.evtsArrs[idx % numDivisions];
+    notes.forEach(note => {
+      MIDI.noteOn(2, note.noteNum, note.velocity);
+    });
+    idx++;
+  }, divisionMs);
+}
+
 function playDrumPattern(measureDurMs, measureDurComputedAt) {
   if (drumIntervalId !== null) {
     clearInterval(drumIntervalId);
@@ -45,20 +56,27 @@ function playDrumPattern(measureDurMs, measureDurComputedAt) {
   const pattern = genMidiPattern(timeSig, false, 2);
   const numDivisions = pattern.evtsArrs.length;
   const divisionMs = measureDurMs / numDivisions;
+  const beatMs = measureDurMs / 4; // one beat = one quarter note
 
-  let idx = 0;
-  drumIntervalId = setInterval(() => {
-    if (idx === 0) {
-      const firstBeatAt = Date.now();
-      console.log('first drum beat triggered at', firstBeatAt);
-      console.log('latency (measureDurMs -> first drum beat):', firstBeatAt - measureDurComputedAt, 'ms');
-    }
-    const notes = pattern.evtsArrs[idx % numDivisions];
-    notes.forEach(note => {
-      MIDI.noteOn(2, note.noteNum, note.velocity);
-    });
-    idx++;
-  }, divisionMs);
+  // An unknown latency likely due to drum start taking some time.
+  // TODO: May need to allow user to customize since some computers are slower.
+  const drumStartLatency = 300;
+  // m1e: compute latency between measureDurMs computation and now
+  const latency = Date.now() - measureDurComputedAt + drumStartLatency;
+  console.log('drum start latency:', latency, 'ms, beatMs:', beatMs);
+
+  // Determine which beat we're in based on latency
+  const beatsElapsed = Math.floor(latency / beatMs);
+  const nextBeat = beatsElapsed + 1; // 0-indexed beat to start on
+
+  const msIntoCurrentBeat = latency % beatMs;
+  const msUntilNextBeat = beatMs - msIntoCurrentBeat;
+  const startDivIdx = nextBeat * (numDivisions / 4);
+
+  console.log('skipping', nextBeat, 'beat(s), starting at beat', nextBeat + 1, 'in', msUntilNextBeat, 'ms');
+  setTimeout(() => {
+    startDrumInterval(pattern, numDivisions, divisionMs, startDivIdx);
+  }, msUntilNextBeat);
 }
 
 function handleMeasureTiming(evt) {

@@ -9,6 +9,8 @@
   - Add the note number and the timeMs of that event to a list, for all note on event.
 
 # m1e
+- There's a lot of latency between measureDurMs and the first beat of the drum
+- Compensate by computing the latency and if it is > 0 (which should always be the case), then skip it and just do a setTimeout for the second beat (timeout will depend on the computed latency) or third beat (if even the second beat has latency > 0).
 
 # m1d
 - measureDurMs should just be computed once, unless things are reset.

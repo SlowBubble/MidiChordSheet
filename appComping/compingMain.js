@@ -2,8 +2,10 @@ import { setupKeyboard } from '../esModules/keyboard-to-midi-evt/index.js';
 import * as pubSub from '../esModules/pub-sub/pubSub.js';
 import * as midiEvent from '../esModules/midi-data/midiEvent.js';
 import { genMidiPattern } from '../esModules/musical-beat/pattern.js';
+import * as midiInput from '../esModules/fire/midiInput.js';
 
-const [midiEvtPub, midiEvtSub] = pubSub.make();
+const [keyboardEvtPub, keyboardEvtSub] = pubSub.make();
+const [midiInputEvtPub, midiInputEvtSub] = pubSub.make();
 
 const volume = 120;
 const soundfontUrl = '../lib/midi.js/soundfont/';
@@ -122,8 +124,9 @@ window.onload = () => {
       MIDI.programChange(2, MIDI.GM.byName['synth_drum'].number);
       MIDI.setVolume(2, volume);
 
-      midiEvtSub(evt => {
-        lastMidiEventTime = performance.now(); // m1i: track last midi event time
+      // keyboard: sound + measure timing
+      keyboardEvtSub(evt => {
+        lastMidiEventTime = performance.now();
         if (evt.type === midiEvent.midiEvtType.NoteOn) {
           MIDI.noteOn(1, evt.noteNum, evt.velocity);
         } else if (evt.type === midiEvent.midiEvtType.NoteOff) {
@@ -131,11 +134,32 @@ window.onload = () => {
         }
         handleMeasureTiming(evt);
       });
+
+      // midi input: measure timing only (no sound)
+      midiInputEvtSub(evt => {
+        lastMidiEventTime = performance.now();
+        handleMeasureTiming(evt);
+      });
     },
   });
 };
 
-setupKeyboard(midiEvtPub);
+setupKeyboard(keyboardEvtPub);
+
+// m2a: real MIDI input triggers measure timing only, no sound
+midiInput.setup(
+  (notes, timeMs) => {
+    notes.forEach(noteNum => {
+      midiInputEvtPub(new midiEvent.NoteOnEvt({ noteNum, velocity: volume, channelNum: 0, time: timeMs }));
+    });
+  },
+  (notes, timeMs) => {
+    notes.forEach(noteNum => {
+      midiInputEvtPub(new midiEvent.NoteOffEvt({ noteNum, channelNum: 0, time: timeMs }));
+    });
+  },
+  () => {},
+);
 
 // m1f: beats per measure and subdivision controls
 function updateBeatsDisplay() {

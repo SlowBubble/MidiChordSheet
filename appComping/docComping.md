@@ -8,7 +8,7 @@
 - Config to only play beat 2 and 4
 
 # m2a
-- Support listening to midi events.
+- In addition having keyboard triggering midi events, listen to actual midi input and trigger midi events.
 
 # m1i
 - If there are no midi events for 1 whole measure, then stop the drum beats

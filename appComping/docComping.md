@@ -8,6 +8,10 @@
 - When a note on event has note number < 60, trigger the following process
   - Add the note number and the timeMs of that event to a list, for all note on event.
 
+# m1g
+- Try avoding the hacky latency fix of hard-coding drumStartLatency by using requestAnimationFrame instead.
+  - with requestAnimationFrame, you should not need setTimout and setInterval at all, since setTimeout is the source of unpredictable delay for the first beat, and also stop using setInterval since it can also have unpredictable delay
+
 # m1f
 - Add a button to increase and decrease number of beats per measure (from 4)
 - Add another button to increase and decrease the subdivision of the beats.

@@ -18,13 +18,15 @@ const lowNoteList = []; // each entry: { noteNum, timeMs }
 // m1d: measureDurMs computed once; reset via space
 let measureDurMs = null;
 
-// Drum metronome — lazily created once MIDI is ready
-let drumIntervalId = null;
+// Drum metronome — driven by requestAnimationFrame
+let drumRunning = false;
+let drumRafId = null;
 
 function reset() {
-  if (drumIntervalId !== null) {
-    clearInterval(drumIntervalId);
-    drumIntervalId = null;
+  drumRunning = false;
+  if (drumRafId !== null) {
+    cancelAnimationFrame(drumRafId);
+    drumRafId = null;
   }
   measureDurMs = null;
   lowNoteList.length = 0;
@@ -38,49 +40,39 @@ window.addEventListener('keydown', e => {
   }
 });
 
-function startDrumInterval(pattern, numDivisions, divisionMs, startIdx) {
-  let idx = startIdx;
-  drumIntervalId = setInterval(() => {
-    const notes = pattern.evtsArrs[idx % numDivisions];
-    notes.forEach(note => {
-      MIDI.noteOn(2, note.noteNum, note.velocity);
-    });
-    idx++;
-  }, divisionMs);
-}
-
-function playDrumPattern(measureDurMs, measureDurComputedAt) {
-  if (drumIntervalId !== null) {
-    clearInterval(drumIntervalId);
-    drumIntervalId = null;
+function playDrumPattern(durMs) {
+  // Stop any running drum loop
+  drumRunning = false;
+  if (drumRafId !== null) {
+    cancelAnimationFrame(drumRafId);
+    drumRafId = null;
   }
 
-  // Simple 4/4 time sig object for genMidiPattern
   const timeSig = { upperNumeral: beatsPerMeasure, lowerNumeral: 4, isCompound: () => false };
   const pattern = genMidiPattern(timeSig, false, beatSubdivision);
   const numDivisions = pattern.evtsArrs.length;
-  const divisionMs = measureDurMs / numDivisions;
-  const beatMs = measureDurMs / beatsPerMeasure; // one beat = one quarter note
+  const divisionMs = durMs / numDivisions;
 
-  // An unknown latency likely due to drum start taking some time.
-  // TODO: May need to allow user to customize since some computers are slower.
-  const drumStartLatency = 300;
-  // m1e: compute latency between measureDurMs computation and now
-  const latency = Date.now() - measureDurComputedAt + drumStartLatency;
-  console.log('drum start latency:', latency, 'ms, beatMs:', beatMs);
+  drumRunning = true;
+  let nextDivIdx = 0;
+  // Use performance.now() for high-res timing; schedule first division immediately
+  let nextFireTime = performance.now();
 
-  // Determine which beat we're in based on latency
-  const beatsElapsed = Math.floor(latency / beatMs);
-  const nextBeat = beatsElapsed + 1; // 0-indexed beat to start on
+  function tick(now) {
+    if (!drumRunning) return;
 
-  const msIntoCurrentBeat = latency % beatMs;
-  const msUntilNextBeat = beatMs - msIntoCurrentBeat;
-  const startDivIdx = nextBeat * (numDivisions / 4);
+    // Fire all divisions whose scheduled time has arrived
+    while (nextFireTime <= now) {
+      const notes = pattern.evtsArrs[nextDivIdx % numDivisions];
+      notes.forEach(note => MIDI.noteOn(2, note.noteNum, note.velocity));
+      nextDivIdx++;
+      nextFireTime += divisionMs;
+    }
 
-  console.log('skipping', nextBeat, 'beat(s), starting at beat', nextBeat + 1, 'in', msUntilNextBeat, 'ms');
-  setTimeout(() => {
-    startDrumInterval(pattern, numDivisions, divisionMs, startDivIdx);
-  }, msUntilNextBeat);
+    drumRafId = requestAnimationFrame(tick);
+  }
+
+  drumRafId = requestAnimationFrame(tick);
 }
 
 function handleMeasureTiming(evt) {
@@ -93,11 +85,10 @@ function handleMeasureTiming(evt) {
 
   if (evt.noteNum < biggestNoteNum && lowNoteList.length > 0 && measureDurMs === null) {
     measureDurMs = evt.time - lowNoteList[0].time;
-    const measureDurComputedAt = Date.now();
-    console.log('measureDurMs computed at', measureDurComputedAt, '— value:', measureDurMs);
+    console.log('measureDurMs:', measureDurMs);
 
     // m1c: trigger 4-beat drum track at the detected tempo
-    playDrumPattern(measureDurMs, measureDurComputedAt);
+    playDrumPattern(measureDurMs);
 
     lowNoteList.length = 0;
   }

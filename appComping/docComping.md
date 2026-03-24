@@ -4,6 +4,15 @@
 # Project structure
 - ../lib and ../esModules have tools that can be shared with other apps
 
+# m2b
+- Config to only play beat 2 and 4
+
+# m2a
+- Support listening to midi events.
+
+# m1i
+- If there are no midi events for 1 whole measure, then stop the drum beats
+  - Make this configurable via increase/decrease buttons
 
 # m1h
 - Make the note number 60 in m1b to be 64 instead and have it be configurable via buttons in the menu

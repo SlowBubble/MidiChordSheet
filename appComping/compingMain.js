@@ -12,8 +12,12 @@ const soundfontUrl = '../lib/midi.js/soundfont/';
 let beatsPerMeasure = 4;
 let beatSubdivision = 1;
 
-// m1h: configurable low-note threshold (default 64)
-let lowNoteThreshold = 64;
+// m1h: configurable low-note threshold (default 62)
+let lowNoteThreshold = 62;
+
+// m1i: stop drums after this many idle measures with no midi events
+let idleMeasures = 1;
+let lastMidiEventTime = null;
 
 // m1b: track low notes (noteNum < lowNoteThreshold) to compute measure duration
 const lowNoteList = []; // each entry: { noteNum, timeMs }
@@ -64,6 +68,14 @@ function playDrumPattern(durMs) {
   function tick(now) {
     if (!drumRunning) return;
 
+    // m1i: stop if no midi events for idleMeasures * measureDurMs
+    if (lastMidiEventTime !== null && (now - lastMidiEventTime) > idleMeasures * durMs) {
+      console.log('m1i: idle timeout, stopping drums');
+      drumRunning = false;
+      drumRafId = null;
+      return;
+    }
+
     // Fire all divisions whose scheduled time has arrived
     while (nextFireTime <= now) {
       const notes = pattern.evtsArrs[nextDivIdx % numDivisions];
@@ -111,6 +123,7 @@ window.onload = () => {
       MIDI.setVolume(2, volume);
 
       midiEvtSub(evt => {
+        lastMidiEventTime = performance.now(); // m1i: track last midi event time
         if (evt.type === midiEvent.midiEvtType.NoteOn) {
           MIDI.noteOn(1, evt.noteNum, evt.velocity);
         } else if (evt.type === midiEvent.midiEvtType.NoteOff) {
@@ -157,4 +170,16 @@ document.getElementById('incr-threshold-btn').onclick = () => {
 };
 document.getElementById('decr-threshold-btn').onclick = () => {
   if (lowNoteThreshold > 1) { lowNoteThreshold--; updateThresholdDisplay(); }
+};
+
+// m1i: idle measures controls
+function updateIdleMeasuresDisplay() {
+  document.getElementById('idle-measures-display').textContent = idleMeasures;
+}
+document.getElementById('incr-idle-btn').onclick = () => {
+  idleMeasures++;
+  updateIdleMeasuresDisplay();
+};
+document.getElementById('decr-idle-btn').onclick = () => {
+  if (idleMeasures > 1) { idleMeasures--; updateIdleMeasuresDisplay(); }
 };

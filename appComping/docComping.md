@@ -4,8 +4,18 @@
 # Project structure
 - ../lib and ../esModules have tools that can be shared with other apps
 
-# m1c
+# m2
+- When a note on event has note number < 60, trigger the following process
+  - Add the note number and the timeMs of that event to a list, for all note on event.
 
+# m1e
+
+# m1d
+- measureDurMs should just be computed once, unless things are reset.
+- Use `space` for reset (stop drum beat and clear measureDurMs).
+
+
+# m1c
 - In addition to logging measureDurMs when it is computed, immediately trigger a 4-beat drum track to be played using measureDurMs to determine how fast to play it. The tools should be in musical-beat there may also be usages in appPlay/
 
 

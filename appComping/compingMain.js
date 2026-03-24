@@ -11,10 +11,30 @@ const soundfontUrl = '../lib/midi.js/soundfont/';
 // m1b: track low notes (noteNum < 60) to compute measure duration
 const lowNoteList = []; // each entry: { noteNum, timeMs }
 
+// m1d: measureDurMs computed once; reset via space
+let measureDurMs = null;
+
 // Drum metronome — lazily created once MIDI is ready
 let drumIntervalId = null;
 
-function playDrumPattern(measureDurMs) {
+function reset() {
+  if (drumIntervalId !== null) {
+    clearInterval(drumIntervalId);
+    drumIntervalId = null;
+  }
+  measureDurMs = null;
+  lowNoteList.length = 0;
+  console.log('reset: drum stopped, measureDurMs cleared');
+}
+
+window.addEventListener('keydown', e => {
+  if (e.code === 'Space') {
+    e.preventDefault();
+    reset();
+  }
+});
+
+function playDrumPattern(measureDurMs, measureDurComputedAt) {
   if (drumIntervalId !== null) {
     clearInterval(drumIntervalId);
     drumIntervalId = null;
@@ -28,6 +48,11 @@ function playDrumPattern(measureDurMs) {
 
   let idx = 0;
   drumIntervalId = setInterval(() => {
+    if (idx === 0) {
+      const firstBeatAt = Date.now();
+      console.log('first drum beat triggered at', firstBeatAt);
+      console.log('latency (measureDurMs -> first drum beat):', firstBeatAt - measureDurComputedAt, 'ms');
+    }
     const notes = pattern.evtsArrs[idx % numDivisions];
     notes.forEach(note => {
       MIDI.noteOn(2, note.noteNum, note.velocity);
@@ -44,11 +69,13 @@ function handleMeasureTiming(evt) {
     ? Math.max(...lowNoteList.map(n => n.noteNum))
     : -Infinity;
 
-  if (evt.noteNum < biggestNoteNum && lowNoteList.length > 0) {
-    const measureDurMs = evt.time - lowNoteList[0].time;
+  if (evt.noteNum < biggestNoteNum && lowNoteList.length > 0 && measureDurMs === null) {
+    measureDurMs = evt.time - lowNoteList[0].time;
+    const measureDurComputedAt = Date.now();
+    console.log('measureDurMs computed at', measureDurComputedAt, '— value:', measureDurMs);
 
     // m1c: trigger 4-beat drum track at the detected tempo
-    playDrumPattern(measureDurMs);
+    playDrumPattern(measureDurMs, measureDurComputedAt);
 
     lowNoteList.length = 0;
   }

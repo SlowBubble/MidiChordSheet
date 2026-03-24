@@ -27,6 +27,33 @@ const lowNoteList = []; // each entry: { noteNum, timeMs }
 // m1d: measureDurMs computed once; reset via space
 let measureDurMs = null;
 
+// idle timer to clear lowNoteList after 2s of no events
+let idleClearTimer = null;
+
+function updateMeasureStatus() {
+  const el = document.getElementById('measure-status');
+  if (!el) return;
+  if (measureDurMs !== null) {
+    const bpm = Math.round((beatsPerMeasure / measureDurMs) * 60000);
+    el.textContent = `Measure: ${Math.round(measureDurMs)}ms (${bpm} bpm)`;
+  } else if (lowNoteList.length > 0) {
+    el.textContent = 'Measure: receiving...';
+  } else {
+    el.textContent = 'Measure: waiting for data...';
+  }
+}
+
+function resetIdleClearTimer() {
+  if (idleClearTimer !== null) clearTimeout(idleClearTimer);
+  idleClearTimer = setTimeout(() => {
+    if (measureDurMs === null) {
+      lowNoteList.length = 0;
+      updateMeasureStatus();
+    }
+    idleClearTimer = null;
+  }, 2000);
+}
+
 // Drum metronome — driven by requestAnimationFrame
 let drumRunning = false;
 let drumRafId = null;
@@ -37,20 +64,66 @@ function reset() {
     cancelAnimationFrame(drumRafId);
     drumRafId = null;
   }
+  if (idleClearTimer !== null) {
+    clearTimeout(idleClearTimer);
+    idleClearTimer = null;
+  }
   measureDurMs = null;
   lowNoteList.length = 0;
+  updateMeasureStatus();
   console.log('reset: drum stopped, measureDurMs cleared');
+}
+
+// m2a: init MIDI lazily on first Space press (satisfies AudioContext user gesture requirement)
+let midiReady = false;
+
+function initMidi() {
+  if (midiReady) return;
+  midiReady = true;
+  const statusEl = document.getElementById('audio-status');
+  statusEl.textContent = 'Audio: loading...';
+  MIDI.loadPlugin({
+    soundfontUrl: soundfontUrl,
+    instruments: ['acoustic_grand_piano', 'synth_drum'],
+    onsuccess: () => {
+      MIDI.setVolume(0, volume);
+      // Channel 1 = piano, channel 2 = drums (synth_drum)
+      MIDI.programChange(1, MIDI.GM.byName['acoustic_grand_piano'].number);
+      MIDI.programChange(2, MIDI.GM.byName['synth_drum'].number);
+      MIDI.setVolume(2, volume);
+      statusEl.textContent = 'Audio: ready \u2713';
+
+      // keyboard: sound + measure timing
+      keyboardEvtSub(evt => {
+        lastMidiEventTime = performance.now();
+        resetIdleClearTimer();
+        if (evt.type === midiEvent.midiEvtType.NoteOn) {
+          MIDI.noteOn(1, evt.noteNum, evt.velocity);
+        } else if (evt.type === midiEvent.midiEvtType.NoteOff) {
+          MIDI.noteOff(1, evt.noteNum);
+        }
+        handleMeasureTiming(evt);
+      });
+
+      // midi input: measure timing only (no sound)
+      midiInputEvtSub(evt => {
+        lastMidiEventTime = performance.now();
+        resetIdleClearTimer();
+        handleMeasureTiming(evt);
+      });
+    },
+  });
 }
 
 window.addEventListener('keydown', e => {
   if (e.code === 'Space') {
     e.preventDefault();
+    initMidi();
     reset();
   }
 });
 
 function playDrumPattern(durMs) {
-  // Stop any running drum loop
   drumRunning = false;
   if (drumRafId !== null) {
     cancelAnimationFrame(drumRafId);
@@ -64,7 +137,6 @@ function playDrumPattern(durMs) {
 
   drumRunning = true;
   let nextDivIdx = 0;
-  // Use performance.now() for high-res timing; schedule first division immediately
   let nextFireTime = performance.now();
 
   function tick(now) {
@@ -75,10 +147,12 @@ function playDrumPattern(durMs) {
       console.log('m1i: idle timeout, stopping drums');
       drumRunning = false;
       drumRafId = null;
+      measureDurMs = null;
+      lowNoteList.length = 0;
+      updateMeasureStatus();
       return;
     }
 
-    // Fire all divisions whose scheduled time has arrived
     while (nextFireTime <= now) {
       const notes = pattern.evtsArrs[nextDivIdx % numDivisions];
       notes.forEach(note => MIDI.noteOn(2, note.noteNum, note.velocity));
@@ -103,46 +177,14 @@ function handleMeasureTiming(evt) {
   if (evt.noteNum < biggestNoteNum && lowNoteList.length > 0 && measureDurMs === null) {
     measureDurMs = evt.time - lowNoteList[0].time;
     console.log('measureDurMs:', measureDurMs);
-
-    // m1c: trigger 4-beat drum track at the detected tempo
+    updateMeasureStatus();
     playDrumPattern(measureDurMs);
-
     lowNoteList.length = 0;
   }
 
   lowNoteList.push({ noteNum: evt.noteNum, time: evt.time });
+  updateMeasureStatus();
 }
-
-window.onload = () => {
-  MIDI.loadPlugin({
-    soundfontUrl: soundfontUrl,
-    instruments: ['acoustic_grand_piano', 'synth_drum'],
-    onsuccess: () => {
-      MIDI.setVolume(0, volume);
-      // Channel 1 = piano, channel 2 = drums (synth_drum)
-      MIDI.programChange(1, MIDI.GM.byName['acoustic_grand_piano'].number);
-      MIDI.programChange(2, MIDI.GM.byName['synth_drum'].number);
-      MIDI.setVolume(2, volume);
-
-      // keyboard: sound + measure timing
-      keyboardEvtSub(evt => {
-        lastMidiEventTime = performance.now();
-        if (evt.type === midiEvent.midiEvtType.NoteOn) {
-          MIDI.noteOn(1, evt.noteNum, evt.velocity);
-        } else if (evt.type === midiEvent.midiEvtType.NoteOff) {
-          MIDI.noteOff(1, evt.noteNum);
-        }
-        handleMeasureTiming(evt);
-      });
-
-      // midi input: measure timing only (no sound)
-      midiInputEvtSub(evt => {
-        lastMidiEventTime = performance.now();
-        handleMeasureTiming(evt);
-      });
-    },
-  });
-};
 
 setupKeyboard(keyboardEvtPub);
 
@@ -169,41 +211,21 @@ function updateSubdivDisplay() {
   document.getElementById('subdiv-display').textContent = beatSubdivision;
 }
 
-document.getElementById('incr-beats-btn').onclick = () => {
-  beatsPerMeasure++;
-  updateBeatsDisplay();
-};
-document.getElementById('decr-beats-btn').onclick = () => {
-  if (beatsPerMeasure > 1) { beatsPerMeasure--; updateBeatsDisplay(); }
-};
-document.getElementById('incr-subdiv-btn').onclick = () => {
-  beatSubdivision++;
-  updateSubdivDisplay();
-};
-document.getElementById('decr-subdiv-btn').onclick = () => {
-  if (beatSubdivision > 1) { beatSubdivision--; updateSubdivDisplay(); }
-};
+document.getElementById('incr-beats-btn').onclick = () => { beatsPerMeasure++; updateBeatsDisplay(); };
+document.getElementById('decr-beats-btn').onclick = () => { if (beatsPerMeasure > 1) { beatsPerMeasure--; updateBeatsDisplay(); } };
+document.getElementById('incr-subdiv-btn').onclick = () => { beatSubdivision++; updateSubdivDisplay(); };
+document.getElementById('decr-subdiv-btn').onclick = () => { if (beatSubdivision > 1) { beatSubdivision--; updateSubdivDisplay(); } };
 
 // m1h: low-note threshold controls
 function updateThresholdDisplay() {
   document.getElementById('threshold-display').textContent = lowNoteThreshold;
 }
-document.getElementById('incr-threshold-btn').onclick = () => {
-  lowNoteThreshold++;
-  updateThresholdDisplay();
-};
-document.getElementById('decr-threshold-btn').onclick = () => {
-  if (lowNoteThreshold > 1) { lowNoteThreshold--; updateThresholdDisplay(); }
-};
+document.getElementById('incr-threshold-btn').onclick = () => { lowNoteThreshold++; updateThresholdDisplay(); };
+document.getElementById('decr-threshold-btn').onclick = () => { if (lowNoteThreshold > 1) { lowNoteThreshold--; updateThresholdDisplay(); } };
 
 // m1i: idle measures controls
 function updateIdleMeasuresDisplay() {
   document.getElementById('idle-measures-display').textContent = idleMeasures;
 }
-document.getElementById('incr-idle-btn').onclick = () => {
-  idleMeasures++;
-  updateIdleMeasuresDisplay();
-};
-document.getElementById('decr-idle-btn').onclick = () => {
-  if (idleMeasures > 1) { idleMeasures--; updateIdleMeasuresDisplay(); }
-};
+document.getElementById('incr-idle-btn').onclick = () => { idleMeasures++; updateIdleMeasuresDisplay(); };
+document.getElementById('decr-idle-btn').onclick = () => { if (idleMeasures > 1) { idleMeasures--; updateIdleMeasuresDisplay(); } };

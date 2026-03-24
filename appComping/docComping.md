@@ -4,6 +4,11 @@
 # Project structure
 - ../lib and ../esModules have tools that can be shared with other apps
 
+# m1c
+
+- In addition to logging measureDurMs when it is computed, immediately trigger a 4-beat drum track to be played using measureDurMs to determine how fast to play it. The tools should be in musical-beat there may also be usages in appPlay/
+
+
 # m1b
 - When a note on event has note number < 60, add the note number and the timeMs of that event to a list.
   - For the special case when another note that has a note number smaller than the biggest note number in that list, compute the duration between this note's timeMs and the list's first note's timeMs, calling it the measureDurMs

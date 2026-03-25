@@ -73,6 +73,7 @@ function reset() {
   measureDurMs = null;
   lowNoteList.length = 0;
   updateMeasureStatus();
+  document.getElementById('beat-display').textContent = '–';
   console.log('reset: drum stopped, measureDurMs cleared');
 }
 
@@ -142,6 +143,7 @@ function playDrumPattern(durMs) {
   drumRunning = true;
   let nextDivIdx = 0;
   let nextFireTime = performance.now();
+  const divisionsPerBeat = numDivisions / beatsPerMeasure;
 
   function tick(now) {
     if (!drumRunning) return;
@@ -154,11 +156,15 @@ function playDrumPattern(durMs) {
       measureDurMs = null;
       lowNoteList.length = 0;
       updateMeasureStatus();
+      document.getElementById('beat-display').textContent = '–';
       return;
     }
 
     while (nextFireTime <= now) {
-      const notes = pattern.evtsArrs[nextDivIdx % numDivisions];
+      const divInMeasure = nextDivIdx % numDivisions;
+      const beat = Math.floor(divInMeasure / divisionsPerBeat) + 1;
+      document.getElementById('beat-display').textContent = beat;
+      const notes = pattern.evtsArrs[divInMeasure];
       notes.forEach(note => MIDI.noteOn(2, note.noteNum, note.velocity));
       nextDivIdx++;
       nextFireTime += divisionMs;

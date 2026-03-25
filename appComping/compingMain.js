@@ -24,6 +24,7 @@ let lastMidiEventTime = null;
 // silent-til-double-bass: track recent bass note-on times and mute state
 const bassNoteOnTimes = new Map(); // noteNum -> timestamp
 let drumMuted = false;
+let pendingUnmuteTimer = null;
 
 // m1b: track low notes (noteNum <= lowNoteThreshold) to compute measure duration
 const lowNoteList = []; // each entry: { noteNum, timeMs }
@@ -76,21 +77,55 @@ function checkDoubleBassUnmute(noteNum, now) {
   for (const partner of octavePair) {
     const partnerTime = bassNoteOnTimes.get(partner);
     if (partnerTime !== undefined && Math.abs(now - partnerTime) <= 300) {
-      drumMuted = false;
+      scheduleUnmute(now);
       return;
     }
   }
 }
 
+function scheduleUnmute(now) {
+  if (pendingUnmuteTimer !== null) return; // already scheduled
+  if (measureDurMs === null || drumPatternStartTime === null) {
+    // drums not running yet, unmute immediately
+    drumMuted = false;
+    return;
+  }
+
+  const beatDurMs = measureDurMs / beatsPerMeasure;
+  const finalBeat = beatsPerMeasure - 1; // 0-indexed
+
+  let delayMs;
+  if (drumCurrentBeat >= finalBeat) {
+    // Already in the final beat — unmute at beat 1 of the next measure
+    const elapsed = (now - drumPatternStartTime) % measureDurMs;
+    delayMs = measureDurMs - elapsed;
+  } else {
+    // Unmute at the start of the final beat
+    const elapsed = (now - drumPatternStartTime) % measureDurMs;
+    delayMs = (finalBeat * beatDurMs) - elapsed;
+  }
+
+  pendingUnmuteTimer = setTimeout(() => {
+    drumMuted = false;
+    pendingUnmuteTimer = null;
+  }, Math.max(0, delayMs));
+}
+
 
 let drumRunning = false;
 let drumRafId = null;
+let drumPatternStartTime = null; // performance.now() when current pattern started
+let drumCurrentBeat = 0; // 0-indexed current beat within measure
 
 function reset() {
   drumRunning = false;
   if (drumRafId !== null) {
     cancelAnimationFrame(drumRafId);
     drumRafId = null;
+  }
+  if (pendingUnmuteTimer !== null) {
+    clearTimeout(pendingUnmuteTimer);
+    pendingUnmuteTimer = null;
   }
   if (idleClearTimer !== null) {
     clearTimeout(idleClearTimer);
@@ -99,6 +134,8 @@ function reset() {
   measureDurMs = null;
   lowNoteList.length = 0;
   bassNoteOnTimes.clear();
+  drumPatternStartTime = null;
+  drumCurrentBeat = 0;
   drumMuted = false;
   updateMeasureStatus();
   document.getElementById('beat-display').textContent = '–';
@@ -178,6 +215,7 @@ function playDrumPattern(durMs) {
   drumRunning = true;
   let nextDivIdx = 0;
   let nextFireTime = performance.now();
+  drumPatternStartTime = nextFireTime;
   const divisionsPerBeat = numDivisions / beatsPerMeasure;
 
   function tick(now) {
@@ -198,6 +236,7 @@ function playDrumPattern(durMs) {
     while (nextFireTime <= now) {
       const divInMeasure = nextDivIdx % numDivisions;
       const beat = Math.floor(divInMeasure / divisionsPerBeat) + 1;
+      drumCurrentBeat = beat - 1; // 0-indexed
       document.getElementById('beat-display').textContent = '⚪'.repeat(beat);
       const notes = pattern.evtsArrs[divInMeasure];
       notes.forEach(note => MIDI.noteOn(2, note.noteNum, drumMuted ? 0 : note.velocity));

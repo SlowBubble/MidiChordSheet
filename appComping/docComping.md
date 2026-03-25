@@ -5,7 +5,6 @@
 - ../lib and ../esModules have tools that can be shared with other apps
 
 # m2c
-TODO: think of a special drum pattern to trigger by playing double bass near the first beat.
 
 # m2b
 - Change the algo for deciding when measureDurMs can be computed
@@ -16,6 +15,8 @@ TODO: think of a special drum pattern to trigger by playing double bass near the
 
 # wishlist
 - Config to only play beat 2 and 4
+  - Also other more complex patterns (e.g. subdivision 0)
+  - TODO: think of a special drum pattern to trigger by playing double bass near the first beat.
 
 # m1i
 - If there are no midi events for 1 whole measure, then stop the drum beats

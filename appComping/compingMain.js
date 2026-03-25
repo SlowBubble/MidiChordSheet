@@ -39,9 +39,9 @@ function updateMeasureStatus() {
   } else if (lowNoteList.length > 0) {
     const distinctAsc = [...new Set(lowNoteList.map(n => n.noteNum))].sort((a, b) => a - b);
     const triggerThreshold = distinctAsc.length >= 2 ? distinctAsc[1] : distinctAsc[0];
-    el.textContent = `🟠 Next Measure Trigger: ${midiToNoteName(triggerThreshold)}`;
+    el.textContent = `🟠 Next Measure Trigger: <= ${midiToNoteName(triggerThreshold)}`;
   } else {
-    el.textContent = `⭕ 1st Measure Trigger: ${midiToNoteName(lowNoteThreshold)}`;
+    el.textContent = `⭕ 1st Measure Trigger: <= ${midiToNoteName(lowNoteThreshold)}`;
   }
 }
 

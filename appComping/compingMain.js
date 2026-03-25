@@ -21,6 +21,10 @@ let lowNoteThreshold = 62;
 let idleMeasures = 1;
 let lastMidiEventTime = null;
 
+// silent-til-double-bass: track recent bass note-on times and mute state
+const bassNoteOnTimes = new Map(); // noteNum -> timestamp
+let drumMuted = false;
+
 // m1b: track low notes (noteNum <= lowNoteThreshold) to compute measure duration
 const lowNoteList = []; // each entry: { noteNum, timeMs }
 
@@ -56,7 +60,29 @@ function resetIdleClearTimer() {
   }, 2000);
 }
 
-// Drum metronome — driven by requestAnimationFrame
+function isSilentTilDoubleBass() {
+  return document.getElementById('silent-til-double-bass-cb')?.checked;
+}
+
+function checkDoubleBassUnmute(noteNum, now) {
+  if (!isSilentTilDoubleBass() || !drumMuted) return;
+  if (noteNum > lowNoteThreshold) return;
+
+  // Record this bass note-on time
+  bassNoteOnTimes.set(noteNum, now);
+
+  // Check if any other bass note exactly 12 semitones away fired within 300ms
+  const octavePair = [noteNum - 12, noteNum + 12];
+  for (const partner of octavePair) {
+    const partnerTime = bassNoteOnTimes.get(partner);
+    if (partnerTime !== undefined && Math.abs(now - partnerTime) <= 300) {
+      drumMuted = false;
+      return;
+    }
+  }
+}
+
+
 let drumRunning = false;
 let drumRafId = null;
 
@@ -72,6 +98,8 @@ function reset() {
   }
   measureDurMs = null;
   lowNoteList.length = 0;
+  bassNoteOnTimes.clear();
+  drumMuted = false;
   updateMeasureStatus();
   document.getElementById('beat-display').textContent = '–';
   console.log('reset: drum stopped, measureDurMs cleared');
@@ -104,6 +132,7 @@ function initMidi() {
         resetIdleClearTimer();
         if (evt.type === midiEvent.midiEvtType.NoteOn) {
           MIDI.noteOn(1, evt.noteNum, evt.velocity);
+          checkDoubleBassUnmute(evt.noteNum, performance.now());
         } else if (evt.type === midiEvent.midiEvtType.NoteOff) {
           MIDI.noteOff(1, evt.noteNum);
         }
@@ -114,6 +143,9 @@ function initMidi() {
       midiInputEvtSub(evt => {
         lastMidiEventTime = performance.now();
         resetIdleClearTimer();
+        if (evt.type === midiEvent.midiEvtType.NoteOn) {
+          checkDoubleBassUnmute(evt.noteNum, performance.now());
+        }
         handleMeasureTiming(evt);
       });
     },
@@ -134,6 +166,9 @@ function playDrumPattern(durMs) {
     cancelAnimationFrame(drumRafId);
     drumRafId = null;
   }
+
+  // silent-til-double-bass: start muted if checkbox is on
+  drumMuted = isSilentTilDoubleBass();
 
   const timeSig = { upperNumeral: beatsPerMeasure, lowerNumeral: 4, isCompound: () => false };
   const pattern = genMidiPattern(timeSig, false, beatSubdivision);
@@ -163,9 +198,9 @@ function playDrumPattern(durMs) {
     while (nextFireTime <= now) {
       const divInMeasure = nextDivIdx % numDivisions;
       const beat = Math.floor(divInMeasure / divisionsPerBeat) + 1;
-      document.getElementById('beat-display').textContent = beat;
+      document.getElementById('beat-display').textContent = '⚪'.repeat(beat);
       const notes = pattern.evtsArrs[divInMeasure];
-      notes.forEach(note => MIDI.noteOn(2, note.noteNum, note.velocity));
+      notes.forEach(note => MIDI.noteOn(2, note.noteNum, drumMuted ? 0 : note.velocity));
       nextDivIdx++;
       nextFireTime += divisionMs;
     }

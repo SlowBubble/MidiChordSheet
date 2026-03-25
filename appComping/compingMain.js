@@ -122,9 +122,9 @@ function initMidi() {
 window.addEventListener('keydown', e => {
   if (e.code === 'Space') {
     e.preventDefault();
-    initMidi();
     reset();
   }
+  initMidi();
 });
 
 function playDrumPattern(durMs) {

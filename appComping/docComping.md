@@ -4,6 +4,9 @@
 # Project structure
 - ../lib and ../esModules have tools that can be shared with other apps
 
+# m2c
+TODO: think of a special drum pattern to trigger by playing double bass near the first beat.
+
 # m2b
 - Change the algo for deciding when measureDurMs can be computed
   - Instead of triggering when another note that has a note number, say N, smaller than the biggest note number in that accumulated list thus far, say [n1, n2, n3, ...] is the distinct ascending note numbers (ded-uplicated), let's trigger when N < n2 (the second note number); there is a special case, when n1 is the first note played and then N < n1, then this should trigger without waiting for 2 note numbers to be accumulated.

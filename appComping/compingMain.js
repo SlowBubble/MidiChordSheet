@@ -26,6 +26,11 @@ const bassNoteOnTimes = new Map(); // noteNum -> timestamp
 let drumMuted = false;
 let pendingUnmuteTimer = null;
 
+// mute-if-double-soprano: track recent soprano note-on times and pending mute
+const sopranoNoteOnTimes = new Map(); // noteNum -> timestamp
+const highNoteThreshold = 72;
+let pendingMuteTimer = null;
+
 // m1b: track low notes (noteNum <= lowNoteThreshold) to compute measure duration
 const lowNoteList = []; // each entry: { noteNum, timeMs }
 
@@ -81,6 +86,10 @@ function isSilentTilDoubleBass() {
   return document.getElementById('silent-til-double-bass-cb')?.checked;
 }
 
+function isMuteIfDoubleSoprano() {
+  return document.getElementById('mute-if-double-soprano-cb')?.checked;
+}
+
 function checkDoubleBassUnmute(noteNum, now) {
   if (!isSilentTilDoubleBass() || !drumMuted) return;
   if (noteNum > lowNoteThreshold) return;
@@ -94,6 +103,22 @@ function checkDoubleBassUnmute(noteNum, now) {
     const partnerTime = bassNoteOnTimes.get(partner);
     if (partnerTime !== undefined && Math.abs(now - partnerTime) <= 300) {
       scheduleUnmute(now);
+      return;
+    }
+  }
+}
+
+function checkDoubleSopranoMute(noteNum, now) {
+  if (!isMuteIfDoubleSoprano() || drumMuted) return;
+  if (noteNum < highNoteThreshold) return;
+
+  sopranoNoteOnTimes.set(noteNum, now);
+
+  const octavePair = [noteNum - 12, noteNum + 12];
+  for (const partner of octavePair) {
+    const partnerTime = sopranoNoteOnTimes.get(partner);
+    if (partnerTime !== undefined && Math.abs(now - partnerTime) <= 300) {
+      scheduleMute(now);
       return;
     }
   }
@@ -127,6 +152,23 @@ function scheduleUnmute(now) {
   }, Math.max(0, delayMs));
 }
 
+function scheduleMute(now) {
+  if (pendingMuteTimer !== null) return; // already scheduled
+  if (measureDurMs === null || drumPatternStartTime === null) {
+    drumMuted = true;
+    return;
+  }
+
+  // Mute at the start of the next measure
+  const elapsed = (now - drumPatternStartTime) % measureDurMs;
+  const delayMs = measureDurMs - elapsed;
+
+  pendingMuteTimer = setTimeout(() => {
+    drumMuted = true;
+    pendingMuteTimer = null;
+  }, Math.max(0, delayMs));
+}
+
 
 let drumRunning = false;
 let drumRafId = null;
@@ -150,9 +192,14 @@ function reset() {
   measureDurMs = null;
   lowNoteList.length = 0;
   bassNoteOnTimes.clear();
+  sopranoNoteOnTimes.clear();
   drumPatternStartTime = null;
   drumCurrentBeat = 0;
   drumMuted = false;
+  if (pendingMuteTimer !== null) {
+    clearTimeout(pendingMuteTimer);
+    pendingMuteTimer = null;
+  }
   updateMeasureStatus();
   document.getElementById('beat-display').textContent = '–';
   console.log('reset: drum stopped, measureDurMs cleared');
@@ -186,6 +233,7 @@ function initMidi() {
         if (evt.type === midiEvent.midiEvtType.NoteOn) {
           MIDI.noteOn(1, evt.noteNum, evt.velocity);
           checkDoubleBassUnmute(evt.noteNum, performance.now());
+          checkDoubleSopranoMute(evt.noteNum, performance.now());
         } else if (evt.type === midiEvent.midiEvtType.NoteOff) {
           MIDI.noteOff(1, evt.noteNum);
         }
@@ -198,6 +246,7 @@ function initMidi() {
         resetIdleClearTimer();
         if (evt.type === midiEvent.midiEvtType.NoteOn) {
           checkDoubleBassUnmute(evt.noteNum, performance.now());
+          checkDoubleSopranoMute(evt.noteNum, performance.now());
         }
         handleMeasureTiming(evt);
       });
@@ -345,4 +394,13 @@ if (getUrlParam('SilentTilDoubleBass') === '1') {
 }
 silentCb.onchange = () => {
   setUrlParam('SilentTilDoubleBass', silentCb.checked ? '1' : null);
+};
+
+// mute-if-double-soprano: persist via URL param
+const muteSopranoCb = document.getElementById('mute-if-double-soprano-cb');
+if (getUrlParam('MuteIfDoubleSoprano') === '1') {
+  muteSopranoCb.checked = true;
+}
+muteSopranoCb.onchange = () => {
+  setUrlParam('MuteIfDoubleSoprano', muteSopranoCb.checked ? '1' : null);
 };

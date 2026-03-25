@@ -61,6 +61,22 @@ function resetIdleClearTimer() {
   }, 2000);
 }
 
+function getUrlParam(key) {
+  const url = new URL(document.URL.replace('#', '?'));
+  return url.searchParams.get(key);
+}
+
+function setUrlParam(key, val) {
+  const url = new URL(document.URL.replace('#', '?'));
+  if (val !== undefined && val !== null) {
+    url.searchParams.set(key, val);
+  } else {
+    url.searchParams.delete(key);
+  }
+  const newHash = url.search.replace('?', '#');
+  history.replaceState(null, '', newHash || window.location.pathname);
+}
+
 function isSilentTilDoubleBass() {
   return document.getElementById('silent-til-double-bass-cb')?.checked;
 }
@@ -321,3 +337,12 @@ function updateIdleMeasuresDisplay() {
 }
 document.getElementById('incr-idle-btn').onclick = () => { idleMeasures++; updateIdleMeasuresDisplay(); };
 document.getElementById('decr-idle-btn').onclick = () => { if (idleMeasures > 1) { idleMeasures--; updateIdleMeasuresDisplay(); } };
+
+// silent-til-double-bass: persist via URL param
+const silentCb = document.getElementById('silent-til-double-bass-cb');
+if (getUrlParam('SilentTilDoubleBass') === '1') {
+  silentCb.checked = true;
+}
+silentCb.onchange = () => {
+  setUrlParam('SilentTilDoubleBass', silentCb.checked ? '1' : null);
+};

@@ -219,8 +219,12 @@ document.getElementById('incr-subdiv-btn').onclick = () => { beatSubdivision++; 
 document.getElementById('decr-subdiv-btn').onclick = () => { if (beatSubdivision > 1) { beatSubdivision--; updateSubdivDisplay(); } };
 
 // m1h: low-note threshold controls
+function midiToNoteName(midi) {
+  const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+  return noteNames[midi % 12] + Math.floor(midi / 12 - 1);
+}
 function updateThresholdDisplay() {
-  document.getElementById('threshold-display').textContent = lowNoteThreshold;
+  document.getElementById('threshold-display').textContent = midiToNoteName(lowNoteThreshold);
 }
 document.getElementById('incr-threshold-btn').onclick = () => { lowNoteThreshold++; updateThresholdDisplay(); };
 document.getElementById('decr-threshold-btn').onclick = () => { if (lowNoteThreshold > 1) { lowNoteThreshold--; updateThresholdDisplay(); } };

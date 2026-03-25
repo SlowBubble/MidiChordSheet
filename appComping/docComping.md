@@ -5,10 +5,14 @@
 - ../lib and ../esModules have tools that can be shared with other apps
 
 # m2b
-- Config to only play beat 2 and 4
+- Change the algo for deciding when measureDurMs can be computed
+  - Instead of triggering when another note that has a note number, say N, smaller than the biggest note number in that accumulated list thus far, say [n1, n2, n3, ...] is the distinct ascending note numbers (ded-uplicated), let's trigger when N < n2 (the second note number); there is a special case, when n1 is the first note played and then N < n1, then this should trigger without waiting for 2 note numbers to be accumulated.
 
 # m2a
 - In addition having keyboard triggering midi events, listen to actual midi input and trigger midi events.
+
+# wishlist
+- Config to only play beat 2 and 4
 
 # m1i
 - If there are no midi events for 1 whole measure, then stop the drum beats

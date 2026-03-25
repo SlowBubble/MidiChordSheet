@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, user-scalable=no">
   <title>Piano Comping</title>
   <link rel="stylesheet" href="../appPlay/play.css">
+  <style>
+    .status { font-size: 1.1rem; color: #000; background: none; }
+  </style>
   <script src="../lib/midi.js/inc/shim/Base64.js"></script>
   <script src="../lib/midi.js/inc/shim/Base64binary.js"></script>
   <script src="../lib/midi.js/inc/shim/WebAudioAPI.js"></script>
@@ -21,9 +24,7 @@
 <body>
   <div id="container">
     <div id="main">
-      <p>Press <strong>Space</strong> to initialize audio, then play low notes to set the tempo.</p>
-      <p id="audio-status">Audio: not started</p>
-      <p id="measure-status">Measure: waiting for data...</p>
+      <p id="status" class="status">🔴 Press Space to start audio</p>
     </div>
     <div id="menu">
       <table id="menu-table">

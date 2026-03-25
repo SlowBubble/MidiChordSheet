@@ -31,15 +31,15 @@ let measureDurMs = null;
 let idleClearTimer = null;
 
 function updateMeasureStatus() {
-  const el = document.getElementById('measure-status');
+  const el = document.getElementById('status');
   if (!el) return;
   if (measureDurMs !== null) {
     const bpm = Math.round((beatsPerMeasure / measureDurMs) * 60000);
-    el.textContent = `Measure: ${Math.round(measureDurMs)}ms (${bpm} bpm)`;
+    el.textContent = `🟢 ${bpm} BPM`;
   } else if (lowNoteList.length > 0) {
-    el.textContent = 'Measure: receiving...';
+    el.textContent = '🟠 Receiving...';
   } else {
-    el.textContent = 'Measure: waiting for data...';
+    el.textContent = '⭕ Waiting for data...';
   }
 }
 
@@ -80,8 +80,8 @@ let midiReady = false;
 function initMidi() {
   if (midiReady) return;
   midiReady = true;
-  const statusEl = document.getElementById('audio-status');
-  statusEl.textContent = 'Audio: loading...';
+  const statusEl = document.getElementById('status');
+  statusEl.textContent = '🔴 Loading audio...';
   MIDI.loadPlugin({
     soundfontUrl: soundfontUrl,
     instruments: ['acoustic_grand_piano', 'synth_drum'],
@@ -92,6 +92,8 @@ function initMidi() {
       MIDI.programChange(2, MIDI.GM.byName['synth_drum'].number);
       MIDI.setVolume(2, volume);
       statusEl.textContent = 'Audio: ready \u2713';
+      updateMeasureStatus();
+      statusEl.className = 'status status-green';
 
       // keyboard: sound + measure timing
       keyboardEvtSub(evt => {

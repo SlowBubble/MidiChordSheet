@@ -21,7 +21,7 @@ let lowNoteThreshold = 62;
 let idleMeasures = 1;
 let lastMidiEventTime = null;
 
-// m1b: track low notes (noteNum < lowNoteThreshold) to compute measure duration
+// m1b: track low notes (noteNum <= lowNoteThreshold) to compute measure duration
 const lowNoteList = []; // each entry: { noteNum, timeMs }
 
 // m1d: measureDurMs computed once; reset via space
@@ -37,9 +37,11 @@ function updateMeasureStatus() {
     const bpm = Math.round((beatsPerMeasure / measureDurMs) * 60000);
     el.textContent = `🟢 ${bpm} BPM`;
   } else if (lowNoteList.length > 0) {
-    el.textContent = '🟠 Receiving...';
+    const distinctAsc = [...new Set(lowNoteList.map(n => n.noteNum))].sort((a, b) => a - b);
+    const triggerThreshold = distinctAsc.length >= 2 ? distinctAsc[1] : distinctAsc[0];
+    el.textContent = `🟠 Next Measure Trigger: ${midiToNoteName(triggerThreshold)}`;
   } else {
-    el.textContent = '⭕ Waiting for data...';
+    el.textContent = `⭕ 1st Measure Trigger: ${midiToNoteName(lowNoteThreshold)}`;
   }
 }
 
@@ -170,18 +172,22 @@ function playDrumPattern(durMs) {
 
 function handleMeasureTiming(evt) {
   if (evt.type !== midiEvent.midiEvtType.NoteOn) return;
-  if (evt.noteNum >= lowNoteThreshold) return;
+  if (evt.noteNum > lowNoteThreshold) return;
 
-  const biggestNoteNum = lowNoteList.length > 0
-    ? Math.max(...lowNoteList.map(n => n.noteNum))
-    : -Infinity;
+  if (measureDurMs === null) {
+    // m2b: build sorted distinct note numbers seen so far
+    const distinctAsc = [...new Set(lowNoteList.map(n => n.noteNum))].sort((a, b) => a - b);
 
-  if (evt.noteNum < biggestNoteNum && lowNoteList.length > 0 && measureDurMs === null) {
-    measureDurMs = evt.time - lowNoteList[0].time;
-    console.log('measureDurMs:', measureDurMs);
-    updateMeasureStatus();
-    playDrumPattern(measureDurMs);
-    lowNoteList.length = 0;
+    // trigger when N < n2 (second distinct note), or N < n1 if only one distinct note seen
+    const triggerThreshold = distinctAsc.length >= 2 ? distinctAsc[1] : distinctAsc[0];
+
+    if (distinctAsc.length > 0 && evt.noteNum < triggerThreshold) {
+      measureDurMs = evt.time - lowNoteList[0].time;
+      console.log('measureDurMs:', measureDurMs);
+      updateMeasureStatus();
+      playDrumPattern(measureDurMs);
+      lowNoteList.length = 0;
+    }
   }
 
   lowNoteList.push({ noteNum: evt.noteNum, time: evt.time });

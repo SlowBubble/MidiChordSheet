@@ -67,19 +67,19 @@ function resetIdleClearTimer() {
 }
 
 function getUrlParam(key) {
-  const url = new URL(document.URL.replace('#', '?'));
-  return url.searchParams.get(key);
+  const params = new URLSearchParams(window.location.hash.slice(1));
+  return params.get(key);
 }
 
 function setUrlParam(key, val) {
-  const url = new URL(document.URL.replace('#', '?'));
+  const params = new URLSearchParams(window.location.hash.slice(1));
   if (val !== undefined && val !== null) {
-    url.searchParams.set(key, val);
+    params.set(key, val);
   } else {
-    url.searchParams.delete(key);
+    params.delete(key);
   }
-  const newHash = url.search.replace('?', '#');
-  history.replaceState(null, '', newHash || window.location.pathname);
+  const newHash = params.toString();
+  history.replaceState(null, '', newHash ? '#' + newHash : window.location.pathname);
 }
 
 function isSilentTilDoubleBass() {

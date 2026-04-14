@@ -138,6 +138,7 @@ export function init(noteRecorder) {
     const threshold = noteRecorder.getLowNoteThreshold();
     const denom = noteRecorder.getNoteLengthDenom_();
     const measure1StartMs = noteRecorder.getMeasure1StartMs();
+    const label = noteRecorder.getLabel();
 
     if (!beats.length || !notes.length || !measureDurMs || !measure1StartMs) {
       renderMgr.clear();
@@ -185,6 +186,7 @@ export function init(noteRecorder) {
     const lhNoteGps = slotMapToNoteGps(lhMap, startSlot, totalSlots, total8n);
 
     const song = new Song({
+      title: label || undefined,
       timeSigChanges: { defaultVal: { upperNumeral: beatsPerMeasure, lowerNumeral: 4 } },
       tempo8nPerMinChanges: { defaultVal: tempo8n },
       pickup8n,

@@ -14,6 +14,7 @@ let _beatsPerMeasure = 4;
 let _lowNoteThreshold = 62;
 let _noteLengthDenom = 4;
 let _noteStartDenom = 16;
+let _label = null;
 
 // noteNum -> index in notes[] for the most recent unresolved NoteOn
 const openNotes = new Map();
@@ -74,6 +75,8 @@ export function setNoteLengthDenom(v) { _noteLengthDenom = v; }
 export function getNoteLengthDenom_() { return _noteLengthDenom; }
 export function setNoteStartDenom(v) { _noteStartDenom = v; }
 export function getNoteStartDenom() { return _noteStartDenom; }
+export function setLabel(v) { _label = v; }
+export function getLabel() { return _label; }
 
 export function subscribe(fn) { listeners.push(fn); }
 
@@ -121,15 +124,18 @@ let disabled = false;
 export function disable() { disabled = true; }
 
 /** Populate recorder state from saved data (triggers subscribers). */
-export function loadInto(savedNotes, savedBeats, savedMeasureDurMs, savedBeatsPerMeasure, savedLowNoteThreshold, savedNoteLengthDenom, savedNoteStartDenom, savedMeasure1StartMs) {
+export function loadInto(savedNotes, savedBeats, savedMeasureDurMs, savedBeatsPerMeasure, savedLowNoteThreshold, savedNoteLengthDenom, savedNoteStartDenom, savedMeasure1StartMs, savedLabel) {
   notes = savedNotes.map(n => ({ ...n }));
   beats = savedBeats.map(b => ({ ...b }));
   openNotes.clear();
   if (savedMeasureDurMs != null) _measureDurMs = savedMeasureDurMs;
-  if (savedMeasure1StartMs != null) _measure1StartMs = savedMeasure1StartMs;
+  // Fallback for recordings saved before measure1StartMs was introduced
+  const m1 = savedMeasure1StartMs ?? (beats.length && savedMeasureDurMs ? beats[0].time - savedMeasureDurMs : null);
+  if (m1 != null) _measure1StartMs = m1;
   if (savedBeatsPerMeasure != null) _beatsPerMeasure = savedBeatsPerMeasure;
   if (savedLowNoteThreshold != null) _lowNoteThreshold = savedLowNoteThreshold;
   if (savedNoteLengthDenom != null) _noteLengthDenom = savedNoteLengthDenom;
   if (savedNoteStartDenom != null) _noteStartDenom = savedNoteStartDenom;
+  if (savedLabel != null) _label = savedLabel;
   notify();
 }

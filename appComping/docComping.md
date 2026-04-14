@@ -4,6 +4,13 @@
 # Project structure
 - ../lib and ../esModules have tools that can be shared with other apps
 
+# m2t
+
+- To make it easy to share non-local-storage recording
+  - cmd+c will copy to the clipboard a link with hash param `data` for index.html
+    - design a way to encode the json in data that is url safe
+  - Then implement reading of `data` fromt he hash param
+
 # m2s
 
 # m2r

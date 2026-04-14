@@ -2,10 +2,19 @@
 
 import { reset, onNoteEvent, volume } from './beatStateMgr.js';
 import { initMidi, whenMidiReady } from './sound.js';
-import { getNotes, getBeats, saveRecording, setNoteLengthDenom } from './noteRecorder.js';
+import { getNotes, getBeats, saveRecording, setNoteLengthDenom, getMeasureDurMs, getMeasure1StartMs, getBeatsPerMeasure, getLowNoteThreshold, getNoteLengthDenom_, getNoteStartDenom, getLabel, getBeatSubdivision } from './noteRecorder.js';
 import { startReplay, stopReplay, isReplaying } from './replay.js';
 import * as beatStateMgr from './beatStateMgr.js';
 import { getNoteLengthDenom } from './buttons.js';
+
+/** Encode a recording object to a URL-safe base64 string. */
+function encodeRecording(rec) {
+  const json = JSON.stringify(rec);
+  const bytes = new TextEncoder().encode(json);
+  let binary = '';
+  bytes.forEach(b => binary += String.fromCharCode(b));
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
 
 export function setupKeyboardHandler(keyboardEvtSub) {
   let keyboardSubscribed = false;
@@ -37,6 +46,38 @@ export function setupKeyboardHandler(keyboardEvtSub) {
         status.textContent = '💾 Saved!';
         setTimeout(() => { status.textContent = prev; }, 1500);
       }
+      return;
+    }
+
+    // cmd+c (Mac) / ctrl+c (Win) — copy shareable link
+    if ((e.metaKey || e.ctrlKey) && e.key === 'c') {
+      const notes = getNotes();
+      const beats = getBeats();
+      if (!notes.length && !beats.length) return;
+      e.preventDefault();
+      setNoteLengthDenom(getNoteLengthDenom());
+      const rec = {
+        notes,
+        beats,
+        measureDurMs: getMeasureDurMs(),
+        measure1StartMs: getMeasure1StartMs(),
+        beatsPerMeasure: getBeatsPerMeasure(),
+        lowNoteThreshold: getLowNoteThreshold(),
+        noteLengthDenom: getNoteLengthDenom_(),
+        noteStartDenom: getNoteStartDenom(),
+        beatSubdivision: getBeatSubdivision(),
+        label: getLabel(),
+      };
+      const encoded = encodeRecording(rec);
+      const url = `${location.origin}${location.pathname}#data=${encoded}`;
+      navigator.clipboard.writeText(url).then(() => {
+        const status = document.getElementById('status');
+        if (status) {
+          const prev = status.textContent;
+          status.textContent = '🔗 Link copied!';
+          setTimeout(() => { status.textContent = prev; }, 1500);
+        }
+      });
       return;
     }
 

@@ -6,6 +6,14 @@ import {
   midiToNoteName,
 } from './beatStateMgr.js';
 
+// Note-length quantization steps (denominator): 16, 8, 4, 2, 1
+const NOTE_LENGTH_STEPS = [16, 8, 4, 2, 1];
+let noteLengthIdx = 2; // default: 1/4
+
+export function getNoteLengthDenom() {
+  return NOTE_LENGTH_STEPS[noteLengthIdx];
+}
+
 function getUrlParam(key) {
   return new URLSearchParams(window.location.hash.slice(1)).get(key);
 }
@@ -46,6 +54,17 @@ export function setupButtons() {
   // idle measures
   document.getElementById('incr-idle-btn').onclick = () => { setIdleMeasures(idleMeasures + 1); updateIdleMeasuresDisplay(); };
   document.getElementById('decr-idle-btn').onclick = () => { if (idleMeasures > 1) { setIdleMeasures(idleMeasures - 1); updateIdleMeasuresDisplay(); } };
+
+  // note length (off-quantization)
+  function updateNoteLengthDisplay() {
+    document.getElementById('note-length-display').textContent = `1/${NOTE_LENGTH_STEPS[noteLengthIdx]}`;
+  }
+  document.getElementById('incr-note-length-btn').onclick = () => {
+    if (noteLengthIdx < NOTE_LENGTH_STEPS.length - 1) { noteLengthIdx++; updateNoteLengthDisplay(); }
+  };
+  document.getElementById('decr-note-length-btn').onclick = () => {
+    if (noteLengthIdx > 0) { noteLengthIdx--; updateNoteLengthDisplay(); }
+  };
 
   // silent-til-double-bass checkbox
   const silentCb = document.getElementById('silent-til-double-bass-cb');

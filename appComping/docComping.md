@@ -4,6 +4,14 @@
 # Project structure
 - ../lib and ../esModules have tools that can be shared with other apps
 
+# m2g
+- replay.js
+  - When you press space while there are recorded notes and the beatStateMgr is idle, replay the notes (and the drumbeats).
+
+# m2f
+- note off qauntize to 1/4 instead of 1/8
+  - let's have it be an increment decrement that starts at 1/4 and increase to 1/2 and 1 or decrease by a factor of 2 down
+ 
 # m2e
 
 Study oldApp/ to see how to make the display nicer

@@ -5,6 +5,7 @@ import { Song } from '../esModules/song-sheet/song.js';
 import { Voice, clefType } from '../esModules/song-sheet/voice.js';
 import { makeSimpleQng, makeRest } from '../esModules/song-sheet/quantizedNoteGp.js';
 import { makeFrac } from '../esModules/fraction/fraction.js';
+import { getNoteLengthDenom } from './buttons.js';
 
 // Build a 16th-note grid extrapolated one measure before beats[0].
 function build16thGrid(beats, measureDurMs, beatsPerMeasure) {
@@ -32,12 +33,14 @@ function snapToGrid(timeMs, grid) {
   return best;
 }
 
-// Quantize duration in ms to nearest 8th-note multiple (min 1 eighth = 2 sixteenths).
+// Quantize duration in ms to nearest grid multiple based on note-length denominator.
+// denom: 16=sixteenth, 8=eighth, 4=quarter, 2=half, 1=whole.
 // Returns duration in 16th-note units.
-function quantizeDuration(durationMs, sixteenthDurMs) {
-  if (!durationMs || durationMs <= 0) return 2;
-  const eighthDurMs = sixteenthDurMs * 2;
-  return Math.max(1, Math.round(durationMs / eighthDurMs)) * 2;
+function quantizeDuration(durationMs, sixteenthDurMs, denom) {
+  const gridMs = sixteenthDurMs * (16 / denom); // e.g. denom=4 -> gridMs = 4 sixteenths
+  const minUnits = 16 / denom;
+  if (!durationMs || durationMs <= 0) return minUnits;
+  return Math.max(minUnits, Math.round(durationMs / gridMs)) * minUnits;
 }
 
 // Group NoteOn events within 60ms of each other as simultaneous (chord).
@@ -59,7 +62,7 @@ function groupSimultaneous(noteOns, thresholdMs = 60) {
 }
 
 // Build slotMap: slotIdx -> { noteNums: Set, dur16 }, with overlap truncation.
-function buildSlotMap(noteList, grid, sixteenthDurMs) {
+function buildSlotMap(noteList, grid, sixteenthDurMs, denom) {
   const map = new Map();
   const groups = groupSimultaneous(noteList);
   for (const group of groups) {
@@ -68,7 +71,7 @@ function buildSlotMap(noteList, grid, sixteenthDurMs) {
       n.offTime != null ? n.offTime : n.onTime + sixteenthDurMs
     );
     const avgOffTime = offTimes.reduce((a, b) => a + b, 0) / offTimes.length;
-    const dur16 = quantizeDuration(avgOffTime - group[0].onTime, sixteenthDurMs);
+    const dur16 = quantizeDuration(avgOffTime - group[0].onTime, sixteenthDurMs, denom);
     if (!map.has(slotIdx)) map.set(slotIdx, { noteNums: new Set(), dur16 });
     const entry = map.get(slotIdx);
     entry.dur16 = Math.max(entry.dur16, dur16);
@@ -132,13 +135,15 @@ export function init(noteRecorder, beatStateMgr) {
     const { grid, sixteenthDurMs } = build16thGrid(beats, measureDurMs, beatsPerMeasure);
     if (!grid.length) return;
 
+    const denom = getNoteLengthDenom();
+
     const noteOns = notes.filter(n => n.onTime != null);
     const threshold = beatStateMgr.lowNoteThreshold;
     const rhNotes = noteOns.filter(n => n.noteNum > threshold);
     const lhNotes = noteOns.filter(n => n.noteNum <= threshold);
 
-    const rhMap = buildSlotMap(rhNotes, grid, sixteenthDurMs);
-    const lhMap = buildSlotMap(lhNotes, grid, sixteenthDurMs);
+    const rhMap = buildSlotMap(rhNotes, grid, sixteenthDurMs, denom);
+    const lhMap = buildSlotMap(lhNotes, grid, sixteenthDurMs, denom);
 
     const totalSlots = grid.length;
     const total8n = makeFrac(totalSlots, 2);

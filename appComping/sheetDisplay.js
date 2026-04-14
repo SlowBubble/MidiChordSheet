@@ -211,7 +211,7 @@ export function init(noteRecorder) {
     });
 
     _lastSong = song;
-    _lastGrid = { grid, sixteenthDurMs, gridStartMs: grid[0], measureDurMs, beatsPerMeasure };
+    _lastGrid = { grid, sixteenthDurMs, gridStartMs: grid[0], measureDurMs, beatsPerMeasure, firstNoteSlot };
 
     try {
       renderMgr.render(song, false, null, cursorTime8n);
@@ -230,8 +230,17 @@ export function init(noteRecorder) {
     },
     renderWithCursor(beatTimeMs) {
       if (!_lastSong || !_lastGrid) return;
-      const slotIdx = Math.round((beatTimeMs - _lastGrid.gridStartMs) / _lastGrid.sixteenthDurMs);
-      const cursor8n = makeFrac(Math.max(0, slotIdx), 2);
+      const rawSlot = Math.round((beatTimeMs - _lastGrid.gridStartMs) / _lastGrid.sixteenthDurMs);
+      const firstNoteSlot = _lastGrid.firstNoteSlot ?? 0;
+      const slotIdx = rawSlot - firstNoteSlot;
+      // pickup8n is negative (e.g. -3 in 8n units for a 3-slot pickup).
+      // render.js calls setPickup(pickup8n.over(8).negative()) which shifts all note
+      // positions back by that amount, so the cursor must be shifted the same way.
+      const pickupOffset8n = _lastSong.pickup8n ?? makeFrac(0); // e.g. -3/1 in 8n
+      const rawCursor8n = makeFrac(Math.max(0, slotIdx), 2);
+      // pickupOffset8n is in 8n units already; rawCursor8n is in 16th/2 units.
+      // Both are fractions — subtract the pickup (which is negative, so this moves cursor back).
+      const cursor8n = rawCursor8n.plus(pickupOffset8n);
       try {
         renderMgr.render(_lastSong, false, null, cursor8n);
       } catch (e) {

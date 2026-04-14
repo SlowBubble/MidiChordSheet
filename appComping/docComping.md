@@ -4,9 +4,18 @@
 # Project structure
 - ../lib and ../esModules have tools that can be shared with other apps
 
+
+# m2n
+- skip displaying the measures at the end if it is entirely a rest measure.
+
+# m2m
+the cursor seems to be display at the wrong place on replay when there is a pickup measure
+
 # m2l
 - Have the top message (e.g. `1st Measure Trigger`) be in the top of the right menu
 - Have the balls use fixed position to the upper left (and have no text instead of '_' when idle)
+
+
 # m2k
 
 - Pickup measure is implemented incorrectly (currently, all the notes in the pickup are squished into the first measure's start)
@@ -14,8 +23,6 @@
   - The extrapolated window should be treated as first measure and potentially has an extra pickup measure.
     - Does it have a pickup measure? It's only if the extrapolated is longer than a measure's time should the rest overflow into the pickup 
 
-# m2j
-- skip displaying the final measure if it is entirely a rest measure.
 
 # m2i
 - cmd+s shortcut: save that recording in localStorage

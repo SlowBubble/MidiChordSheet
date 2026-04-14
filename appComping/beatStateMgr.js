@@ -171,7 +171,7 @@ export function playDrumPattern(durMs) {
       lowNoteList.length = 0;
       markIdle();
       updateMeasureStatus();
-      document.getElementById('beat-display').textContent = '–';
+      document.getElementById('beat-display').textContent = '';
       return;
     }
 
@@ -253,6 +253,6 @@ export function reset() {
   drumMuted = false;
   markIdle();
   updateMeasureStatus();
-  document.getElementById('beat-display').textContent = '–';
+  document.getElementById('beat-display').textContent = '';
   console.log('reset: drum stopped, measureDurMs cleared');
 }

@@ -25,11 +25,11 @@
 <body>
   <div id="container">
     <div id="main">
-      <p id="status" class="status">🔴 Press Space to start audio</p>
-      <p id="beat-display" style="font-size:4rem; font-weight:bold; letter-spacing:0.8em;"></p>
+      <p id="beat-display" style="position:fixed; top:0; left:0; font-size:4rem; font-weight:bold; letter-spacing:0.8em; margin:0; pointer-events:none;"></p>
       <div id="sheet-display" style="margin-top:1em;"></div>
     </div>
     <div id="menu">
+      <p id="status" class="status" style="margin:0 0 0.5rem 0; padding:4px 8px;">🔴 Press Space to start audio</p>
       <table id="menu-table">
         <tr>
           <td>Beats/measure</td>

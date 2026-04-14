@@ -179,23 +179,16 @@ export function playDrumPattern(durMs, measure1StartMs) {
 
   // If measure2StartPerf is in the past (shouldn't happen normally), start from now
   if (nextFireTime < nowPerf) {
-    console.warn('m2l: measure2StartPerf is in the past by', nowPerf - nextFireTime, 'ms');
     nextFireTime = nowPerf;
   }
 
-  drumPatternStartTime = measure2StartPerf; // perf domain anchor for beat 1 of measure 2
-
-  console.log('m2l: measure1StartMs (Date):', measure1StartMs,
-    'measure2StartPerf:', measure2StartPerf,
-    'nowPerf:', nowPerf,
-    'lag to first drum beat (ms):', measure2StartPerf - nowPerf);
+  drumPatternStartTime = measure2StartPerf;
 
   function tick(now) {
     if (!drumRunning) return;
 
     if (lastMidiEventTime !== null && (now - lastMidiEventTime) > idleMeasures * durMs) {
-      console.log('m1i: idle timeout, stopping drums');
-      stopDrumPattern();
+      console.log('m1i: idle timeout, stopping drums');      stopDrumPattern();
       measureDurMs = null;
       lowNoteList.length = 0;
       markIdle();
@@ -213,9 +206,6 @@ export function playDrumPattern(durMs, measure1StartMs) {
         drumNoteOn(note.noteNum, drumMuted ? 0 : note.velocity)
       );
       const beatDateMs = nextFireTime + perfToDateOffset;
-      console.log('m2l: beat', beat, 'div', divInMeasure, 'at Date ms:', beatDateMs,
-        'expected measure2Start:', measure1StartMs + durMs,
-        'diff:', beatDateMs - (measure1StartMs + durMs));
       recordBeat(beat, beatDateMs);
       nextDivIdx++;
       nextFireTime += divisionMs;
@@ -242,7 +232,6 @@ function handleMeasureTiming(evt) {
     if (distinctAsc.length > 0 && evt.noteNum < triggerThreshold) {
       const dur = evt.time - lowNoteList[0].time;
       const measure1StartMs = lowNoteList[0].time;
-      console.log('m2l: measureDurMs:', dur, 'measure1StartMs:', measure1StartMs, 'trigger note time:', evt.time);
       measureDurMs = dur;
       noteRecorder.setMeasureDurMs(dur);
       noteRecorder.setMeasure1StartMs(measure1StartMs);
@@ -289,5 +278,4 @@ export function reset() {
   markIdle();
   updateMeasureStatus();
   document.getElementById('beat-display').textContent = '';
-  console.log('reset: drum stopped, measureDurMs cleared');
 }

@@ -157,19 +157,6 @@ export function init(noteRecorder) {
     const rhMap = buildSlotMap(rhNotes, grid, sixteenthDurMs, denom);
     const lhMap = buildSlotMap(lhNotes, grid, sixteenthDurMs, denom);
 
-    // Debug: log first LH note placement vs measure1 slot
-    const measure1Slot0check = Math.round((gridMeasure1StartMs - grid[0]) / sixteenthDurMs);
-    if (lhNotes.length) {
-      const firstLh = [...lhNotes].sort((a, b) => a.onTime - b.onTime)[0];
-      const firstLhSlot = Math.round((firstLh.onTime - grid[0]) / sixteenthDurMs);
-      console.log('m2o sheetDisplay: measure1Slot0=', measure1Slot0check,
-        'firstLhNote onTime=', firstLh.onTime,
-        'snapped to slot=', firstLhSlot,
-        'offset from measure1 (slots)=', firstLhSlot - measure1Slot0check,
-        'offset (ms)=', firstLh.onTime - gridMeasure1StartMs,
-        'sixteenthDurMs=', sixteenthDurMs);
-    }
-
     // Trim trailing all-rest measures from the end.
     // A measure is slotsPerMeasure = 16th-notes per measure = beatsPerMeasure * 4.
     const slotsPerMeasure = beatsPerMeasure * 4;

@@ -2,6 +2,7 @@
 
 import { genMidiPattern } from '../esModules/musical-beat/pattern.js';
 import { drumNoteOn } from './sound.js';
+import { recordBeat, markIdle, recordNote } from './noteRecorder.js';
 
 // ── settings ──────────────────────────────────────────────────────────────────
 
@@ -167,6 +168,7 @@ export function playDrumPattern(durMs) {
       stopDrumPattern();
       measureDurMs = null;
       lowNoteList.length = 0;
+      markIdle();
       updateMeasureStatus();
       document.getElementById('beat-display').textContent = '–';
       return;
@@ -180,6 +182,7 @@ export function playDrumPattern(durMs) {
       pattern.evtsArrs[divInMeasure].forEach(note =>
         drumNoteOn(note.noteNum, drumMuted ? 0 : note.velocity)
       );
+      recordBeat(beat, now);
       nextDivIdx++;
       nextFireTime += divisionMs;
     }
@@ -228,6 +231,7 @@ export function onNoteEvent(evt, withSound) {
   } else if (evt.type === midiEvent.midiEvtType.NoteOff) {
     if (withSound) pianoNoteOff(evt.noteNum);
   }
+  recordNote(evt);
   handleMeasureTiming(evt);
 }
 
@@ -245,6 +249,7 @@ export function reset() {
   drumPatternStartTime = null;
   drumCurrentBeat = 0;
   drumMuted = false;
+  markIdle();
   updateMeasureStatus();
   document.getElementById('beat-display').textContent = '–';
   console.log('reset: drum stopped, measureDurMs cleared');

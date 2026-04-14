@@ -12,7 +12,8 @@ Feature: record what has been comped.
     - You will need to clear the notes from before the previous idling of the beatStateMgr (not currently exposed)
   - record the beats
 - recorderDisplay.js
-  - For now just outputs (notes and beats) in pretty JSON as they are recorded. 
+  - For now just outputs (notes and beats) in pretty JSON as they are recorded.
+  - In the future, we will look at oldApp/ to see how to display these.
 
 # m2c
 

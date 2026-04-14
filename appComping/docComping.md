@@ -4,7 +4,23 @@
 # Project structure
 - ../lib and ../esModules have tools that can be shared with other apps
 
+# m2d
+Feature: record what has been comped.
+
+- noteRecorder.js
+  - record the notes that have been played so far
+    - You will need to clear the notes from before the previous idling of the beatStateMgr (not currently exposed)
+  - record the beats
+- recorderDisplay.js
+  - For now just outputs (notes and beats) in pretty JSON as they are recorded. 
+
 # m2c
+
+- compingMain: init and hook things up
+- beatStateMgr: handle beat state and trigger things like the sound
+- sound: handles the sound
+- keyboardHandler
+- midiHandler
 
 # m2b
 - Change the algo for deciding when measureDurMs can be computed

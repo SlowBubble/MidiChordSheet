@@ -1,5 +1,6 @@
 import * as state from '../fire/state.js';
 import * as banner from '../fire/banner.js';
+import { makeFrac } from '../fraction/fraction.js';
 
 export class RenderMgr {
   constructor(canvasDiv) {
@@ -64,8 +65,9 @@ export class RenderMgr {
     // Configure the cursor.
     stateMgr.viewMode = false;
     stateMgr.editor.cursorOnChords = true;
-    if (cursorTime8n && sheetStart8n) {
-      stateMgr.editor.cursorTime = cursorTime8n.minus(sheetStart8n).over(8);
+    if (cursorTime8n) {
+      const offset = sheetStart8n ? sheetStart8n.over(8) : makeFrac(0);
+      stateMgr.editor.cursorTime = cursorTime8n.over(8).minus(offset);
     }
 
     const params = {};

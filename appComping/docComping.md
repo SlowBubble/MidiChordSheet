@@ -4,6 +4,20 @@
 # Project structure
 - ../lib and ../esModules have tools that can be shared with other apps
 
+# m2j
+- skip displaying the final measure if it is entirely a rest measure.
+# m2i
+- cmd+s shortcut: save that recording in localStorage
+  - Add another saved.html to display what is saved and link it back to index.html with a RecordingId in the hash params to load and display it in index.html.
+    - When displaying with RecordingId, don't overwrite the recorder's data (disabling).
+
+# m2h
+- The ball display is incorrect when replay, let's just remove that part
+- But try to update the cursor of the sheet per beat when replaying
+
+- You should consider the start of the drum beat as the second measure
+- The extrapolated window should be treated as first measure even if there are notes. It's only if the extrapolated is much longer than a measure's time should the rest overflow into the pickup 
+
 # m2g
 - replay.js
   - When you press space while there are recorded notes and the beatStateMgr is idle, replay the notes.

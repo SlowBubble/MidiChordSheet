@@ -7,6 +7,7 @@ import { setupMidiHandler } from './midiHandler.js';
 import * as noteRecorder from './noteRecorder.js';
 import { init as initSheetDisplay } from './sheetDisplay.js';
 import * as beatStateMgr from './beatStateMgr.js';
+import { setSheetApi } from './replay.js';
 
 const [keyboardEvtPub, keyboardEvtSub] = pubSub.make();
 
@@ -14,4 +15,5 @@ setupButtons();
 setupMidiHandler();
 setupKeyboardHandler(keyboardEvtSub);
 setupKeyboard(keyboardEvtPub);
-initSheetDisplay(noteRecorder, beatStateMgr);
+const sheetApi = initSheetDisplay(noteRecorder, beatStateMgr);
+setSheetApi(sheetApi);

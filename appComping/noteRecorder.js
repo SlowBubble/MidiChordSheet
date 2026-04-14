@@ -9,6 +9,7 @@ let beats = [];
 let pendingClear = false;
 const listeners = [];
 let _measureDurMs = null;
+let _measure1StartMs = null;
 let _beatsPerMeasure = 4;
 let _lowNoteThreshold = 62;
 let _noteLengthDenom = 4;
@@ -63,6 +64,8 @@ export function getBeats() { return [...beats]; }
 // Store the last known non-null measureDurMs so it survives idle reset
 export function setMeasureDurMs(v) { if (v != null) _measureDurMs = v; }
 export function getMeasureDurMs() { return _measureDurMs; }
+export function setMeasure1StartMs(v) { if (v != null) _measure1StartMs = v; }
+export function getMeasure1StartMs() { return _measure1StartMs; }
 export function setBeatsPerMeasure(v) { _beatsPerMeasure = v; }
 export function getBeatsPerMeasure() { return _beatsPerMeasure; }
 export function setLowNoteThreshold(v) { _lowNoteThreshold = v; }
@@ -93,6 +96,7 @@ export function saveRecording(label) {
     notes: [...notes],
     beats: [...beats],
     measureDurMs: _measureDurMs,
+    measure1StartMs: _measure1StartMs,
     beatsPerMeasure: _beatsPerMeasure,
     lowNoteThreshold: _lowNoteThreshold,
     noteLengthDenom: _noteLengthDenom,
@@ -117,11 +121,12 @@ let disabled = false;
 export function disable() { disabled = true; }
 
 /** Populate recorder state from saved data (triggers subscribers). */
-export function loadInto(savedNotes, savedBeats, savedMeasureDurMs, savedBeatsPerMeasure, savedLowNoteThreshold, savedNoteLengthDenom, savedNoteStartDenom) {
+export function loadInto(savedNotes, savedBeats, savedMeasureDurMs, savedBeatsPerMeasure, savedLowNoteThreshold, savedNoteLengthDenom, savedNoteStartDenom, savedMeasure1StartMs) {
   notes = savedNotes.map(n => ({ ...n }));
   beats = savedBeats.map(b => ({ ...b }));
   openNotes.clear();
   if (savedMeasureDurMs != null) _measureDurMs = savedMeasureDurMs;
+  if (savedMeasure1StartMs != null) _measure1StartMs = savedMeasure1StartMs;
   if (savedBeatsPerMeasure != null) _beatsPerMeasure = savedBeatsPerMeasure;
   if (savedLowNoteThreshold != null) _lowNoteThreshold = savedLowNoteThreshold;
   if (savedNoteLengthDenom != null) _noteLengthDenom = savedNoteLengthDenom;

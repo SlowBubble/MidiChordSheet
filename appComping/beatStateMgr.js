@@ -149,7 +149,7 @@ export function stopDrumPattern() {
   if (drumRafId !== null) { cancelAnimationFrame(drumRafId); drumRafId = null; }
 }
 
-export function playDrumPattern(durMs) {
+export function playDrumPattern(durMs, measure1StartMs) {
   stopDrumPattern();
   drumMuted = isSilentTilDoubleBass();
 
@@ -161,8 +161,34 @@ export function playDrumPattern(durMs) {
 
   drumRunning = true;
   let nextDivIdx = 0;
-  let nextFireTime = performance.now();
-  drumPatternStartTime = nextFireTime;
+
+  // Anchor the drum grid to measure1StartMs (Date.now() domain).
+  // Convert to performance.now() domain for the RAF loop.
+  const nowPerf = performance.now();
+  const nowDate = Date.now();
+  const perfToDateOffset = nowDate - nowPerf; // date = perf + offset
+
+  // measure1StartMs is in Date.now() domain; convert to perf domain
+  const measure1StartPerf = measure1StartMs - perfToDateOffset;
+
+  // The first beat of measure 2 fires at measure1StartMs + durMs
+  // Skip any divisions that are already in the past
+  const measure2StartPerf = measure1StartPerf + durMs;
+  nextDivIdx = 0;
+  let nextFireTime = measure2StartPerf;
+
+  // If measure2StartPerf is in the past (shouldn't happen normally), start from now
+  if (nextFireTime < nowPerf) {
+    console.warn('m2l: measure2StartPerf is in the past by', nowPerf - nextFireTime, 'ms');
+    nextFireTime = nowPerf;
+  }
+
+  drumPatternStartTime = measure2StartPerf; // perf domain anchor for beat 1 of measure 2
+
+  console.log('m2l: measure1StartMs (Date):', measure1StartMs,
+    'measure2StartPerf:', measure2StartPerf,
+    'nowPerf:', nowPerf,
+    'lag to first drum beat (ms):', measure2StartPerf - nowPerf);
 
   function tick(now) {
     if (!drumRunning) return;
@@ -186,7 +212,11 @@ export function playDrumPattern(durMs) {
       pattern.evtsArrs[divInMeasure].forEach(note =>
         drumNoteOn(note.noteNum, drumMuted ? 0 : note.velocity)
       );
-      recordBeat(beat, Date.now());
+      const beatDateMs = nextFireTime + perfToDateOffset;
+      console.log('m2l: beat', beat, 'div', divInMeasure, 'at Date ms:', beatDateMs,
+        'expected measure2Start:', measure1StartMs + durMs,
+        'diff:', beatDateMs - (measure1StartMs + durMs));
+      recordBeat(beat, beatDateMs);
       nextDivIdx++;
       nextFireTime += divisionMs;
     }
@@ -211,11 +241,13 @@ function handleMeasureTiming(evt) {
     const triggerThreshold = distinctAsc.length >= 2 ? distinctAsc[1] : distinctAsc[0];
     if (distinctAsc.length > 0 && evt.noteNum < triggerThreshold) {
       const dur = evt.time - lowNoteList[0].time;
-      console.log('measureDurMs:', dur);
+      const measure1StartMs = lowNoteList[0].time;
+      console.log('m2l: measureDurMs:', dur, 'measure1StartMs:', measure1StartMs, 'trigger note time:', evt.time);
       measureDurMs = dur;
       noteRecorder.setMeasureDurMs(dur);
+      noteRecorder.setMeasure1StartMs(measure1StartMs);
       updateMeasureStatus();
-      playDrumPattern(dur);
+      playDrumPattern(dur, measure1StartMs);
       lowNoteList.length = 0;
     }
   }

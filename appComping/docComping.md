@@ -4,6 +4,8 @@
 # Project structure
 - ../lib and ../esModules have tools that can be shared with other apps
 
+# m2p
+- Fix bug where first left-hand note is not aligned with the first measure
 
 # m2o
 - Let's make the `Note Start Qaunta` configurable

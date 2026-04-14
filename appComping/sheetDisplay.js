@@ -163,7 +163,17 @@ export function init(noteRecorder) {
     const rhMap = buildSlotMap(rhNotes, grid, sixteenthDurMs, denom);
     const lhMap = buildSlotMap(lhNotes, grid, sixteenthDurMs, denom);
 
-    const totalSlots = grid.length;
+    // Trim trailing all-rest measures from the end.
+    // A measure is slotsPerMeasure = 16th-notes per measure = beatsPerMeasure * 4.
+    const slotsPerMeasure = beatsPerMeasure * 4;
+    const measure1Slot0 = Math.round((measure1StartMs - grid[0]) / sixteenthDurMs);
+    const allNoteSlots = [...rhMap.keys(), ...lhMap.keys()];
+    const lastNoteSlot = allNoteSlots.length ? Math.max(...allNoteSlots) : measure1Slot0;
+    // Find which measure (0-indexed from measure1) the last note falls in.
+    const lastNoteMeasureIdx = Math.floor((lastNoteSlot - measure1Slot0) / slotsPerMeasure);
+    // Trim grid to end of that measure.
+    const trimmedEndSlot = measure1Slot0 + (lastNoteMeasureIdx + 1) * slotsPerMeasure;
+    const totalSlots = Math.min(grid.length, trimmedEndSlot);
     const total8n = makeFrac(totalSlots, 2);
 
     const rhNoteGps = slotMapToNoteGps(rhMap, totalSlots, total8n);
@@ -176,8 +186,7 @@ export function init(noteRecorder) {
     // We don't include leading rests in the pickup — it starts at the first note.
     const allSlots = [...rhMap.keys(), ...lhMap.keys()];
     const firstNoteSlot = allSlots.length ? Math.min(...allSlots) : 0;
-    const measure1Slot = Math.round((measure1StartMs - grid[0]) / sixteenthDurMs);
-    const pickupSlots = firstNoteSlot < measure1Slot ? measure1Slot - firstNoteSlot : 0;
+    const pickupSlots = firstNoteSlot < measure1Slot0 ? measure1Slot0 - firstNoteSlot : 0;
     // render.js calls setPickup(song.pickup8n.over(8).negative()).
     // setPickup rejects negatives, so store as negative for double-negation to work.
     const pickup8n = makeFrac(-pickupSlots, 2);

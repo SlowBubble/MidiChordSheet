@@ -6,7 +6,7 @@
 
 
 # m2n
-- skip displaying the measures at the end if it is entirely a rest measure.
+- skip displaying the measures at the end (1 or more) if they are entirely a rest measure.
 
 # m2m
 the cursor seems to be display at the wrong place on replay when there is a pickup measure

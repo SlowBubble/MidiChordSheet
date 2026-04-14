@@ -20,12 +20,12 @@ function build16thGrid(beats, measureDurMs, beatsPerMeasure, earliestNoteTime) {
   const measure1StartMs = beats[0].time - measureDurMs;
 
   // Grid starts at earliestNoteTime if there are notes before measure1,
-  // otherwise at measure1 start. Snap grid start back to nearest 16th boundary.
-  const rawStart = (earliestNoteTime != null && earliestNoteTime < measure1StartMs)
-    ? earliestNoteTime
-    : measure1StartMs;
-  // Align start to a 16th-note grid anchored at measure1StartMs
-  const offsetSlots = Math.floor((measure1StartMs - rawStart) / sixteenthDurMs);
+  // otherwise at measure1 start.
+  // Align start to a 16th-note grid anchored at measure1StartMs,
+  // going back far enough to cover earliestNoteTime (use ceil so we don't undershoot)
+  const offsetSlots = earliestNoteTime != null && earliestNoteTime < measure1StartMs
+    ? Math.ceil((measure1StartMs - earliestNoteTime) / sixteenthDurMs)
+    : 0;
   const start = measure1StartMs - offsetSlots * sixteenthDurMs;
 
   const lastBeat = beats[beats.length - 1];
@@ -172,20 +172,41 @@ export function init(noteRecorder) {
     const bpmVal = Math.round((beatsPerMeasure / measureDurMs) * 60000);
     const tempo8n = bpmVal * 2;
 
-    // pickup8n: exact duration before measure1 in 8th notes.
-    // measure1StartMs is the grid-aligned start of the extrapolated first measure.
-    // Anything before it (grid[0] to measure1StartMs) is the pickup.
-    const pickupMs = measure1StartMs - grid[0];
-    const pickup8n = pickupMs > 0
-      ? makeFrac(Math.round(pickupMs / sixteenthDurMs), 2)
-      : makeFrac(0);
+    // pickup8n: slots from the first actual note to measure1Start.
+    // We don't include leading rests in the pickup — it starts at the first note.
+    const allSlots = [...rhMap.keys(), ...lhMap.keys()];
+    const firstNoteSlot = allSlots.length ? Math.min(...allSlots) : 0;
+    const measure1Slot = Math.round((measure1StartMs - grid[0]) / sixteenthDurMs);
+    const pickupSlots = firstNoteSlot < measure1Slot ? measure1Slot - firstNoteSlot : 0;
+    // render.js calls setPickup(song.pickup8n.over(8).negative()).
+    // setPickup rejects negatives, so store as negative for double-negation to work.
+    const pickup8n = makeFrac(-pickupSlots, 2);
+
+    // Align all voices to start at firstNoteSlot (the pickup start).
+    // - Voices with pickup notes: trim the leading rest before the first note.
+    // - Voices without pickup notes: replace the leading rest with one starting at firstNoteSlot.
+    const pickupStart8n = makeFrac(firstNoteSlot, 2);
+    function alignToPickup(noteGps) {
+      if (pickupSlots === 0) return noteGps;
+      if (!noteGps.length) return [makeRest(pickupStart8n, makeFrac(totalSlots, 2))];
+      const first = noteGps[0];
+      const isRest = !first.midiNotes || first.midiNotes.length === 0;
+      if (isRest) {
+        // Replace leading rest: start it at pickupStart8n
+        const trimmed = { ...first, start8n: pickupStart8n };
+        return [trimmed, ...noteGps.slice(1)];
+      }
+      return noteGps;
+    }
+
+    // No position offset needed — render.js uses durations only, not start8n positions.
     const song = new Song({
       timeSigChanges: { defaultVal: { upperNumeral: beatsPerMeasure, lowerNumeral: 4 } },
       tempo8nPerMinChanges: { defaultVal: tempo8n },
       pickup8n,
       voices: [
-        { noteGps: rhNoteGps, clef: clefType.Treble },
-        { noteGps: lhNoteGps, clef: clefType.Bass },
+        { noteGps: alignToPickup(rhNoteGps), clef: clefType.Treble },
+        { noteGps: alignToPickup(lhNoteGps), clef: clefType.Bass },
       ],
     });
 

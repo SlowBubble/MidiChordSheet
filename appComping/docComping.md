@@ -4,6 +4,9 @@
 # Project structure
 - ../lib and ../esModules have tools that can be shared with other apps
 
+# m2l
+- Have the top message (e.g. `1st Measure Trigger`) be in the top of the right menu
+- Have the balls use fixed position to the upper left (and have no text instead of '_' when idle)
 # m2k
 
 - Pickup measure is implemented incorrectly (currently, all the notes in the pickup are squished into the first measure's start)

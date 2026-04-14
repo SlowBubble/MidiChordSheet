@@ -15,7 +15,7 @@ export let idleMeasures = 1;
 export const highNoteThreshold = 72;
 
 export function setBeatsPerMeasure(v) { beatsPerMeasure = v; noteRecorder.setBeatsPerMeasure(v); }
-export function setBeatSubdivision(v) { beatSubdivision = v; }
+export function setBeatSubdivision(v) { beatSubdivision = v; noteRecorder.setBeatSubdivision(v); }
 export function setLowNoteThreshold(v) { lowNoteThreshold = v; noteRecorder.setLowNoteThreshold(v); }
 export function setIdleMeasures(v) { idleMeasures = v; }
 
@@ -217,7 +217,39 @@ export function playDrumPattern(durMs, measure1StartMs) {
   drumRafId = requestAnimationFrame(tick);
 }
 
-// ── event handler ────────────────────────────────────────────────────────────
+// ── replay drum scheduling ────────────────────────────────────────────────────
+
+// Schedules drum hits for a replay session using setTimeout (no RAF loop).
+// Returns an array of timeout IDs so the caller can cancel them.
+// measure1StartMs: Date.now() time of beat 1 of measure 1.
+// durationMs: one measure duration.
+// numMeasures: how many measures to schedule.
+// originTime: Date.now() replay origin (subtracted to get delay ms).
+export function scheduleReplayDrums(measure1StartMs, durationMs, numMeasures, originTime, beatsPerMeasureVal, beatSubdivisionVal) {
+  const timeSig = { upperNumeral: beatsPerMeasureVal, lowerNumeral: 4, isCompound: () => false };
+  const pattern = genMidiPattern(timeSig, false, beatSubdivisionVal);
+  const numDivisions = pattern.evtsArrs.length;
+  const divisionMs = durationMs / numDivisions;
+  const divisionsPerBeat = numDivisions / beatsPerMeasureVal;
+  const beatDisplay = document.getElementById('beat-display');
+  const ids = [];
+
+  // Start from measure 1 (measure1StartMs), schedule all divisions across numMeasures
+  const totalDivisions = numDivisions * numMeasures;
+  for (let d = 0; d < totalDivisions; d++) {
+    const fireTime = measure1StartMs + d * divisionMs;
+    const delay = fireTime - originTime;
+    if (delay < 0) continue;
+    const divInMeasure = d % numDivisions;
+    const beat = Math.floor(divInMeasure / divisionsPerBeat) + 1;
+    const notes = pattern.evtsArrs[divInMeasure];
+    ids.push(setTimeout(() => {
+      if (beatDisplay) beatDisplay.textContent = '⚪'.repeat(beat);
+      notes.forEach(note => drumNoteOn(note.noteNum, note.velocity));
+    }, delay));
+  }
+  return ids;
+}
 
 import { pianoNoteOn, pianoNoteOff } from './sound.js';
 import * as midiEvent from '../esModules/midi-data/midiEvent.js';

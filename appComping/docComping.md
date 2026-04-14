@@ -4,7 +4,10 @@
 # Project structure
 - ../lib and ../esModules have tools that can be shared with other apps
 
+# m2s
+
 # m2r
+- Fix rendering bug
 
 # m2q
 - cmd+s provides a prompt to edit the name of the saved item (do we need another field in the json item)?

@@ -8,10 +8,15 @@ import * as beatStateMgr from './beatStateMgr.js';
 import { getNoteLengthDenom } from './buttons.js';
 
 export function setupKeyboardHandler(keyboardEvtSub) {
+  let keyboardSubscribed = false;
+
   window.addEventListener('keydown', e => {
     // Always try to init MIDI on any keydown (idempotent after first call)
     initMidi(volume, () => {
-      keyboardEvtSub(evt => onNoteEvent(evt, true));
+      if (!keyboardSubscribed) {
+        keyboardEvtSub(evt => onNoteEvent(evt, true));
+        keyboardSubscribed = true;
+      }
       beatStateMgr.updateMeasureStatus();
     });
 

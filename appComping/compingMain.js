@@ -25,7 +25,7 @@ if (recordingId) {
   const rec = noteRecorder.loadRecording(recordingId);
   if (rec) {
     noteRecorder.disable();
-    noteRecorder.loadInto(rec.notes, rec.beats, rec.measureDurMs, rec.beatsPerMeasure, rec.lowNoteThreshold, rec.noteLengthDenom, rec.noteStartDenom, rec.measure1StartMs, rec.label);
+    noteRecorder.loadInto(rec.notes, rec.beats, rec.measureDurMs, rec.beatsPerMeasure, rec.lowNoteThreshold, rec.noteLengthDenom, rec.noteStartDenom, rec.measure1StartMs, rec.label, rec.beatSubdivision);
     const status = document.getElementById('status');
     if (status) status.textContent = `📼 ${rec.label}`;
   } else {

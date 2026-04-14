@@ -14,6 +14,7 @@ let _beatsPerMeasure = 4;
 let _lowNoteThreshold = 62;
 let _noteLengthDenom = 4;
 let _noteStartDenom = 16;
+let _beatSubdivision = 1;
 let _label = null;
 
 // noteNum -> index in notes[] for the most recent unresolved NoteOn
@@ -77,6 +78,8 @@ export function setNoteStartDenom(v) { _noteStartDenom = v; }
 export function getNoteStartDenom() { return _noteStartDenom; }
 export function setLabel(v) { _label = v; }
 export function getLabel() { return _label; }
+export function setBeatSubdivision(v) { _beatSubdivision = v; }
+export function getBeatSubdivision() { return _beatSubdivision; }
 
 export function subscribe(fn) { listeners.push(fn); }
 
@@ -104,6 +107,7 @@ export function saveRecording(label) {
     lowNoteThreshold: _lowNoteThreshold,
     noteLengthDenom: _noteLengthDenom,
     noteStartDenom: _noteStartDenom,
+    beatSubdivision: _beatSubdivision,
   };
   localStorage.setItem('compingRec_' + id, JSON.stringify(entry));
   const idx = getIndex();
@@ -124,7 +128,7 @@ let disabled = false;
 export function disable() { disabled = true; }
 
 /** Populate recorder state from saved data (triggers subscribers). */
-export function loadInto(savedNotes, savedBeats, savedMeasureDurMs, savedBeatsPerMeasure, savedLowNoteThreshold, savedNoteLengthDenom, savedNoteStartDenom, savedMeasure1StartMs, savedLabel) {
+export function loadInto(savedNotes, savedBeats, savedMeasureDurMs, savedBeatsPerMeasure, savedLowNoteThreshold, savedNoteLengthDenom, savedNoteStartDenom, savedMeasure1StartMs, savedLabel, savedBeatSubdivision) {
   notes = savedNotes.map(n => ({ ...n }));
   beats = savedBeats.map(b => ({ ...b }));
   openNotes.clear();
@@ -137,5 +141,6 @@ export function loadInto(savedNotes, savedBeats, savedMeasureDurMs, savedBeatsPe
   if (savedNoteLengthDenom != null) _noteLengthDenom = savedNoteLengthDenom;
   if (savedNoteStartDenom != null) _noteStartDenom = savedNoteStartDenom;
   if (savedLabel != null) _label = savedLabel;
+  if (savedBeatSubdivision != null) _beatSubdivision = savedBeatSubdivision;
   notify();
 }

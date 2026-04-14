@@ -1,7 +1,7 @@
 // replay.js — replays recorded notes and advances the sheet cursor per beat
 
 import { pianoNoteOn, pianoNoteOff } from './sound.js';
-import { volume } from './beatStateMgr.js';
+import { volume, scheduleReplayDrums } from './beatStateMgr.js';
 import * as noteRecorder from './noteRecorder.js';
 
 let _timeouts = [];
@@ -17,6 +17,8 @@ export function stopReplay() {
   _timeouts = [];
   _isReplaying = false;
   _sheetApi?.clearCursor();
+  const beatDisplay = document.getElementById('beat-display');
+  if (beatDisplay) beatDisplay.textContent = '';
 }
 
 // notes: [{ noteNum, velocity, onTime, offTime }]
@@ -29,15 +31,14 @@ export function startReplay(notes, beats) {
     ...notes.map(n => n.onTime),
     ...beats.map(b => b.time),
   ];
-  // originTime = grid start = one measure before the first drum beat
-  // This ensures first-measure cursor events have non-negative delays.
   const gridInfo = _sheetApi?.getGridInfo();
   const measureDurMs = noteRecorder.getMeasureDurMs();
-  const bpm = noteRecorder.getBeatsPerMeasure();
+  const beatsPerMeasureVal = noteRecorder.getBeatsPerMeasure();
+  const beatSubdivisionVal = noteRecorder.getBeatSubdivision();
+  const measure1StartMs = noteRecorder.getMeasure1StartMs();
   const gridStartMs = measureDurMs && beats.length
     ? beats[0].time - measureDurMs
     : Math.min(...allTimes);
-  // originTime = earliest of grid start and earliest note, so all delays are >= 0
   const earliestNoteTime = notes.length ? Math.min(...notes.map(n => n.onTime)) : gridStartMs;
   const originTime = Math.min(gridStartMs, earliestNoteTime);
 
@@ -66,16 +67,16 @@ export function startReplay(notes, beats) {
   );
 
   // Extrapolate first-measure beats using the true beat duration.
-  const beatDurMs = measureDurMs ? measureDurMs / bpm : 0;
+  const beatDurMs = measureDurMs ? measureDurMs / beatsPerMeasureVal : 0;
   const firstMeasureBeats = [];
   if (beatDurMs > 0) {
-    for (let i = 0; i < bpm; i++) {
+    for (let i = 0; i < beatsPerMeasureVal; i++) {
       firstMeasureBeats.push({ beat: i + 1, time: gridStartMs + i * beatDurMs });
     }
   }
   const allBeats = [...firstMeasureBeats, ...dedupedRecorded];
 
-  // Schedule cursor advances per beat (all delays are >= 0 since originTime = gridStartMs)
+  // Schedule cursor advances per beat
   for (const beat of allBeats) {
     const delay = beat.time - originTime;
     _timeouts.push(setTimeout(() => {
@@ -83,6 +84,14 @@ export function startReplay(notes, beats) {
         _sheetApi.renderWithCursor(beat.time);
       }
     }, delay));
+  }
+
+  // Schedule drum pattern across all recorded measures
+  if (measureDurMs && measure1StartMs) {
+    const lastBeatTime = beats.length ? beats[beats.length - 1].time : measure1StartMs + measureDurMs;
+    const numMeasures = Math.ceil((lastBeatTime - measure1StartMs) / measureDurMs) + 1;
+    const drumIds = scheduleReplayDrums(measure1StartMs, measureDurMs, numMeasures, originTime, beatsPerMeasureVal, beatSubdivisionVal);
+    _timeouts.push(...drumIds);
   }
 
   // Auto-stop after last event

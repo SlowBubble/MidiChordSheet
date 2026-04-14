@@ -12,6 +12,7 @@ export function setupKeyboardHandler(keyboardEvtSub) {
     // Always try to init MIDI on any keydown (idempotent after first call)
     initMidi(volume, () => {
       keyboardEvtSub(evt => onNoteEvent(evt, true));
+      beatStateMgr.updateMeasureStatus();
     });
 
     // cmd+s (Mac) / ctrl+s (Win) — save recording

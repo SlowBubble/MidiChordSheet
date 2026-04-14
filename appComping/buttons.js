@@ -11,6 +11,8 @@ import * as noteRecorder from './noteRecorder.js';
 const NOTE_LENGTH_STEPS = [16, 8, 4, 2, 1];
 let noteLengthIdx = 2; // default: 1/4
 
+let noteStartDenom = 16; // default: 1/16
+
 export function getNoteLengthDenom() {
   return NOTE_LENGTH_STEPS[noteLengthIdx];
 }
@@ -70,6 +72,17 @@ export function setupButtons() {
   };
   document.getElementById('decr-note-length-btn').onclick = () => {
     if (noteLengthIdx > 0) { noteLengthIdx--; noteRecorder.setNoteLengthDenom(NOTE_LENGTH_STEPS[noteLengthIdx]); updateNoteLengthDisplay(); }
+  };
+
+  // note start quantization
+  function updateNoteStartDisplay() {
+    document.getElementById('note-start-display').textContent = `1/${noteStartDenom}`;
+  }
+  document.getElementById('incr-note-start-btn').onclick = () => {
+    noteStartDenom++; noteRecorder.setNoteStartDenom(noteStartDenom); updateNoteStartDisplay();
+  };
+  document.getElementById('decr-note-start-btn').onclick = () => {
+    if (noteStartDenom > 1) { noteStartDenom--; noteRecorder.setNoteStartDenom(noteStartDenom); updateNoteStartDisplay(); }
   };
 
   // silent-til-double-bass checkbox

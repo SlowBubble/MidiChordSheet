@@ -15,7 +15,8 @@ export function initMidi(volume, onReady) {
   _onLoadedCallbacks.push(onReady);
 
   const statusEl = document.getElementById('status');
-  statusEl.textContent = '🔴 Loading audio...';
+  statusEl.textContent = 'Loading audio...';
+  statusEl.className = 'status status-orange';
 
   MIDI.loadPlugin({
     soundfontUrl,
@@ -25,8 +26,6 @@ export function initMidi(volume, onReady) {
       MIDI.programChange(1, MIDI.GM.byName['acoustic_grand_piano'].number);
       MIDI.programChange(2, MIDI.GM.byName['synth_drum'].number);
       MIDI.setVolume(2, volume);
-      statusEl.textContent = 'Audio: ready ✓';
-      statusEl.className = 'status status-green';
       midiLoaded = true;
       _onLoadedCallbacks.forEach(cb => cb());
       _onLoadedCallbacks.length = 0;

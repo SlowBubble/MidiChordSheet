@@ -12,6 +12,7 @@ let _measureDurMs = null;
 let _beatsPerMeasure = 4;
 let _lowNoteThreshold = 62;
 let _noteLengthDenom = 4;
+let _noteStartDenom = 16;
 
 // noteNum -> index in notes[] for the most recent unresolved NoteOn
 const openNotes = new Map();
@@ -68,6 +69,8 @@ export function setLowNoteThreshold(v) { _lowNoteThreshold = v; }
 export function getLowNoteThreshold() { return _lowNoteThreshold; }
 export function setNoteLengthDenom(v) { _noteLengthDenom = v; }
 export function getNoteLengthDenom_() { return _noteLengthDenom; }
+export function setNoteStartDenom(v) { _noteStartDenom = v; }
+export function getNoteStartDenom() { return _noteStartDenom; }
 
 export function subscribe(fn) { listeners.push(fn); }
 
@@ -93,6 +96,7 @@ export function saveRecording(label) {
     beatsPerMeasure: _beatsPerMeasure,
     lowNoteThreshold: _lowNoteThreshold,
     noteLengthDenom: _noteLengthDenom,
+    noteStartDenom: _noteStartDenom,
   };
   localStorage.setItem('compingRec_' + id, JSON.stringify(entry));
   const idx = getIndex();
@@ -113,7 +117,7 @@ let disabled = false;
 export function disable() { disabled = true; }
 
 /** Populate recorder state from saved data (triggers subscribers). */
-export function loadInto(savedNotes, savedBeats, savedMeasureDurMs, savedBeatsPerMeasure, savedLowNoteThreshold, savedNoteLengthDenom) {
+export function loadInto(savedNotes, savedBeats, savedMeasureDurMs, savedBeatsPerMeasure, savedLowNoteThreshold, savedNoteLengthDenom, savedNoteStartDenom) {
   notes = savedNotes.map(n => ({ ...n }));
   beats = savedBeats.map(b => ({ ...b }));
   openNotes.clear();
@@ -121,5 +125,6 @@ export function loadInto(savedNotes, savedBeats, savedMeasureDurMs, savedBeatsPe
   if (savedBeatsPerMeasure != null) _beatsPerMeasure = savedBeatsPerMeasure;
   if (savedLowNoteThreshold != null) _lowNoteThreshold = savedLowNoteThreshold;
   if (savedNoteLengthDenom != null) _noteLengthDenom = savedNoteLengthDenom;
+  if (savedNoteStartDenom != null) _noteStartDenom = savedNoteStartDenom;
   notify();
 }

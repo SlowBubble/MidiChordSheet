@@ -5,6 +5,10 @@
 - ../lib and ../esModules have tools that can be shared with other apps
 
 
+# m2o
+- Let's make the `Note Start Qaunta` configurable
+  - Start with 1/16 and let it increase or decrease by increment of 1 in the denominator
+
 # m2n
 - skip displaying the measures at the end (1 or more) if they are entirely a rest measure.
 

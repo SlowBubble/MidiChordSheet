@@ -52,13 +52,16 @@ export function updateMeasureStatus() {
   if (!el) return;
   if (measureDurMs !== null) {
     const bpm = Math.round((beatsPerMeasure / measureDurMs) * 60000);
-    el.textContent = `🟢 ${bpm} BPM`;
+    el.textContent = `🔴 ${bpm} BPM`;
+    el.className = 'status';
   } else if (lowNoteList.length > 0) {
     const distinctAsc = [...new Set(lowNoteList.map(n => n.noteNum))].sort((a, b) => a - b);
     const triggerThreshold = distinctAsc.length >= 2 ? distinctAsc[1] : distinctAsc[0];
-    el.textContent = `🟠 Next Measure Trigger: <= ${midiToNoteName(triggerThreshold)}`;
+    el.textContent = `⭕ Next Measure Trigger: <= ${midiToNoteName(triggerThreshold)}`;
+    el.className = 'status';
   } else {
-    el.textContent = `⭕ 1st Measure Trigger: <= ${midiToNoteName(lowNoteThreshold)}`;
+    el.textContent = `1st Measure Trigger: <= ${midiToNoteName(lowNoteThreshold)}`;
+    el.className = 'status status-green';
   }
 }
 

@@ -7,6 +7,8 @@
   <link rel="stylesheet" href="../appPlay/play.css">
   <style>
     .status { font-size: 1.1rem; color: #000; background: none; }
+    .status-green { color: #1a7a1a; }
+    .status-orange { color: #c85a00; }
   </style>
   <script src="../lib/midi.js/inc/shim/Base64.js"></script>
   <script src="../lib/midi.js/inc/shim/Base64binary.js"></script>
@@ -29,7 +31,7 @@
       <div id="sheet-display" style="margin-top:1em;"></div>
     </div>
     <div id="menu">
-      <p id="status" class="status" style="margin:0 0 0.5rem 0; padding:4px 8px;">🔴 Press Space to start audio</p>
+      <p id="status" class="status status-orange" style="margin:0 0 0.5rem 0; padding:4px 8px;">Loading audio...</p>
       <table id="menu-table">
         <tr>
           <td>Beats/measure</td>
@@ -61,6 +63,14 @@
           <td>
             <div><button id="incr-idle-btn">▲</button></div>
             <div><button id="decr-idle-btn">▼</button></div>
+          </td>
+        </tr>
+        <tr>
+          <td>Note Start Quanta</td>
+          <td id="note-start-display">1/16</td>
+          <td>
+            <div><button id="incr-note-start-btn">▲</button></div>
+            <div><button id="decr-note-start-btn">▼</button></div>
           </td>
         </tr>
         <tr>

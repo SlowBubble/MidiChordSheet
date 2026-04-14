@@ -27,7 +27,7 @@ export function recordNote(evt) {
 
   if (evt.type === midiEvent.midiEvtType.NoteOn) {
     const idx = notes.length;
-    notes.push({ noteNum: evt.noteNum, onTime: evt.time, offTime: null });
+    notes.push({ noteNum: evt.noteNum, velocity: evt.velocity, onTime: evt.time, offTime: null });
     openNotes.set(evt.noteNum, idx);
   } else {
     // NoteOff — resolve the matching open NoteOn

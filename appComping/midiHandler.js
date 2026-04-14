@@ -10,9 +10,9 @@ midiInputEvtSub(evt => onNoteEvent(evt, false));
 
 export function setupMidiHandler() {
   midiInput.setup(
-    (notes, timeMs) => {
+    (notes, timeMs, velocity) => {
       notes.forEach(noteNum =>
-        midiInputEvtPub(new midiEvent.NoteOnEvt({ noteNum, velocity: volume, channelNum: 0, time: timeMs }))
+        midiInputEvtPub(new midiEvent.NoteOnEvt({ noteNum, velocity: velocity ?? volume, channelNum: 0, time: timeMs }))
       );
     },
     (notes, timeMs) => {

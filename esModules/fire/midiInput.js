@@ -100,9 +100,10 @@ function handlePedalOff(firstPedalVelocity) {
 function handleNoteOn(note, velocity) {
   if (velocity <= 0) {
     handleNoteOff(note);
+    return;
   }
   const now = Date.now();
-  _notedownPub([note], now);
+  _notedownPub([note], now, velocity);
 }
 
 function handleNoteOff(note) {

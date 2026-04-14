@@ -6,7 +6,7 @@
 
 # m2g
 - replay.js
-  - When you press space while there are recorded notes and the beatStateMgr is idle, replay the notes (and the drumbeats).
+  - When you press space while there are recorded notes and the beatStateMgr is idle, replay the notes.
 
 # m2f
 - note off qauntize to 1/4 instead of 1/8

@@ -23,7 +23,9 @@ export function setupKeyboardHandler(keyboardEvtSub) {
       if (!notes.length && !beats.length) return;
       // Sync noteLengthDenom into noteRecorder before saving
       setNoteLengthDenom(getNoteLengthDenom());
-      saveRecording();
+      const label = prompt('Save recording as:', new Date().toLocaleString());
+      if (label === null) return; // cancelled
+      saveRecording(label || new Date().toLocaleString());
       const status = document.getElementById('status');
       if (status) {
         const prev = status.textContent;

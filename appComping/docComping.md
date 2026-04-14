@@ -4,6 +4,9 @@
 # Project structure
 - ../lib and ../esModules have tools that can be shared with other apps
 
+# m2q
+- cmd+s provides a prompt to edit the name of the saved item (do we need another field in the json item)?
+
 # m2p
 - Fix bug where first left-hand note is not aligned with the first measure
 

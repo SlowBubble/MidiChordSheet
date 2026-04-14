@@ -8,6 +8,10 @@ let notes = [];
 let beats = [];
 let pendingClear = false;
 const listeners = [];
+let _measureDurMs = null;
+let _beatsPerMeasure = 4;
+let _lowNoteThreshold = 62;
+let _noteLengthDenom = 4;
 
 // noteNum -> index in notes[] for the most recent unresolved NoteOn
 const openNotes = new Map();
@@ -17,6 +21,7 @@ function notify() {
 }
 
 export function recordNote(evt) {
+  if (disabled) return;
   if (evt.type !== midiEvent.midiEvtType.NoteOn && evt.type !== midiEvent.midiEvtType.NoteOff) return;
   if (pendingClear) {
     notes = [];
@@ -41,6 +46,7 @@ export function recordNote(evt) {
 }
 
 export function recordBeat(beat, time) {
+  if (disabled) return;
   beats.push({ beat, time });
   notify();
 }
@@ -53,4 +59,67 @@ export function markIdle() {
 export function getNotes() { return [...notes]; }
 export function getBeats() { return [...beats]; }
 
+// Store the last known non-null measureDurMs so it survives idle reset
+export function setMeasureDurMs(v) { if (v != null) _measureDurMs = v; }
+export function getMeasureDurMs() { return _measureDurMs; }
+export function setBeatsPerMeasure(v) { _beatsPerMeasure = v; }
+export function getBeatsPerMeasure() { return _beatsPerMeasure; }
+export function setLowNoteThreshold(v) { _lowNoteThreshold = v; }
+export function getLowNoteThreshold() { return _lowNoteThreshold; }
+export function setNoteLengthDenom(v) { _noteLengthDenom = v; }
+export function getNoteLengthDenom_() { return _noteLengthDenom; }
+
 export function subscribe(fn) { listeners.push(fn); }
+
+// ── localStorage persistence ──────────────────────────────────────────────────
+
+const LS_INDEX_KEY = 'compingRecordings';
+
+function getIndex() {
+  try { return JSON.parse(localStorage.getItem(LS_INDEX_KEY)) || []; }
+  catch { return []; }
+}
+
+/** Save current notes+beats to localStorage. Returns the new RecordingId. */
+export function saveRecording(label) {
+  const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const entry = {
+    id,
+    label: label || new Date().toLocaleString(),
+    savedAt: Date.now(),
+    notes: [...notes],
+    beats: [...beats],
+    measureDurMs: _measureDurMs,
+    beatsPerMeasure: _beatsPerMeasure,
+    lowNoteThreshold: _lowNoteThreshold,
+    noteLengthDenom: _noteLengthDenom,
+  };
+  localStorage.setItem('compingRec_' + id, JSON.stringify(entry));
+  const idx = getIndex();
+  idx.push({ id, label: entry.label, savedAt: entry.savedAt });
+  localStorage.setItem(LS_INDEX_KEY, JSON.stringify(idx));
+  return id;
+}
+/** Load a recording by id. Returns { notes, beats, label } or null. */
+export function loadRecording(id) {
+  try { return JSON.parse(localStorage.getItem('compingRec_' + id)) || null; }
+  catch { return null; }
+}
+
+export function listRecordings() { return getIndex(); }
+
+/** Disable live recording (used when viewing a saved recording). */
+let disabled = false;
+export function disable() { disabled = true; }
+
+/** Populate recorder state from saved data (triggers subscribers). */
+export function loadInto(savedNotes, savedBeats, savedMeasureDurMs, savedBeatsPerMeasure, savedLowNoteThreshold, savedNoteLengthDenom) {
+  notes = savedNotes.map(n => ({ ...n }));
+  beats = savedBeats.map(b => ({ ...b }));
+  openNotes.clear();
+  if (savedMeasureDurMs != null) _measureDurMs = savedMeasureDurMs;
+  if (savedBeatsPerMeasure != null) _beatsPerMeasure = savedBeatsPerMeasure;
+  if (savedLowNoteThreshold != null) _lowNoteThreshold = savedLowNoteThreshold;
+  if (savedNoteLengthDenom != null) _noteLengthDenom = savedNoteLengthDenom;
+  notify();
+}

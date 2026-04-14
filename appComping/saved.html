@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, user-scalable=no">
+  <title>Saved Recordings</title>
+  <link rel="stylesheet" href="../appPlay/play.css">
+  <style>
+    body { padding: 1.5rem; }
+    h2 { margin-bottom: 1rem; }
+    .rec-list { list-style: none; padding: 0; }
+    .rec-list li { margin: 0.5rem 0; display: flex; align-items: center; gap: 1rem; }
+    .rec-list a { font-size: 1rem; }
+    .rec-date { color: #888; font-size: 0.85rem; }
+    .delete-btn { font-size: 0.8rem; cursor: pointer; background: none; border: 1px solid #ccc; border-radius: 3px; padding: 2px 6px; }
+    .empty { color: #888; }
+    .back-link { display: inline-block; margin-bottom: 1.5rem; }
+  </style>
+</head>
+<body>
+  <a class="back-link" href="index.html">← Back to Comping</a>
+  <h2>Saved Recordings</h2>
+  <ul class="rec-list" id="rec-list"></ul>
+  <p class="empty" id="empty-msg" style="display:none">No recordings saved yet. Press Cmd+S while playing to save one.</p>
+
+  <script type="module">
+    const LS_INDEX_KEY = 'compingRecordings';
+
+    function getIndex() {
+      try { return JSON.parse(localStorage.getItem(LS_INDEX_KEY)) || []; }
+      catch { return []; }
+    }
+
+    function saveIndex(idx) {
+      localStorage.setItem(LS_INDEX_KEY, JSON.stringify(idx));
+    }
+
+    function render() {
+      const list = document.getElementById('rec-list');
+      const emptyMsg = document.getElementById('empty-msg');
+      const idx = getIndex();
+      list.innerHTML = '';
+      if (!idx.length) { emptyMsg.style.display = ''; return; }
+      emptyMsg.style.display = 'none';
+      // newest first
+      [...idx].reverse().forEach(({ id, label, savedAt }) => {
+        const li = document.createElement('li');
+        const a = document.createElement('a');
+        a.href = `index.html#RecordingId=${encodeURIComponent(id)}`;
+        a.textContent = label;
+        const date = document.createElement('span');
+        date.className = 'rec-date';
+        date.textContent = new Date(savedAt).toLocaleString();
+        const del = document.createElement('button');
+        del.className = 'delete-btn';
+        del.textContent = 'Delete';
+        del.onclick = () => {
+          localStorage.removeItem('compingRec_' + id);
+          saveIndex(getIndex().filter(r => r.id !== id));
+          render();
+        };
+        li.append(a, date, del);
+        list.appendChild(li);
+      });
+    }
+
+    render();
+  </script>
+</body>
+</html>

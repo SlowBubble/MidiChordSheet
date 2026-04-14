@@ -3,10 +3,16 @@
 const soundfontUrl = '../lib/midi.js/soundfont/';
 let midiReady = false;
 let midiLoaded = false;
+const _onLoadedCallbacks = [];
 
 export function initMidi(volume, onReady) {
-  if (midiReady) return;
+  if (midiReady) {
+    if (midiLoaded) onReady();
+    else _onLoadedCallbacks.push(onReady);
+    return;
+  }
   midiReady = true;
+  _onLoadedCallbacks.push(onReady);
 
   const statusEl = document.getElementById('status');
   statusEl.textContent = '🔴 Loading audio...';
@@ -22,9 +28,16 @@ export function initMidi(volume, onReady) {
       statusEl.textContent = 'Audio: ready ✓';
       statusEl.className = 'status status-green';
       midiLoaded = true;
-      onReady();
+      _onLoadedCallbacks.forEach(cb => cb());
+      _onLoadedCallbacks.length = 0;
     },
   });
+}
+
+/** Call fn immediately if MIDI is loaded, otherwise queue it for when it is. */
+export function whenMidiReady(fn) {
+  if (midiLoaded) { fn(); return; }
+  _onLoadedCallbacks.push(fn);
 }
 
 export function pianoNoteOn(noteNum, velocity) {

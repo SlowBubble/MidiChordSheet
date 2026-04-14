@@ -3,6 +3,7 @@
 import { genMidiPattern } from '../esModules/musical-beat/pattern.js';
 import { drumNoteOn } from './sound.js';
 import { recordBeat, markIdle, recordNote } from './noteRecorder.js';
+import * as noteRecorder from './noteRecorder.js';
 
 // ── settings ──────────────────────────────────────────────────────────────────
 
@@ -13,9 +14,9 @@ export let lowNoteThreshold = 62;
 export let idleMeasures = 1;
 export const highNoteThreshold = 72;
 
-export function setBeatsPerMeasure(v) { beatsPerMeasure = v; }
+export function setBeatsPerMeasure(v) { beatsPerMeasure = v; noteRecorder.setBeatsPerMeasure(v); }
 export function setBeatSubdivision(v) { beatSubdivision = v; }
-export function setLowNoteThreshold(v) { lowNoteThreshold = v; }
+export function setLowNoteThreshold(v) { lowNoteThreshold = v; noteRecorder.setLowNoteThreshold(v); }
 export function setIdleMeasures(v) { idleMeasures = v; }
 
 // ── runtime state ─────────────────────────────────────────────────────────────
@@ -27,7 +28,7 @@ export let drumPatternStartTime = null;
 export let drumCurrentBeat = 0;
 
 export function setLastMidiEventTime(v) { lastMidiEventTime = v; }
-export function setMeasureDurMs(v) { measureDurMs = v; }
+export function setMeasureDurMs(v) { measureDurMs = v; noteRecorder.setMeasureDurMs(v); }
 
 export const bassNoteOnTimes = new Map();
 export const sopranoNoteOnTimes = new Map();
@@ -209,6 +210,7 @@ function handleMeasureTiming(evt) {
       const dur = evt.time - lowNoteList[0].time;
       console.log('measureDurMs:', dur);
       measureDurMs = dur;
+      noteRecorder.setMeasureDurMs(dur);
       updateMeasureStatus();
       playDrumPattern(dur);
       lowNoteList.length = 0;

@@ -5,6 +5,7 @@ import {
   setBeatsPerMeasure, setBeatSubdivision, setLowNoteThreshold, setIdleMeasures,
   midiToNoteName,
 } from './beatStateMgr.js';
+import * as noteRecorder from './noteRecorder.js';
 
 // Note-length quantization steps (denominator): 16, 8, 4, 2, 1
 const NOTE_LENGTH_STEPS = [16, 8, 4, 2, 1];
@@ -12,6 +13,11 @@ let noteLengthIdx = 2; // default: 1/4
 
 export function getNoteLengthDenom() {
   return NOTE_LENGTH_STEPS[noteLengthIdx];
+}
+
+export function setNoteLengthDenom(denom) {
+  const idx = NOTE_LENGTH_STEPS.indexOf(denom);
+  if (idx !== -1) { noteLengthIdx = idx; noteRecorder.setNoteLengthDenom(denom); }
 }
 
 function getUrlParam(key) {
@@ -60,10 +66,10 @@ export function setupButtons() {
     document.getElementById('note-length-display').textContent = `1/${NOTE_LENGTH_STEPS[noteLengthIdx]}`;
   }
   document.getElementById('incr-note-length-btn').onclick = () => {
-    if (noteLengthIdx < NOTE_LENGTH_STEPS.length - 1) { noteLengthIdx++; updateNoteLengthDisplay(); }
+    if (noteLengthIdx < NOTE_LENGTH_STEPS.length - 1) { noteLengthIdx++; noteRecorder.setNoteLengthDenom(NOTE_LENGTH_STEPS[noteLengthIdx]); updateNoteLengthDisplay(); }
   };
   document.getElementById('decr-note-length-btn').onclick = () => {
-    if (noteLengthIdx > 0) { noteLengthIdx--; updateNoteLengthDisplay(); }
+    if (noteLengthIdx > 0) { noteLengthIdx--; noteRecorder.setNoteLengthDenom(NOTE_LENGTH_STEPS[noteLengthIdx]); updateNoteLengthDisplay(); }
   };
 
   // silent-til-double-bass checkbox

@@ -4,8 +4,16 @@
 # Project structure
 - ../lib and ../esModules have tools that can be shared with other apps
 
+# m2k
+
+- Pickup measure is implemented incorrectly (currently, all the notes in the pickup are squished into the first measure's start)
+  - You should consider the start of the drum beat as the second measure
+  - The extrapolated window should be treated as first measure and potentially has an extra pickup measure.
+    - Does it have a pickup measure? It's only if the extrapolated is longer than a measure's time should the rest overflow into the pickup 
+
 # m2j
 - skip displaying the final measure if it is entirely a rest measure.
+
 # m2i
 - cmd+s shortcut: save that recording in localStorage
   - Add another saved.html to display what is saved and link it back to index.html with a RecordingId in the hash params to load and display it in index.html.
@@ -14,9 +22,6 @@
 # m2h
 - The ball display is incorrect when replay, let's just remove that part
 - But try to update the cursor of the sheet per beat when replaying
-
-- You should consider the start of the drum beat as the second measure
-- The extrapolated window should be treated as first measure even if there are notes. It's only if the extrapolated is much longer than a measure's time should the rest overflow into the pickup 
 
 # m2g
 - replay.js

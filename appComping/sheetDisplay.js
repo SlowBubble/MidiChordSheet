@@ -5,23 +5,35 @@ import { Song } from '../esModules/song-sheet/song.js';
 import { Voice, clefType } from '../esModules/song-sheet/voice.js';
 import { makeSimpleQng, makeRest } from '../esModules/song-sheet/quantizedNoteGp.js';
 import { makeFrac } from '../esModules/fraction/fraction.js';
-import { getNoteLengthDenom } from './buttons.js';
 
-// Build a 16th-note grid:
-// - starts one measure before beats[0] (the extrapolated first measure)
-// - ends at the last recorded beat (no extra trailing measure)
-function build16thGrid(beats, measureDurMs, beatsPerMeasure) {
-  if (!beats.length) return { grid: [], sixteenthDurMs: 0 };
+// Build a 16th-note grid.
+// Layout: [pickup? | measure1 (extrapolated) | measure2 (drum beat 1) | ...]
+// - measure1 start = beats[0].time - measureDurMs
+// - pickup = anything before measure1 start (exact, not rounded to whole measures)
+// - grid starts at earliestNoteTime if before measure1 start, else at measure1 start
+// Returns { grid, sixteenthDurMs, measure1StartMs }
+function build16thGrid(beats, measureDurMs, beatsPerMeasure, earliestNoteTime) {
+  if (!beats.length) return { grid: [], sixteenthDurMs: 0, measure1StartMs: 0 };
   const beatDurMs = measureDurMs / beatsPerMeasure;
   const sixteenthDurMs = beatDurMs / 4;
-  const anchor = beats[0].time;
-  const start = anchor - measureDurMs;
+
+  const measure1StartMs = beats[0].time - measureDurMs;
+
+  // Grid starts at earliestNoteTime if there are notes before measure1,
+  // otherwise at measure1 start. Snap grid start back to nearest 16th boundary.
+  const rawStart = (earliestNoteTime != null && earliestNoteTime < measure1StartMs)
+    ? earliestNoteTime
+    : measure1StartMs;
+  // Align start to a 16th-note grid anchored at measure1StartMs
+  const offsetSlots = Math.floor((measure1StartMs - rawStart) / sixteenthDurMs);
+  const start = measure1StartMs - offsetSlots * sixteenthDurMs;
+
   const lastBeat = beats[beats.length - 1];
   const totalMs = lastBeat.time - start;
   const numSlots = Math.ceil(totalMs / sixteenthDurMs) + 1;
   const grid = [];
   for (let i = 0; i < numSlots; i++) grid.push(start + i * sixteenthDurMs);
-  return { grid, sixteenthDurMs };
+  return { grid, sixteenthDurMs, measure1StartMs };
 }
 
 // Snap a time to the nearest slot index in a sorted grid.
@@ -119,7 +131,7 @@ function slotMapToNoteGps(slotMap, numSlots, total8n) {
   return noteGps;
 }
 
-export function init(noteRecorder, beatStateMgr) {
+export function init(noteRecorder) {
   const canvasDiv = document.getElementById('sheet-display');
   if (!canvasDiv) return;
 
@@ -128,8 +140,10 @@ export function init(noteRecorder, beatStateMgr) {
   let _lastGrid = null;
 
   function buildAndRender(notes, beats, cursorTime8n = null) {
-    const beatsPerMeasure = beatStateMgr.beatsPerMeasure;
-    const measureDurMs = beatStateMgr.measureDurMs;
+    const measureDurMs = noteRecorder.getMeasureDurMs();
+    const beatsPerMeasure = noteRecorder.getBeatsPerMeasure();
+    const threshold = noteRecorder.getLowNoteThreshold();
+    const denom = noteRecorder.getNoteLengthDenom_();
 
     if (!beats.length || !notes.length || !measureDurMs) {
       renderMgr.clear();
@@ -137,13 +151,12 @@ export function init(noteRecorder, beatStateMgr) {
       return;
     }
 
-    const { grid, sixteenthDurMs } = build16thGrid(beats, measureDurMs, beatsPerMeasure);
+    const noteOns = notes.filter(n => n.onTime != null);
+
+    const earliestNoteTime = noteOns.length ? Math.min(...noteOns.map(n => n.onTime)) : null;
+    const { grid, sixteenthDurMs, measure1StartMs } = build16thGrid(beats, measureDurMs, beatsPerMeasure, earliestNoteTime);
     if (!grid.length) return;
 
-    const denom = getNoteLengthDenom();
-
-    const noteOns = notes.filter(n => n.onTime != null);
-    const threshold = beatStateMgr.lowNoteThreshold;
     const rhNotes = noteOns.filter(n => n.noteNum > threshold);
     const lhNotes = noteOns.filter(n => n.noteNum <= threshold);
 
@@ -159,15 +172,13 @@ export function init(noteRecorder, beatStateMgr) {
     const bpmVal = Math.round((beatsPerMeasure / measureDurMs) * 60000);
     const tempo8n = bpmVal * 2;
 
-    // The grid always starts exactly one measure before beats[0], so the
-    // extrapolated window is a full first measure — no pickup needed.
-    // Only add a pickup if notes land before the grid start (shouldn't normally happen).
-    const earliestNoteSlot = Math.min(
-      ...[...rhMap.keys(), ...lhMap.keys()],
-      Infinity
-    );
-    const pickup8n = earliestNoteSlot < 0 ? makeFrac(-earliestNoteSlot, 2) : makeFrac(0);
-
+    // pickup8n: exact duration before measure1 in 8th notes.
+    // measure1StartMs is the grid-aligned start of the extrapolated first measure.
+    // Anything before it (grid[0] to measure1StartMs) is the pickup.
+    const pickupMs = measure1StartMs - grid[0];
+    const pickup8n = pickupMs > 0
+      ? makeFrac(Math.round(pickupMs / sixteenthDurMs), 2)
+      : makeFrac(0);
     const song = new Song({
       timeSigChanges: { defaultVal: { upperNumeral: beatsPerMeasure, lowerNumeral: 4 } },
       tempo8nPerMinChanges: { defaultVal: tempo8n },

@@ -182,7 +182,7 @@ export function playDrumPattern(durMs) {
       pattern.evtsArrs[divInMeasure].forEach(note =>
         drumNoteOn(note.noteNum, drumMuted ? 0 : note.velocity)
       );
-      recordBeat(beat, now);
+      recordBeat(beat, Date.now());
       nextDivIdx++;
       nextFireTime += divisionMs;
     }

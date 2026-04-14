@@ -4,6 +4,14 @@
 # Project structure
 - ../lib and ../esModules have tools that can be shared with other apps
 
+# m2e
+
+Study oldApp/ to see how to make the display nicer
+- Note the libraries it use, should already be in esModules (see how appPlay/ uses it)
+- The hard thing is to decide what goes to the left hand and what goes to the right hand, which oldApp should have logic for.
+  - Once that's decided, then the other hard part is to quantize correctly. See if oldApp/ has a good way to do it
+  - Feel free to ask me for clarifications if anything is unclear
+
 # m2d
 Feature: record what has been comped.
 

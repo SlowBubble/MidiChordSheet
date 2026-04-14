@@ -2,10 +2,15 @@
 
 import * as midiEvent from '../esModules/midi-data/midiEvent.js';
 
+// notes entries: { noteNum, onTime, offTime }
+// offTime is null until the NoteOff arrives.
 let notes = [];
 let beats = [];
 let pendingClear = false;
 const listeners = [];
+
+// noteNum -> index in notes[] for the most recent unresolved NoteOn
+const openNotes = new Map();
 
 function notify() {
   listeners.forEach(fn => fn({ notes: [...notes], beats: [...beats] }));
@@ -16,9 +21,22 @@ export function recordNote(evt) {
   if (pendingClear) {
     notes = [];
     beats = [];
+    openNotes.clear();
     pendingClear = false;
   }
-  notes.push({ type: evt.type, noteNum: evt.noteNum, time: evt.time });
+
+  if (evt.type === midiEvent.midiEvtType.NoteOn) {
+    const idx = notes.length;
+    notes.push({ noteNum: evt.noteNum, onTime: evt.time, offTime: null });
+    openNotes.set(evt.noteNum, idx);
+  } else {
+    // NoteOff — resolve the matching open NoteOn
+    const idx = openNotes.get(evt.noteNum);
+    if (idx !== undefined) {
+      notes[idx].offTime = evt.time;
+      openNotes.delete(evt.noteNum);
+    }
+  }
   notify();
 }
 

@@ -69,7 +69,9 @@ export function resetIdleClearTimer() {
   if (idleClearTimer !== null) clearTimeout(idleClearTimer);
   idleClearTimer = setTimeout(() => {
     if (measureDurMs === null) {
+      // Drum beats never started — discard any notes the user played before going idle
       lowNoteList.length = 0;
+      markIdle();
       updateMeasureStatus();
     }
     idleClearTimer = null;

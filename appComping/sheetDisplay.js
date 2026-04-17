@@ -189,7 +189,8 @@ function slotMapToNoteGps(slotMap, startSlot, numSlots, total8n, graceGroups = [
       continue;
     }
     const start8n = makeFrac(s - startSlot, 2);
-    const end8n = makeFrac(s - startSlot + entry.dur16, 2);
+    const rawEnd8n = makeFrac(s - startSlot + entry.dur16, 2);
+    const end8n = rawEnd8n.lessThan(total8n) ? rawEnd8n : total8n;
     if (start8n.greaterThan(cursor8n)) {
       noteGps.push(makeRest(cursor8n, start8n));
     }
@@ -268,7 +269,50 @@ export function init(noteRecorder) {
     const allNoteSlots = [...rhMap.keys(), ...lhMap.keys()];
     const lastNoteSlot = allNoteSlots.length ? Math.max(...allNoteSlots) : measure1Slot0;
     // Find which measure (0-indexed from measure1) the last note falls in.
-    const lastNoteMeasureIdx = Math.floor((lastNoteSlot - measure1Slot0) / slotsPerMeasure);
+    let lastNoteMeasureIdx = Math.floor((lastNoteSlot - measure1Slot0) / slotsPerMeasure);
+
+    // Trim the final measure if it only contains rests or notes that are tied over
+    // from the previous measure with a duration greater than a quarter note.
+    // A note is "tied over" into the final measure if it started in the previous measure
+    // and its duration (dur16) exceeds a quarter note (4 sixteenth slots).
+    if (lastNoteMeasureIdx > 0) {
+      const finalMeasureStart = measure1Slot0 + lastNoteMeasureIdx * slotsPerMeasure;
+      const prevMeasureStart  = finalMeasureStart - slotsPerMeasure;
+
+      // Collect all note slots that fall inside the final measure
+      const slotsInFinalMeasure = allNoteSlots.filter(
+        s => s >= finalMeasureStart && s < finalMeasureStart + slotsPerMeasure
+      );
+
+      // A note slot is a "tied-over" entry if it started in the previous measure
+      // and its duration extends into (or past) the final measure start, with dur > quarter.
+      const isTiedOver = (slotIdx, map) => {
+        if (slotIdx >= finalMeasureStart) return false; // starts in final measure, not tied
+        const entry = map.get(slotIdx);
+        if (!entry) return false;
+        const endsAt = slotIdx + entry.dur16;
+        return endsAt > finalMeasureStart && entry.dur16 > 4; // dur16 > 4 = longer than quarter
+      };
+
+      const rhTiedIntoFinal = [...rhMap.keys()].some(s => isTiedOver(s, rhMap));
+      const lhTiedIntoFinal = [...lhMap.keys()].some(s => isTiedOver(s, lhMap));
+
+      // The final measure is trimmable if every voice either:
+      //   - has no note starts in the final measure (all rests), OR
+      //   - has no note starts in the final measure but has a tied-over note from prev measure
+      const rhSlotsInFinal = allNoteSlots.filter(s => rhMap.has(s) && s >= finalMeasureStart);
+      const lhSlotsInFinal = allNoteSlots.filter(s => lhMap.has(s) && s >= finalMeasureStart);
+
+      const rhFinalIsEmpty = rhSlotsInFinal.length === 0;
+      const lhFinalIsEmpty = lhSlotsInFinal.length === 0;
+
+      // Trim if both voices have no new note starts in the final measure,
+      // and at least one voice has a qualifying tied-over note.
+      if (rhFinalIsEmpty && lhFinalIsEmpty && (rhTiedIntoFinal || lhTiedIntoFinal)) {
+        lastNoteMeasureIdx -= 1;
+      }
+    }
+
     // Trim grid to end of that measure.
     const trimmedEndSlot = measure1Slot0 + (lastNoteMeasureIdx + 1) * slotsPerMeasure;
     const totalSlots = Math.min(grid.length, trimmedEndSlot);
@@ -300,35 +344,7 @@ export function init(noteRecorder) {
     });
 
     _lastSong = song;
-    _lastGrid = { grid, sixteenthDurMs, gridStartMs: grid[0], measureDurMs, beatsPerMeasure, startSlot };
-
-    // ── DEBUG: log final 2 measures ──────────────────────────────────────────
-    try {
-      const measureDur8n = makeFrac(beatsPerMeasure * 2); // beatsPerMeasure beats * 2 eighth-notes/beat
-      const end8n = song.getEnd8n();
-      const final2Start8n = end8n.minus(measureDur8n.times(2));
-      console.group('[sheetDisplay] final 2 measures');
-      console.log('total8n:', total8n.toFloat(), '| end8n:', end8n.toFloat(), '| final2Start8n:', final2Start8n.toFloat());
-      song.voices.forEach((voice, vi) => {
-        const label = vi === 0 ? 'RH (treble)' : 'LH (bass)';
-        const inWindow = voice.noteGps.filter(qng => qng.end8n.greaterThan(final2Start8n));
-        console.group(`Voice ${vi} — ${label} (${inWindow.length} note groups)`);
-        inWindow.forEach(qng => {
-          const noteNums = qng.getNoteNums();
-          console.log(
-            `start8n=${qng.start8n.toFloat().toFixed(3)}`,
-            `end8n=${qng.end8n.toFloat().toFixed(3)}`,
-            `dur8n=${qng.end8n.minus(qng.start8n).toFloat().toFixed(3)}`,
-            noteNums.length ? `notes=${noteNums}` : 'REST'
-          );
-        });
-        console.groupEnd();
-      });
-      console.groupEnd();
-    } catch (dbgErr) {
-      console.warn('[sheetDisplay] debug log error:', dbgErr);
-    }
-    // ── END DEBUG ────────────────────────────────────────────────────────────
+    _lastGrid = { grid, sixteenthDurMs, gridStartMs: grid[0], measureDurMs, beatsPerMeasure, startSlot, trimmedEndSlot };
 
     try {
       renderMgr.render(song, false, null, cursorTime8n);

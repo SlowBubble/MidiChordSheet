@@ -8,8 +8,10 @@
 - Show current measure in a smoother fashion
 - Windowing only 8 bars?
 
+# m3c
+
 # m3b
-- truncate the final measure also if it only contains a tied note from the previous measure that has a duration of greater than a quarter note
+- truncate the final measure also if there are only rests or only contain tied notes from the previous measure and the notes in the previous measure being tied to all have a duration of greater than a quarter note.
 
 # m3a
 Rendering grace notes:

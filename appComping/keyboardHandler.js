@@ -81,6 +81,16 @@ export function setupKeyboardHandler(keyboardEvtSub) {
       return;
     }
 
+    if (e.code === 'Escape') {
+      e.preventDefault();
+      const cb = document.getElementById('disable-drumbeat-cb');
+      if (cb) {
+        cb.checked = !cb.checked;
+        cb.dispatchEvent(new Event('change'));
+      }
+      return;
+    }
+
     if (e.code === 'Space') {
       e.preventDefault();
       if (isReplaying()) {

@@ -5,8 +5,9 @@
 - ../lib and ../esModules have tools that can be shared with other apps
 
 # wishlist
-- Show current measure in a smoother fashion
-- Windowing only 8 bars?
+
+# m3d
+- Windowing only 8 bars
 
 # m3c
 During recording, we can save some resources by:

@@ -151,6 +151,8 @@ export function stopDrumPattern() {
   if (drumRafId !== null) { cancelAnimationFrame(drumRafId); drumRafId = null; }
 }
 
+export function isDrumRunning() { return drumRunning; }
+
 export function playDrumPattern(durMs, measure1StartMs) {
   stopDrumPattern();
   drumMuted = isSilentTilDoubleBass();

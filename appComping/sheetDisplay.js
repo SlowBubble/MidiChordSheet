@@ -40,12 +40,8 @@ function classifyGraceNotes(noteOns) {
     const endToStart = next.onTime - (n.offTime ?? n.onTime);
     const s2sOk = startToStart < GRACE_START_TO_START_MS;
     const e2sOk = endToStart < GRACE_END_TO_START_MS;
-    if (startToStart < GRACE_START_TO_START_MS * 2 || endToStart < GRACE_END_TO_START_MS * 2) {
-      console.log(`[grace?] noteNum=${n.noteNum} startToStart=${startToStart.toFixed(1)}ms(ok=${s2sOk}) endToStart=${endToStart.toFixed(1)}ms(ok=${e2sOk})`);
-    }
     if (s2sOk && e2sOk) {
       isGrace[i] = true;
-      console.log(`[grace] ✅ noteNum=${n.noteNum} -> grace before noteNum=${next.noteNum}`);
     }
   }
 

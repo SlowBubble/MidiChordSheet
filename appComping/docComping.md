@@ -8,6 +8,9 @@
 - Show current measure in a smoother fashion
 - Windowing only 8 bars?
 
+# m3b
+- truncate the final measure also if it only contains a tied note from the previous measure that has a duration of greater than a quarter note
+
 # m3a
 Rendering grace notes:
 - If there is a note with duration shorter than 75ms followed by another note within 55ms, then the previous note should be considered a grace note (there can be consecutive grace notes also, if the next note also satisfy the same condition)

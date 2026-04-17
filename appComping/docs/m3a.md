@@ -13,7 +13,7 @@ immediately following individual note:
 | Condition | Threshold | Meaning |
 |---|---|---|
 | `next.onTime - note.onTime` | < 135 ms | The next note started within 135 ms of this one starting |
-| `next.onTime - note.offTime` | < 75 ms | The next note started within 75 ms of this one ending (negative = overlap, which is fine) |
+| `Math.abs(next.onTime - note.offTime)` | < 75 ms | The next note started within 75 ms of this one ending (in either direction) |
 
 Constants in code: `GRACE_START_TO_START_MS = 135`, `GRACE_END_TO_START_MS = 75`.
 
@@ -34,11 +34,14 @@ Grace detection runs separately on RH notes (above the low-note threshold) and L
 (at or below it). Running it on all notes together caused bass trigger notes to be grouped
 with treble grace notes, inflating the apparent duration and preventing detection.
 
-### 3. Negative end-to-start gap is intentional
+### 3. End-to-start gap uses absolute value
 
-When a player holds a grace note slightly into the next note (overlap), `next.onTime -
-note.offTime` is negative. This is normal technique and should still qualify. The threshold
-`< 55 ms` naturally allows negative values.
+The end-to-start check uses `Math.abs(next.onTime - note.offTime) < GRACE_END_TO_START_MS`.
+This means the next note must start *close* to when this note ends — within 75 ms in either
+direction. A small overlap (player holds the grace note a few ms into the next note) still
+qualifies. However, a note held for hundreds of milliseconds that happens to start near
+another note (i.e. a chord played with a slight roll) will have a large absolute gap and
+will correctly be treated as a regular note, not a grace note.
 
 ## Rendering
 

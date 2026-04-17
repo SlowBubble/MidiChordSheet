@@ -39,9 +39,10 @@ function classifyGraceNotes(noteOns) {
     const startToStart = next.onTime - n.onTime;
     const endToStart = next.onTime - (n.offTime ?? n.onTime);
     const s2sOk = startToStart < GRACE_START_TO_START_MS;
-    const e2sOk = endToStart < GRACE_END_TO_START_MS;
+    const e2sOk = Math.abs(endToStart) < GRACE_END_TO_START_MS;
     if (s2sOk && e2sOk) {
       isGrace[i] = true;
+      console.log(`[grace] noteNum=${n.noteNum} onTime=${n.onTime} offTime=${n.offTime} dur=${n.offTime - n.onTime}ms | next noteNum=${next.noteNum} onTime=${next.onTime} | startToStart=${startToStart}ms (< ${GRACE_START_TO_START_MS}) endToStart=${endToStart}ms (abs < ${GRACE_END_TO_START_MS})`);
     }
   }
 
@@ -300,6 +301,34 @@ export function init(noteRecorder) {
 
     _lastSong = song;
     _lastGrid = { grid, sixteenthDurMs, gridStartMs: grid[0], measureDurMs, beatsPerMeasure, startSlot };
+
+    // ── DEBUG: log final 2 measures ──────────────────────────────────────────
+    try {
+      const measureDur8n = makeFrac(beatsPerMeasure * 2); // beatsPerMeasure beats * 2 eighth-notes/beat
+      const end8n = song.getEnd8n();
+      const final2Start8n = end8n.minus(measureDur8n.times(2));
+      console.group('[sheetDisplay] final 2 measures');
+      console.log('total8n:', total8n.toFloat(), '| end8n:', end8n.toFloat(), '| final2Start8n:', final2Start8n.toFloat());
+      song.voices.forEach((voice, vi) => {
+        const label = vi === 0 ? 'RH (treble)' : 'LH (bass)';
+        const inWindow = voice.noteGps.filter(qng => qng.end8n.greaterThan(final2Start8n));
+        console.group(`Voice ${vi} — ${label} (${inWindow.length} note groups)`);
+        inWindow.forEach(qng => {
+          const noteNums = qng.getNoteNums();
+          console.log(
+            `start8n=${qng.start8n.toFloat().toFixed(3)}`,
+            `end8n=${qng.end8n.toFloat().toFixed(3)}`,
+            `dur8n=${qng.end8n.minus(qng.start8n).toFloat().toFixed(3)}`,
+            noteNums.length ? `notes=${noteNums}` : 'REST'
+          );
+        });
+        console.groupEnd();
+      });
+      console.groupEnd();
+    } catch (dbgErr) {
+      console.warn('[sheetDisplay] debug log error:', dbgErr);
+    }
+    // ── END DEBUG ────────────────────────────────────────────────────────────
 
     try {
       renderMgr.render(song, false, null, cursorTime8n);

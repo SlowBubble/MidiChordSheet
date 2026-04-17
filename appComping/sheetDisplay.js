@@ -14,6 +14,32 @@ const RECORDING_WINDOW_MEASURES = 8;
 const GRACE_START_TO_START_MS = 135;  // grace note start to next note start must be within this
 const GRACE_END_TO_START_MS = 75;     // grace note end to next note start must be less than this
 
+// Cross-voice chord alignment: notes within this window are considered simultaneous
+// and get their onTime unified to the earliest in the group before voice splitting.
+const CROSS_VOICE_CHORD_MS = 35;
+
+/**
+ * Align notes that are played simultaneously across voices.
+ * Any group of notes whose onTimes all fall within CROSS_VOICE_CHORD_MS of the
+ * earliest note in the group gets its onTime snapped to that earliest time.
+ * This ensures RH and LH notes that belong to the same chord snap to the same grid slot.
+ */
+function alignCrossVoiceChords(noteOns) {
+  if (noteOns.length < 2) return noteOns;
+  const sorted = [...noteOns].sort((a, b) => a.onTime - b.onTime);
+  const result = sorted.map(n => ({ ...n })); // shallow copy so we don't mutate originals
+  let groupStart = 0;
+  for (let i = 1; i <= result.length; i++) {
+    const endOfGroup = i === result.length || result[i].onTime - result[groupStart].onTime > CROSS_VOICE_CHORD_MS;
+    if (endOfGroup) {
+      const anchor = result[groupStart].onTime;
+      for (let j = groupStart; j < i; j++) result[j] = { ...result[j], onTime: anchor };
+      groupStart = i;
+    }
+  }
+  return result;
+}
+
 /**
  * Classify noteOns into regular notes and grace notes.
  *
@@ -46,7 +72,6 @@ function classifyGraceNotes(noteOns) {
     const e2sOk = Math.abs(endToStart) < GRACE_END_TO_START_MS;
     if (s2sOk && e2sOk) {
       isGrace[i] = true;
-      console.log(`[grace] noteNum=${n.noteNum} onTime=${n.onTime} offTime=${n.offTime} dur=${n.offTime - n.onTime}ms | next noteNum=${next.noteNum} onTime=${next.onTime} | startToStart=${startToStart}ms (< ${GRACE_START_TO_START_MS}) endToStart=${endToStart}ms (abs < ${GRACE_END_TO_START_MS})`);
     }
   }
 
@@ -244,14 +269,18 @@ export function init(noteRecorder) {
 
     const noteOns = notes.filter(n => n.onTime != null);
 
-    const earliestNoteTime = noteOns.length ? Math.min(...noteOns.map(n => n.onTime)) : null;
+    // Snap simultaneous cross-voice notes to a common onTime before splitting by voice,
+    // so RH and LH notes in the same chord always land on the same grid slot.
+    const alignedNoteOns = alignCrossVoiceChords(noteOns);
+
+    const earliestNoteTime = alignedNoteOns.length ? Math.min(...alignedNoteOns.map(n => n.onTime)) : null;
     const { grid, sixteenthDurMs, measure1StartMs: gridMeasure1StartMs } = build16thGrid(measure1StartMs, measureDurMs, beatsPerMeasure, earliestNoteTime);
     if (!grid.length) return;
 
     // Split by voice first, then classify grace notes within each voice independently.
     // This prevents bass trigger notes from being grouped with treble grace notes.
-    const rhNoteOnsAll = noteOns.filter(n => n.noteNum > threshold);
-    const lhNoteOnsAll = noteOns.filter(n => n.noteNum <= threshold);
+    const rhNoteOnsAll = alignedNoteOns.filter(n => n.noteNum > threshold);
+    const lhNoteOnsAll = alignedNoteOns.filter(n => n.noteNum <= threshold);
 
     const { regularNotes: rhNotes, graceGroups: rhGraceGroupsRaw } = classifyGraceNotes(rhNoteOnsAll);
     const { regularNotes: lhNotes, graceGroups: lhGraceGroupsRaw } = classifyGraceNotes(lhNoteOnsAll);

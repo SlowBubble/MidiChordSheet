@@ -228,7 +228,7 @@ export function init(noteRecorder) {
   // measure during live recording (not on every beat or subdivision).
   let _lastRenderedMeasureCount = -1;
 
-  function buildAndRender(notes, beats, cursorTime8n = null, windowStart8n = null) {
+  function buildAndRender(notes, beats, cursorTime8n = null, windowStart8n = null, recordingSheetEnd8n = null) {
     const measureDurMs = noteRecorder.getMeasureDurMs();
     const beatsPerMeasure = noteRecorder.getBeatsPerMeasure();
     const threshold = noteRecorder.getLowNoteThreshold();
@@ -357,7 +357,7 @@ export function init(noteRecorder) {
     _lastWindowStart8n = windowStart8n;
 
     try {
-      renderMgr.render(song, false, windowStart8n, cursorTime8n);
+      renderMgr.render(song, false, windowStart8n, cursorTime8n, recordingSheetEnd8n);
     } catch (e) {
       console.warn('RenderMgr error:', e);
     }
@@ -370,10 +370,10 @@ export function init(noteRecorder) {
       return;
     }
 
-    // During live recording, only re-render at the start of each new measure
-    // (beat 1) to save resources. Note events always render immediately so the
-    // sheet stays up-to-date as the player plays.
-    if (beatFired) {
+    // During live recording, only re-render once per measure at beat 1.
+    // Both note events and non-downbeat events are suppressed.
+    if (isDrumRunning()) {
+      if (!beatFired) return; // note event — skip during recording
       const lastBeat = beats[beats.length - 1];
       if (lastBeat.beat !== 1) return; // not the downbeat — skip
       const measureDurMs = noteRecorder.getMeasureDurMs();
@@ -385,8 +385,10 @@ export function init(noteRecorder) {
       }
     }
 
-    // During active recording, compute a rolling window of the last 8 measures.
+    // During active recording, compute a rolling window of the last 8 measures
+    // and hide the current (incomplete) measure.
     let windowStart8n = null;
+    let recordingSheetEnd8n = null;
     if (isDrumRunning()) {
       const measureDurMs = noteRecorder.getMeasureDurMs();
       const measure1StartMs = noteRecorder.getMeasure1StartMs();
@@ -398,10 +400,12 @@ export function init(noteRecorder) {
         // Convert measure index to 8n: each measure = beatsPerMeasure * 2 eighth-notes
         const measure8n = beatsPerMeasure * 2;
         windowStart8n = makeFrac(windowStartMeasureIdx * measure8n);
+        // Hide the current (incomplete) measure — stop rendering at its start.
+        recordingSheetEnd8n = makeFrac(currentMeasureIdx * measure8n);
       }
     }
 
-    buildAndRender(notes, beats, null, windowStart8n);
+    buildAndRender(notes, beats, null, windowStart8n, recordingSheetEnd8n);
   });
 
   // Called by replay to advance the cursor per beat.

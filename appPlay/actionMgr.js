@@ -158,7 +158,11 @@ export class ActionMgr {
     this.chordsCanvas.innerHTML = '';
     const svgInfo = this.chordSvgMgr.getSvgInfo(this.displayTactics, this.displayRomanNumeral);
     this.chordsCanvas.append(svgInfo.svg);
-    // TODO explore scrolling to the highlighted line - 1 line at the top.
+    const currentY = parseInt(svgInfo.currentSvg.getAttribute('y') || 0);
+    const mainDiv = this.chordsCanvas.closest('#main');
+    if (mainDiv) {
+      mainDiv.scrollTop = currentY;
+    }
   }
   clearChordsCanvas() {
     this.chordsCanvas.innerHTML = '';

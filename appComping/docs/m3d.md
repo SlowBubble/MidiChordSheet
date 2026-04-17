@@ -45,10 +45,17 @@ note event → compute windowStart8n and render immediately
 **Window calculation** (when `isDrumRunning()` is true):
 
 ```
-currentMeasureIdx    = floor((lastBeatTime - measure1StartMs) / measureDurMs)
-windowStartMeasureIdx = max(0, currentMeasureIdx - RECORDING_WINDOW_MEASURES + 1)
-windowStart8n        = windowStartMeasureIdx * beatsPerMeasure * 2   (in eighth-notes)
+currentMeasureIdx     = floor((lastBeatTime - measure1StartMs) / measureDurMs)
+latestStart           = max(0, currentMeasureIdx - RECORDING_WINDOW_MEASURES + 1)
+windowStartMeasureIdx = floor(latestStart / 4) * 4
+windowStart8n         = windowStartMeasureIdx * beatsPerMeasure * 2   (in eighth-notes)
+recordingSheetEnd8n   = currentMeasureIdx * beatsPerMeasure * 2       (hides current measure)
 ```
+
+The window start snaps to multiples of 4, but only advances when the current measure
+would overflow the second line (i.e. `currentMeasureIdx >= windowStart + 8`). New measures
+always appear on the second line until it fills up, then the window jumps forward by 4:
+0–7, 4–11, 8–15, 12–19, …
 
 `windowStart8n` is stored as `_lastWindowStart8n` and reused in `renderWithCursor` so the
 replay cursor offset stays consistent with whatever window was last rendered.
@@ -66,7 +73,7 @@ replay cursor offset stays consistent with whatever window was last rendered.
 
 - The `Song` object is always built from all recorded notes. Windowing is purely a
   render-time concern — `_lastSong` and `_lastGrid` remain complete for replay use.
-- For the first 8 measures of a session `windowStartMeasureIdx` clamps to 0, so the full
-  sheet is shown until it grows beyond 8 measures.
+- The window start snaps to multiples of 4, giving a half-window overlap: 0–7, 4–11,
+  8–15, 12–19, … — flipping every 4 measures.
 - `render.js` suppresses the pickup when `sheetStart8n` is non-null, which is correct
   since the pickup only applies at the very beginning of the piece.

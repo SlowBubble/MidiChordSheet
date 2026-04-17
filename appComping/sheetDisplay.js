@@ -228,7 +228,7 @@ export function init(noteRecorder) {
   // measure during live recording (not on every beat or subdivision).
   let _lastRenderedMeasureCount = -1;
 
-  function buildAndRender(notes, beats, cursorTime8n = null, windowStart8n = null, recordingSheetEnd8n = null) {
+  function buildAndRender(notes, beats, cursorTime8n = null, recordingWindowMeasureIdx = null) {
     const measureDurMs = noteRecorder.getMeasureDurMs();
     const beatsPerMeasure = noteRecorder.getBeatsPerMeasure();
     const threshold = noteRecorder.getLowNoteThreshold();
@@ -341,23 +341,59 @@ export function init(noteRecorder) {
     const rhNoteGps = slotMapToNoteGps(rhMap, startSlot, totalSlots, total8n, rhGraceGroups);
     const lhNoteGps = slotMapToNoteGps(lhMap, startSlot, totalSlots, total8n, lhGraceGroups);
 
+    // Convert recording window measure indices to 8n in the song's coordinate space.
+    // Song 8n: 0 = startSlot, so measure1 starts at (measure1Slot0 - startSlot)/2.
+    let resolvedWindowStart8n = null;
+    let resolvedCursor8n = cursorTime8n;
+    let voiceNoteGps = [rhNoteGps, lhNoteGps];
+    if (recordingWindowMeasureIdx !== null) {
+      const { windowStartMeasureIdx, currentMeasureIdx, windowEndMeasureIdx } = recordingWindowMeasureIdx;
+      const measure1Offset8n = makeFrac(measure1Slot0 - startSlot, 2);
+      resolvedWindowStart8n = measure1Offset8n.plus(makeFrac(windowStartMeasureIdx * slotsPerMeasure, 2));
+      const currentMeasure8n = measure1Offset8n.plus(makeFrac(currentMeasureIdx * slotsPerMeasure, 2));
+      const windowEnd8n      = measure1Offset8n.plus(makeFrac(windowEndMeasureIdx * slotsPerMeasure, 2));
+
+      // Extend the song to the full window end so the layout is always 8 measures wide.
+
+      // Replace any note groups at or after the current measure with a single rest,
+      // so the current (incomplete) measure shows as blank rather than partial notes.
+      // Also track currentMeasure8n for cursor placement.
+      let recordingCursor8n = currentMeasure8n;
+      voiceNoteGps = [rhNoteGps, lhNoteGps].map(noteGps => {
+        const completed = noteGps.filter(qng => qng.end8n.leq(currentMeasure8n));
+        // Trim any note that straddles the boundary
+        const trimmed = noteGps
+          .filter(qng => qng.start8n.lessThan(currentMeasure8n) && qng.end8n.greaterThan(currentMeasure8n))
+          .map(qng => {
+            const noteNums = qng.getNoteNums();
+            return noteNums.length
+              ? makeSimpleQng(qng.start8n, currentMeasure8n, noteNums)
+              : makeRest(qng.start8n, currentMeasure8n);
+          });
+        // Fill from currentMeasure8n to windowEnd8n with a rest
+        const tail = [makeRest(currentMeasure8n, windowEnd8n)];
+        return [...completed, ...trimmed, ...tail];
+      });
+      resolvedCursor8n = recordingCursor8n;
+    }
+
     const song = new Song({
       title: label || undefined,
       timeSigChanges: { defaultVal: { upperNumeral: beatsPerMeasure, lowerNumeral: 4 } },
       tempo8nPerMinChanges: { defaultVal: tempo8n },
       pickup8n,
       voices: [
-        { noteGps: rhNoteGps, clef: clefType.Treble },
-        { noteGps: lhNoteGps, clef: clefType.Bass },
+        { noteGps: voiceNoteGps[0], clef: clefType.Treble },
+        { noteGps: voiceNoteGps[1], clef: clefType.Bass },
       ],
     });
 
     _lastSong = song;
     _lastGrid = { grid, sixteenthDurMs, gridStartMs: grid[0], measureDurMs, beatsPerMeasure, startSlot, trimmedEndSlot };
-    _lastWindowStart8n = windowStart8n;
+    _lastWindowStart8n = resolvedWindowStart8n;
 
     try {
-      renderMgr.render(song, false, windowStart8n, cursorTime8n, recordingSheetEnd8n);
+      renderMgr.render(song, false, resolvedWindowStart8n, resolvedCursor8n);
     } catch (e) {
       console.warn('RenderMgr error:', e);
     }
@@ -387,8 +423,7 @@ export function init(noteRecorder) {
 
     // During active recording, compute a rolling window of the last 8 measures
     // and hide the current (incomplete) measure.
-    let windowStart8n = null;
-    let recordingSheetEnd8n = null;
+    let recordingWindowMeasureIdx = null;
     if (isDrumRunning()) {
       const measureDurMs = noteRecorder.getMeasureDurMs();
       const measure1StartMs = noteRecorder.getMeasure1StartMs();
@@ -396,16 +431,13 @@ export function init(noteRecorder) {
       if (measureDurMs && measure1StartMs && beats.length) {
         const lastBeatTime = beats[beats.length - 1].time;
         const currentMeasureIdx = Math.floor((lastBeatTime - measure1StartMs) / measureDurMs);
-        const windowStartMeasureIdx = Math.max(0, currentMeasureIdx - RECORDING_WINDOW_MEASURES + 1);
-        // Convert measure index to 8n: each measure = beatsPerMeasure * 2 eighth-notes
-        const measure8n = beatsPerMeasure * 2;
-        windowStart8n = makeFrac(windowStartMeasureIdx * measure8n);
-        // Hide the current (incomplete) measure — stop rendering at its start.
-        recordingSheetEnd8n = makeFrac(currentMeasureIdx * measure8n);
+        const halfWindow = RECORDING_WINDOW_MEASURES / 2; // 4
+        const windowStartMeasureIdx = Math.max(0, Math.floor(currentMeasureIdx / halfWindow) * halfWindow - halfWindow);
+        recordingWindowMeasureIdx = { windowStartMeasureIdx, currentMeasureIdx, windowEndMeasureIdx: windowStartMeasureIdx + RECORDING_WINDOW_MEASURES };
       }
     }
 
-    buildAndRender(notes, beats, null, windowStart8n, recordingSheetEnd8n);
+    buildAndRender(notes, beats, null, recordingWindowMeasureIdx);
   });
 
   // Called by replay to advance the cursor per beat.

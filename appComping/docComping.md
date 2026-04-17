@@ -4,15 +4,18 @@
 # Project structure
 - ../lib and ../esModules have tools that can be shared with other apps
 
+# wishlist
+- Show current measure in a smoother fashion
+- Windowing only 8 bars?
 
 # m3a
-- Show current measure in a smoother fashion
-- Windowing only 4 bars?
+Rendering grace notes:
+- If there is a note with duration shorter than 75ms followed by another note within 55ms, then the previous note should be considered a grace note (there can be consecutive grace notes also, if the next note also satisfy the same condition)
+  - In that case, see if you can make the sheet render it as grace notes (using the high-level api)
 
 # m2u
 - Clear out the recorded data if it turns idle before drum beats start
   - E.g. if the user plays a few high notes but then stops, so it turns idle
-
 
 # m2t
 - To make it easy to share non-local-storage recording

@@ -6,6 +6,82 @@ import { Voice, clefType } from '../esModules/song-sheet/voice.js';
 import { makeSimpleQng, makeRest } from '../esModules/song-sheet/quantizedNoteGp.js';
 import { makeFrac } from '../esModules/fraction/fraction.js';
 
+// Grace-note detection thresholds
+const GRACE_START_TO_START_MS = 135;  // grace note start to next note start must be within this
+const GRACE_END_TO_START_MS = 75;     // grace note end to next note start must be less than this
+
+/**
+ * Classify noteOns into regular notes and grace notes.
+ *
+ * A note is a grace note if both:
+ *   - (next.onTime - g.onTime) < GRACE_START_TO_START_MS
+ *   - (next.onTime - g.offTime) < GRACE_END_TO_START_MS  (can be negative = overlap, that's fine)
+ *
+ * Returns { regularNotes, graceGroups }
+ *   regularNotes: noteOn entries that are NOT grace notes
+ *   graceGroups:  Array of { targetOnTime, notes[] }
+ */
+function classifyGraceNotes(noteOns) {
+  if (!noteOns.length) return { regularNotes: noteOns, graceGroups: [] };
+
+  // Sort by onTime for sequential analysis
+  const sorted = [...noteOns].sort((a, b) => a.onTime - b.onTime);
+
+  // Grace-note detection runs on individual notes BEFORE any chord grouping,
+  // so a grace note played close to another note isn't swallowed into a chord.
+  // A note is a grace note if, compared to the very next individual note:
+  //   - start-to-start < GRACE_START_TO_START_MS
+  //   - end-to-start   < GRACE_END_TO_START_MS  (negative = overlap, fine)
+  const isGrace = new Array(sorted.length).fill(false);
+  for (let i = 0; i < sorted.length - 1; i++) {
+    const n = sorted[i];
+    const next = sorted[i + 1];
+    const startToStart = next.onTime - n.onTime;
+    const endToStart = next.onTime - (n.offTime ?? n.onTime);
+    const s2sOk = startToStart < GRACE_START_TO_START_MS;
+    const e2sOk = endToStart < GRACE_END_TO_START_MS;
+    if (startToStart < GRACE_START_TO_START_MS * 2 || endToStart < GRACE_END_TO_START_MS * 2) {
+      console.log(`[grace?] noteNum=${n.noteNum} startToStart=${startToStart.toFixed(1)}ms(ok=${s2sOk}) endToStart=${endToStart.toFixed(1)}ms(ok=${e2sOk})`);
+    }
+    if (s2sOk && e2sOk) {
+      isGrace[i] = true;
+      console.log(`[grace] ✅ noteNum=${n.noteNum} -> grace before noteNum=${next.noteNum}`);
+    }
+  }
+
+  // Now group non-grace notes into chords (simultaneous within 60ms).
+  // Grace notes are kept separate and attached to the first following non-grace note.
+  const CHORD_THRESHOLD_MS = 60;
+  const regularNotes = [];
+  const graceGroups = [];
+  let pendingGrace = [];
+
+  // Walk through sorted notes; group consecutive non-grace notes that are simultaneous.
+  let i = 0;
+  while (i < sorted.length) {
+    if (isGrace[i]) {
+      pendingGrace.push(sorted[i]);
+      i++;
+      continue;
+    }
+    // Start a chord group from this non-grace note
+    const chordStart = sorted[i].onTime;
+    while (i < sorted.length && !isGrace[i] && sorted[i].onTime - chordStart <= CHORD_THRESHOLD_MS) {
+      regularNotes.push(sorted[i]);
+      i++;
+    }
+    // Attach any accumulated grace notes to this chord's onTime
+    if (pendingGrace.length) {
+      graceGroups.push({ targetOnTime: chordStart, notes: pendingGrace });
+      pendingGrace = [];
+    }
+  }
+  // Trailing grace notes with no following real note — treat as regular
+  if (pendingGrace.length) regularNotes.push(...pendingGrace);
+
+  return { regularNotes, graceGroups };
+}
+
 // Build a 16th-note grid anchored to the known measure1StartMs.
 // measure1StartMs: the exact time of the first trigger note (Date.now() domain).
 // Returns { grid, sixteenthDurMs, measure1StartMs }
@@ -97,7 +173,15 @@ function buildSlotMap(noteList, grid, sixteenthDurMs, denom) {
 // Convert slotMap + grid length into an array of QuantizedNoteGp, with rests filling gaps.
 // slot index -> 8n = (slotIdx - startSlot) / 2
 // startSlot: the slot that maps to 8n=0 (either measure1Slot0 or firstNoteSlot for pickups)
-function slotMapToNoteGps(slotMap, startSlot, numSlots, total8n) {
+// graceGroups: array of { slotIdx, noteNums[] } — grace notes to insert just before that slot
+function slotMapToNoteGps(slotMap, startSlot, numSlots, total8n, graceGroups = []) {
+  // Build a map from slotIdx -> list of grace note arrays (each array = one chord of grace notes)
+  const graceBySlot = new Map();
+  for (const { slotIdx, noteNums } of graceGroups) {
+    if (!graceBySlot.has(slotIdx)) graceBySlot.set(slotIdx, []);
+    graceBySlot.get(slotIdx).push(noteNums);
+  }
+
   const noteGps = [];
   let cursor8n = makeFrac(0);
   let s = startSlot;
@@ -111,6 +195,11 @@ function slotMapToNoteGps(slotMap, startSlot, numSlots, total8n) {
     const end8n = makeFrac(s - startSlot + entry.dur16, 2);
     if (start8n.greaterThan(cursor8n)) {
       noteGps.push(makeRest(cursor8n, start8n));
+    }
+    // Insert grace notes just before this slot's real note
+    const graceChords = graceBySlot.get(s) || [];
+    for (const gnNoteNums of graceChords) {
+      noteGps.push(makeSimpleQng(start8n, start8n, gnNoteNums));
     }
     const noteNums = [...entry.noteNums].sort((a, b) => a - b);
     noteGps.push(makeSimpleQng(start8n, end8n, noteNums));
@@ -152,13 +241,30 @@ export function init(noteRecorder) {
     const { grid, sixteenthDurMs, measure1StartMs: gridMeasure1StartMs } = build16thGrid(measure1StartMs, measureDurMs, beatsPerMeasure, earliestNoteTime);
     if (!grid.length) return;
 
-    const rhNotes = noteOns.filter(n => n.noteNum > threshold);
-    const lhNotes = noteOns.filter(n => n.noteNum <= threshold);
+    // Split by voice first, then classify grace notes within each voice independently.
+    // This prevents bass trigger notes from being grouped with treble grace notes.
+    const rhNoteOnsAll = noteOns.filter(n => n.noteNum > threshold);
+    const lhNoteOnsAll = noteOns.filter(n => n.noteNum <= threshold);
+
+    const { regularNotes: rhNotes, graceGroups: rhGraceGroupsRaw } = classifyGraceNotes(rhNoteOnsAll);
+    const { regularNotes: lhNotes, graceGroups: lhGraceGroupsRaw } = classifyGraceNotes(lhNoteOnsAll);
 
     const rhMap = buildSlotMap(rhNotes, grid, sixteenthDurMs, denom);
     const lhMap = buildSlotMap(lhNotes, grid, sixteenthDurMs, denom);
 
-    // Trim trailing all-rest measures from the end.
+    // Convert grace groups' targetOnTime -> slotIdx, filtered to slots that exist in the voice map
+    function resolveGraceGroups(graceGroupsRaw, voiceSlotMap) {
+      return graceGroupsRaw.flatMap(({ targetOnTime, notes: gnNotes }) => {
+        const slotIdx = snapToGrid(targetOnTime, grid);
+        if (!voiceSlotMap.has(slotIdx)) return [];
+        const noteNums = gnNotes.map(n => n.noteNum).sort((a, b) => a - b);
+        return [{ slotIdx, noteNums }];
+      });
+    }
+
+    const rhGraceGroups = resolveGraceGroups(rhGraceGroupsRaw, rhMap);
+    const lhGraceGroups = resolveGraceGroups(lhGraceGroupsRaw, lhMap);
+
     // A measure is slotsPerMeasure = 16th-notes per measure = beatsPerMeasure * 4.
     const slotsPerMeasure = beatsPerMeasure * 4;
     const measure1Slot0 = Math.round((gridMeasure1StartMs - grid[0]) / sixteenthDurMs);
@@ -182,8 +288,8 @@ export function init(noteRecorder) {
     const pickup8n = makeFrac(-pickupSlots, 2);
     const total8n = makeFrac(totalSlots - startSlot, 2);
 
-    const rhNoteGps = slotMapToNoteGps(rhMap, startSlot, totalSlots, total8n);
-    const lhNoteGps = slotMapToNoteGps(lhMap, startSlot, totalSlots, total8n);
+    const rhNoteGps = slotMapToNoteGps(rhMap, startSlot, totalSlots, total8n, rhGraceGroups);
+    const lhNoteGps = slotMapToNoteGps(lhMap, startSlot, totalSlots, total8n, lhGraceGroups);
 
     const song = new Song({
       title: label || undefined,

@@ -127,6 +127,7 @@ export function listRecordings() { return getIndex(); }
 /** Disable live recording (used when viewing a saved recording). */
 let disabled = false;
 export function disable() { disabled = true; }
+export function isDisabled() { return disabled; }
 
 /** Populate recorder state from saved data (triggers subscribers). */
 export function loadInto(savedNotes, savedBeats, savedMeasureDurMs, savedBeatsPerMeasure, savedLowNoteThreshold, savedNoteLengthDenom, savedNoteStartDenom, savedMeasure1StartMs, savedLabel, savedBeatSubdivision) {

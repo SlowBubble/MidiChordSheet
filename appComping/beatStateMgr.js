@@ -68,7 +68,7 @@ export function updateMeasureStatus() {
 export function resetIdleClearTimer() {
   if (idleClearTimer !== null) clearTimeout(idleClearTimer);
   idleClearTimer = setTimeout(() => {
-    if (measureDurMs === null) {
+    if (measureDurMs === null && !noteRecorder.isDisabled()) {
       // Drum beats never started — discard any notes the user played before going idle
       lowNoteList.length = 0;
       markIdle();
@@ -86,6 +86,10 @@ export function isSilentTilDoubleBass() {
 
 export function isMuteIfDoubleSoprano() {
   return document.getElementById('mute-if-double-soprano-cb')?.checked;
+}
+
+export function isDrumbeatDisabled() {
+  return document.getElementById('disable-drumbeat-cb')?.checked;
 }
 
 // ── mute / unmute scheduling ──────────────────────────────────────────────────
@@ -259,6 +263,7 @@ import { pianoNoteOn, pianoNoteOff } from './sound.js';
 import * as midiEvent from '../esModules/midi-data/midiEvent.js';
 
 function handleMeasureTiming(evt) {
+  if (isDrumbeatDisabled()) return;
   if (evt.type !== midiEvent.midiEvtType.NoteOn) return;
   if (evt.noteNum > lowNoteThreshold) return;
 
@@ -269,8 +274,10 @@ function handleMeasureTiming(evt) {
       const dur = evt.time - lowNoteList[0].time;
       const measure1StartMs = lowNoteList[0].time;
       measureDurMs = dur;
-      noteRecorder.setMeasureDurMs(dur);
-      noteRecorder.setMeasure1StartMs(measure1StartMs);
+      if (!noteRecorder.isDisabled()) {
+        noteRecorder.setMeasureDurMs(dur);
+        noteRecorder.setMeasure1StartMs(measure1StartMs);
+      }
       updateMeasureStatus();
       playDrumPattern(dur, measure1StartMs);
       lowNoteList.length = 0;

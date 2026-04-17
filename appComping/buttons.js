@@ -94,4 +94,9 @@ export function setupButtons() {
   const muteSopranoCb = document.getElementById('mute-if-double-soprano-cb');
   if (getUrlParam('MuteIfDoubleSoprano') === '1') muteSopranoCb.checked = true;
   muteSopranoCb.onchange = () => setUrlParam('MuteIfDoubleSoprano', muteSopranoCb.checked ? '1' : null);
+
+  // disable-drumbeat checkbox
+  const disableDrumbeatCb = document.getElementById('disable-drumbeat-cb');
+  if (getUrlParam('DisableDrumbeat') === '1') disableDrumbeatCb.checked = true;
+  disableDrumbeatCb.onchange = () => setUrlParam('DisableDrumbeat', disableDrumbeatCb.checked ? '1' : null);
 }

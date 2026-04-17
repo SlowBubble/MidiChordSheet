@@ -219,6 +219,10 @@ export function init(noteRecorder) {
   let _lastSong = null;
   let _lastGrid = null;
 
+  // Track the measure count at the last render so we only re-render once per
+  // measure during live recording (not on every beat or subdivision).
+  let _lastRenderedMeasureCount = -1;
+
   function buildAndRender(notes, beats, cursorTime8n = null) {
     const measureDurMs = noteRecorder.getMeasureDurMs();
     const beatsPerMeasure = noteRecorder.getBeatsPerMeasure();
@@ -353,7 +357,23 @@ export function init(noteRecorder) {
     }
   }
 
-  noteRecorder.subscribe(({ notes, beats }) => buildAndRender(notes, beats));
+  noteRecorder.subscribe(({ notes, beats, beatFired }) => {
+    // During live recording, only re-render at the start of each new measure
+    // (beat 1) to save resources. Note events always render immediately so the
+    // sheet stays up-to-date as the player plays.
+    if (beatFired) {
+      const lastBeat = beats[beats.length - 1];
+      if (lastBeat.beat !== 1) return; // not the downbeat — skip
+      const measureDurMs = noteRecorder.getMeasureDurMs();
+      const measure1StartMs = noteRecorder.getMeasure1StartMs();
+      if (measureDurMs && measure1StartMs) {
+        const measureCount = Math.floor((lastBeat.time - measure1StartMs) / measureDurMs);
+        if (measureCount === _lastRenderedMeasureCount) return; // same measure — skip
+        _lastRenderedMeasureCount = measureCount;
+      }
+    }
+    buildAndRender(notes, beats);
+  });
 
   // Called by replay to advance the cursor per beat.
   // beatTime: Date.now() ms of the beat; gridStart: ms of grid slot 0.

@@ -9,6 +9,8 @@
 - Windowing only 8 bars?
 
 # m3c
+During recording, we can save some resources by:
+- Rendering only at the start of every measure instead of every beat
 
 # m3b
 - truncate the final measure also if there are only rests or only contain tied notes from the previous measure and the notes in the previous measure being tied to all have a duration of greater than a quarter note.

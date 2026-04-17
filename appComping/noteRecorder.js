@@ -20,8 +20,8 @@ let _label = null;
 // noteNum -> index in notes[] for the most recent unresolved NoteOn
 const openNotes = new Map();
 
-function notify() {
-  listeners.forEach(fn => fn({ notes: [...notes], beats: [...beats] }));
+function notify(beatFired = false) {
+  listeners.forEach(fn => fn({ notes: [...notes], beats: [...beats], beatFired }));
 }
 
 export function recordNote(evt) {
@@ -52,7 +52,7 @@ export function recordNote(evt) {
 export function recordBeat(beat, time) {
   if (disabled) return;
   beats.push({ beat, time });
-  notify();
+  notify(true);
 }
 
 // Call on idle/reset — clears on the next incoming note, not immediately

@@ -87,6 +87,83 @@ export function getSnapBias() { return _snapBias; }
 
 export function subscribe(fn) { listeners.push(fn); }
 
+// ── chord grouping (shared with sheetDisplay) ─────────────────────────────────
+
+// Notes within this window are considered simultaneous across voices and get
+// their onTime unified to the earliest in the group before voice splitting.
+export const CROSS_VOICE_CHORD_MS = 35;
+
+// Notes within this window are grouped as a simultaneous chord within a voice.
+export const CHORD_THRESHOLD_MS = 60;
+
+/**
+ * Align notes played simultaneously across voices: any cluster of notes whose
+ * onTimes all fall within CROSS_VOICE_CHORD_MS of the earliest gets snapped to
+ * that earliest time.
+ */
+export function alignCrossVoiceChords(noteOns) {
+  if (noteOns.length < 2) return noteOns;
+  const sorted = [...noteOns].sort((a, b) => a.onTime - b.onTime);
+  const result = sorted.map(n => ({ ...n }));
+  let groupStart = 0;
+  for (let i = 1; i <= result.length; i++) {
+    const endOfGroup = i === result.length || result[i].onTime - result[groupStart].onTime > CROSS_VOICE_CHORD_MS;
+    if (endOfGroup) {
+      const anchor = result[groupStart].onTime;
+      for (let j = groupStart; j < i; j++) result[j] = { ...result[j], onTime: anchor };
+      groupStart = i;
+    }
+  }
+  return result;
+}
+
+/**
+ * Group NoteOn events within CHORD_THRESHOLD_MS of each other as simultaneous (chord).
+ * Returns an array of arrays, each inner array being one chord group.
+ */
+export function groupSimultaneous(noteOns, thresholdMs = CHORD_THRESHOLD_MS) {
+  if (!noteOns.length) return [];
+  const sorted = [...noteOns].sort((a, b) => a.onTime - b.onTime);
+  const groups = [];
+  let current = [sorted[0]];
+  for (let i = 1; i < sorted.length; i++) {
+    if (sorted[i].onTime - current[0].onTime <= thresholdMs) {
+      current.push(sorted[i]);
+    } else {
+      groups.push(current);
+      current = [sorted[i]];
+    }
+  }
+  groups.push(current);
+  return groups;
+}
+
+/**
+ * Group recorded notes into sequential note groups for each hand, using the
+ * same chord-alignment and simultaneous-grouping logic as the sheet renderer.
+ * Returns { lhGroups, rhGroups } where each group is { noteNums, velocities, onTime }.
+ * @param {number} threshold - noteNum <= threshold is left hand
+ */
+export function getNoteGroups(threshold) {
+  const noteOns = notes.filter(n => n.onTime != null);
+  const aligned = alignCrossVoiceChords(noteOns);
+
+  const lhNoteOns = aligned.filter(n => n.noteNum <= threshold);
+  const rhNoteOns = aligned.filter(n => n.noteNum > threshold);
+
+  function toGroups(noteOnsForHand) {
+    return groupSimultaneous(noteOnsForHand).map(chord => ({
+      noteNums: chord.map(n => n.noteNum),
+      velocities: chord.map(n => n.velocity ?? 80),
+      onTime: chord[0].onTime,
+    }));
+  }
+
+  const lhGroups = toGroups(lhNoteOns);
+  const rhGroups = toGroups(rhNoteOns);
+  return { lhGroups, rhGroups };
+}
+
 // ── localStorage persistence ──────────────────────────────────────────────────
 
 const LS_INDEX_KEY = 'compingRecordings';

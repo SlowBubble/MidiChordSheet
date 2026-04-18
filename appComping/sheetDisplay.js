@@ -6,6 +6,7 @@ import { Voice, clefType } from '../esModules/song-sheet/voice.js';
 import { makeSimpleQng, makeRest } from '../esModules/song-sheet/quantizedNoteGp.js';
 import { makeFrac } from '../esModules/fraction/fraction.js';
 import { isDrumRunning } from './beatStateMgr.js';
+import { alignCrossVoiceChords, groupSimultaneous, CHORD_THRESHOLD_MS } from './noteRecorder.js';
 
 // Number of measures to show in the rolling window during live recording.
 const RECORDING_WINDOW_MEASURES = 8;
@@ -13,32 +14,6 @@ const RECORDING_WINDOW_MEASURES = 8;
 // Grace-note detection thresholds
 const GRACE_START_TO_START_MS = 135;  // grace note start to next note start must be within this
 const GRACE_END_TO_START_MS = 75;     // grace note end to next note start must be less than this
-
-// Cross-voice chord alignment: notes within this window are considered simultaneous
-// and get their onTime unified to the earliest in the group before voice splitting.
-const CROSS_VOICE_CHORD_MS = 35;
-
-/**
- * Align notes that are played simultaneously across voices.
- * Any group of notes whose onTimes all fall within CROSS_VOICE_CHORD_MS of the
- * earliest note in the group gets its onTime snapped to that earliest time.
- * This ensures RH and LH notes that belong to the same chord snap to the same grid slot.
- */
-function alignCrossVoiceChords(noteOns) {
-  if (noteOns.length < 2) return noteOns;
-  const sorted = [...noteOns].sort((a, b) => a.onTime - b.onTime);
-  const result = sorted.map(n => ({ ...n })); // shallow copy so we don't mutate originals
-  let groupStart = 0;
-  for (let i = 1; i <= result.length; i++) {
-    const endOfGroup = i === result.length || result[i].onTime - result[groupStart].onTime > CROSS_VOICE_CHORD_MS;
-    if (endOfGroup) {
-      const anchor = result[groupStart].onTime;
-      for (let j = groupStart; j < i; j++) result[j] = { ...result[j], onTime: anchor };
-      groupStart = i;
-    }
-  }
-  return result;
-}
 
 /**
  * Classify noteOns into regular notes and grace notes.
@@ -75,9 +50,8 @@ function classifyGraceNotes(noteOns) {
     }
   }
 
-  // Now group non-grace notes into chords (simultaneous within 60ms).
+  // Now group non-grace notes into chords (simultaneous within CHORD_THRESHOLD_MS).
   // Grace notes are kept separate and attached to the first following non-grace note.
-  const CHORD_THRESHOLD_MS = 60;
   const regularNotes = [];
   const graceGroups = [];
   let pendingGrace = [];
@@ -153,24 +127,6 @@ function quantizeDuration(durationMs, sixteenthDurMs, denom) {
   const minUnits = 16 / denom;
   if (!durationMs || durationMs <= 0) return minUnits;
   return Math.max(minUnits, Math.round(durationMs / gridMs)) * minUnits;
-}
-
-// Group NoteOn events within 60ms of each other as simultaneous (chord).
-function groupSimultaneous(noteOns, thresholdMs = 60) {
-  if (!noteOns.length) return [];
-  const sorted = [...noteOns].sort((a, b) => a.onTime - b.onTime);
-  const groups = [];
-  let current = [sorted[0]];
-  for (let i = 1; i < sorted.length; i++) {
-    if (sorted[i].onTime - current[0].onTime <= thresholdMs) {
-      current.push(sorted[i]);
-    } else {
-      groups.push(current);
-      current = [sorted[i]];
-    }
-  }
-  groups.push(current);
-  return groups;
 }
 
 // Build slotMap: slotIdx -> { noteNums: Set, dur16 }, with overlap truncation.

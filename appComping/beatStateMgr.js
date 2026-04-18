@@ -300,7 +300,7 @@ export function onNoteEvent(evt, withSound) {
   } else if (evt.type === midiEvent.midiEvtType.NoteOff) {
     if (withSound) pianoNoteOff(evt.noteNum);
   }
-  recordNote(evt);
+  if (!isDrumbeatDisabled()) recordNote(evt);
   handleMeasureTiming(evt);
 }
 

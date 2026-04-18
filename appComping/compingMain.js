@@ -27,12 +27,12 @@ function decodeRecording(encoded) {
   }
 }
 
-setupButtons();
 setupMidiHandler();
 setupKeyboardHandler(keyboardEvtSub);
 setupKeyboard(keyboardEvtPub);
 const sheetApi = initSheetDisplay(noteRecorder);
 setSheetApi(sheetApi);
+setupButtons(sheetApi);
 
 if (recordingId) {
   const rec = noteRecorder.loadRecording(recordingId);

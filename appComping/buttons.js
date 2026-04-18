@@ -13,6 +13,8 @@ let noteLengthIdx = 2; // default: 1/4
 
 let noteStartDenom = 16; // default: 1/16
 
+let snapBiasPct = 70; // default: 70%
+
 export function getNoteLengthDenom() {
   return NOTE_LENGTH_STEPS[noteLengthIdx];
 }
@@ -46,7 +48,7 @@ function updateIdleMeasuresDisplay() {
   document.getElementById('idle-measures-display').textContent = idleMeasures;
 }
 
-export function setupButtons() {
+export function setupButtons(sheetApi) {
   // beats per measure
   document.getElementById('incr-beats-btn').onclick = () => { setBeatsPerMeasure(beatsPerMeasure + 1); updateBeatsDisplay(); };
   document.getElementById('decr-beats-btn').onclick = () => { if (beatsPerMeasure > 1) { setBeatsPerMeasure(beatsPerMeasure - 1); updateBeatsDisplay(); } };
@@ -83,6 +85,17 @@ export function setupButtons() {
   };
   document.getElementById('decr-note-start-btn').onclick = () => {
     if (noteStartDenom > 1) { noteStartDenom--; noteRecorder.setNoteStartDenom(noteStartDenom); updateNoteStartDisplay(); }
+  };
+
+  // snap bias
+  function updateSnapBiasDisplay() {
+    document.getElementById('snap-bias-display').textContent = `${snapBiasPct}%`;
+  }
+  document.getElementById('incr-snap-bias-btn').onclick = () => {
+    if (snapBiasPct < 100) { snapBiasPct = Math.min(100, snapBiasPct + 5); noteRecorder.setSnapBias(snapBiasPct / 100); updateSnapBiasDisplay(); sheetApi?.rerender(); }
+  };
+  document.getElementById('decr-snap-bias-btn').onclick = () => {
+    if (snapBiasPct > 0) { snapBiasPct = Math.max(0, snapBiasPct - 5); noteRecorder.setSnapBias(snapBiasPct / 100); updateSnapBiasDisplay(); sheetApi?.rerender(); }
   };
 
   // silent-til-double-bass checkbox

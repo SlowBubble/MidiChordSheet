@@ -16,6 +16,7 @@ let _noteLengthDenom = 4;
 let _noteStartDenom = 16;
 let _beatSubdivision = 1;
 let _label = null;
+let _snapBias = 0.7;
 
 // noteNum -> index in notes[] for the most recent unresolved NoteOn
 const openNotes = new Map();
@@ -81,6 +82,8 @@ export function setLabel(v) { _label = v; }
 export function getLabel() { return _label; }
 export function setBeatSubdivision(v) { _beatSubdivision = v; }
 export function getBeatSubdivision() { return _beatSubdivision; }
+export function setSnapBias(v) { _snapBias = Math.min(1, Math.max(0, v)); }
+export function getSnapBias() { return _snapBias; }
 
 export function subscribe(fn) { listeners.push(fn); }
 
@@ -109,6 +112,7 @@ export function saveRecording(label) {
     noteLengthDenom: _noteLengthDenom,
     noteStartDenom: _noteStartDenom,
     beatSubdivision: _beatSubdivision,
+    snapBias: _snapBias,
   };
   localStorage.setItem('compingRec_' + id, JSON.stringify(entry));
   const idx = getIndex();
@@ -130,7 +134,7 @@ export function disable() { disabled = true; }
 export function isDisabled() { return disabled; }
 
 /** Populate recorder state from saved data (triggers subscribers). */
-export function loadInto(savedNotes, savedBeats, savedMeasureDurMs, savedBeatsPerMeasure, savedLowNoteThreshold, savedNoteLengthDenom, savedNoteStartDenom, savedMeasure1StartMs, savedLabel, savedBeatSubdivision) {
+export function loadInto(savedNotes, savedBeats, savedMeasureDurMs, savedBeatsPerMeasure, savedLowNoteThreshold, savedNoteLengthDenom, savedNoteStartDenom, savedMeasure1StartMs, savedLabel, savedBeatSubdivision, savedSnapBias) {
   notes = savedNotes.map(n => ({ ...n }));
   beats = savedBeats.map(b => ({ ...b }));
   openNotes.clear();
@@ -144,5 +148,6 @@ export function loadInto(savedNotes, savedBeats, savedMeasureDurMs, savedBeatsPe
   if (savedNoteStartDenom != null) _noteStartDenom = savedNoteStartDenom;
   if (savedLabel != null) _label = savedLabel;
   if (savedBeatSubdivision != null) _beatSubdivision = savedBeatSubdivision;
+  if (savedSnapBias != null) _snapBias = savedSnapBias;
   notify();
 }

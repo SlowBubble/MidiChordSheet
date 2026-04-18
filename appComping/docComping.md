@@ -6,6 +6,29 @@
 
 # wishlist
 
+# m3e
+- I see some unexpected quantization for the second left hand note in measure 4. And you log out details for it.
+
+## Implementation
+
+`buildSlotMap` gains an optional `debugGroups` parameter. When provided, each processed
+note group is appended as `{ group, slotIdx, rawDurMs, dur16 }` before overlap truncation.
+
+In `buildAndRender`, `lhDebugGroups` is passed to the LH `buildSlotMap` call. After both
+maps are built, a scoped debug block:
+
+1. Computes `m4Start` / `m4End` slot indices for measure 4 (index 3, 0-based from measure 1).
+2. Filters `lhDebugGroups` to slots in that range and sorts by slot.
+3. If at least two LH notes exist in measure 4, logs the second one with:
+   - `noteNums`, `onTime`, `offTime`
+   - `rawDurMs` (actual measured duration)
+   - `sixteenthDurMs` and `denom` / `gridMs` (the quantization grid)
+   - `slotIdx` and its position within measure 4
+   - `dur16` before and after overlap truncation
+   - all LH slot positions within measure 4 (for context)
+
+All output is prefixed `[m3e]` for easy filtering in the browser console.
+
 # m3d
 - Windowing only 8 bars
 

@@ -15,7 +15,7 @@ export function initMidi(volume, onReady) {
   _onLoadedCallbacks.push(onReady);
 
   const statusEl = document.getElementById('status');
-  statusEl.textContent = 'Loading audio...';
+  statusEl.textContent = 'Press space to load audio';
   statusEl.className = 'status status-orange';
 
   MIDI.loadPlugin({

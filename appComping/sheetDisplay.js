@@ -130,13 +130,17 @@ function build16thGrid(measure1StartMs, measureDurMs, beatsPerMeasure, earliestN
   return { grid, sixteenthDurMs, measure1StartMs };
 }
 
-// Snap a time to the nearest slot index in a sorted grid.
-function snapToGrid(timeMs, grid) {
-  let best = 0, bestDist = Infinity;
-  for (let i = 0; i < grid.length; i++) {
-    const d = Math.abs(timeMs - grid[i]);
-    if (d < bestDist) { bestDist = d; best = i; }
-    else break;
+// Snap a time to a grid slot with a configurable leftward bias.
+// A note snaps to slot i if it falls before the SNAP_BIAS point between slot i and slot i+1.
+// Default 0.7 means snap left for anything in the first 70% of the slot width.
+const SNAP_BIAS_DEFAULT = 0.7;
+function snapToGrid(timeMs, grid, snapBias = SNAP_BIAS_DEFAULT) {
+  let best = 0;
+  for (let i = 0; i < grid.length - 1; i++) {
+    if (timeMs < grid[i]) break;
+    const threshold = grid[i] + snapBias * (grid[i + 1] - grid[i]);
+    if (timeMs < threshold) { best = i; break; }
+    best = i + 1;
   }
   return best;
 }
@@ -170,16 +174,17 @@ function groupSimultaneous(noteOns, thresholdMs = 60) {
 }
 
 // Build slotMap: slotIdx -> { noteNums: Set, dur16 }, with overlap truncation.
-function buildSlotMap(noteList, grid, sixteenthDurMs, denom) {
+function buildSlotMap(noteList, grid, sixteenthDurMs, denom, snapBias) {
   const map = new Map();
   const groups = groupSimultaneous(noteList);
   for (const group of groups) {
-    const slotIdx = snapToGrid(group[0].onTime, grid);
+    const slotIdx = snapToGrid(group[0].onTime, grid, snapBias);
     const offTimes = group.map(n =>
       n.offTime != null ? n.offTime : n.onTime + sixteenthDurMs
     );
     const avgOffTime = offTimes.reduce((a, b) => a + b, 0) / offTimes.length;
-    const dur16 = quantizeDuration(avgOffTime - group[0].onTime, sixteenthDurMs, denom);
+    const rawDurMs = avgOffTime - group[0].onTime;
+    const dur16 = quantizeDuration(rawDurMs, sixteenthDurMs, denom);
     if (!map.has(slotIdx)) map.set(slotIdx, { noteNums: new Set(), dur16 });
     const entry = map.get(slotIdx);
     entry.dur16 = Math.max(entry.dur16, dur16);
@@ -260,6 +265,7 @@ export function init(noteRecorder) {
     const denom = noteRecorder.getNoteLengthDenom_();
     const measure1StartMs = noteRecorder.getMeasure1StartMs();
     const label = noteRecorder.getLabel();
+    const snapBias = noteRecorder.getSnapBias();
 
     if (!beats.length || !notes.length || !measureDurMs || !measure1StartMs) {
       renderMgr.clear();
@@ -285,13 +291,13 @@ export function init(noteRecorder) {
     const { regularNotes: rhNotes, graceGroups: rhGraceGroupsRaw } = classifyGraceNotes(rhNoteOnsAll);
     const { regularNotes: lhNotes, graceGroups: lhGraceGroupsRaw } = classifyGraceNotes(lhNoteOnsAll);
 
-    const rhMap = buildSlotMap(rhNotes, grid, sixteenthDurMs, denom);
-    const lhMap = buildSlotMap(lhNotes, grid, sixteenthDurMs, denom);
+    const rhMap = buildSlotMap(rhNotes, grid, sixteenthDurMs, denom, snapBias);
+    const lhMap = buildSlotMap(lhNotes, grid, sixteenthDurMs, denom, snapBias);
 
     // Convert grace groups' targetOnTime -> slotIdx, filtered to slots that exist in the voice map
     function resolveGraceGroups(graceGroupsRaw, voiceSlotMap) {
       return graceGroupsRaw.flatMap(({ targetOnTime, notes: gnNotes }) => {
-        const slotIdx = snapToGrid(targetOnTime, grid);
+        const slotIdx = snapToGrid(targetOnTime, grid, snapBias);
         if (!voiceSlotMap.has(slotIdx)) return [];
         const noteNums = gnNotes.map(n => n.noteNum).sort((a, b) => a - b);
         return [{ slotIdx, noteNums }];
@@ -472,6 +478,10 @@ export function init(noteRecorder) {
   // Called by replay to advance the cursor per beat.
   // beatTime: Date.now() ms of the beat; gridStart: ms of grid slot 0.
   return {
+    rerender() {
+      const { notes, beats } = { notes: noteRecorder.getNotes(), beats: noteRecorder.getBeats() };
+      buildAndRender(notes, beats, null, null);
+    },
     getGridInfo() {
       return _lastGrid;
     },

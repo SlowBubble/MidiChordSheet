@@ -6,6 +6,10 @@
 
 # wishlist
 
+# m3g
+- Currently, I feel lag in certain places
+- Let's start with not rendering the sheet during recording and only render it when it goes from active to idle.
+
 # m3e
 - I see some unexpected quantization for the second left hand note in measure 4. And you log out details for it.
 

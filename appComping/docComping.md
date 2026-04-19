@@ -6,6 +6,22 @@
 
 # wishlist
 
+# m3h
+- Currently, I feel lag in certain places
+- Explain how the recorded time for the beat and the notes happen
+
+## Implementation
+
+Beat timestamps were previously recorded as the *scheduled* fire time (`nextFireTime + perfToDateOffset`),
+while note timestamps are the *actual* receipt time (`Date.now()` at MIDI message arrival).
+
+This mismatch meant a note played in sync with what the user heard could appear slightly early
+in the grid, because the drum hit was recorded as on-schedule even when the RAF callback fired late.
+
+Fix: in the `while (nextFireTime <= now)` loop inside `playDrumPattern` in `beatStateMgr.js`,
+changed `beatDateMs` from `nextFireTime + perfToDateOffset` to `now + perfToDateOffset`.
+Beat times now reflect when the drum actually fired, matching the time domain of incoming notes.
+
 # m3g
 - Currently, I feel lag in certain places
 - Let's start with not rendering the sheet during recording and only render it when it goes from active to idle.

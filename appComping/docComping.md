@@ -6,12 +6,6 @@
 
 # wishlist
 
-# m3f
-- Add a gamify checkbox, which when checked to use the computer keyboard differently:
-  - When space is pressed, it will just play the drumbeats without the recorded notes.
-  - It will use the left part of the keyboard to sound the next left hand recorded note groups and right part of the keyboard to sound the next right hand recorded note groups
-  - see appPlay/gameMgr.js for reference (it shouldn't be as complex though, since that code invole smart things and scoring).
-
 # m3e
 - I see some unexpected quantization for the second left hand note in measure 4. And you log out details for it.
 

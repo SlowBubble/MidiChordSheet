@@ -5,12 +5,8 @@ import * as midiEvent from '../esModules/midi-data/midiEvent.js';
 import * as midiInput from '../esModules/fire/midiInput.js';
 import { volume, onNoteEvent } from './beatStateMgr.js';
 
-function isGamifyOn() {
-  return document.getElementById('gamify-cb')?.checked ?? false;
-}
-
 const [midiInputEvtPub, midiInputEvtSub] = pubSub.make();
-midiInputEvtSub(evt => { if (!isGamifyOn()) onNoteEvent(evt, false); });
+midiInputEvtSub(evt => onNoteEvent(evt, false));
 
 export function setupMidiHandler() {
   midiInput.setup(

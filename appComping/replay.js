@@ -1,7 +1,7 @@
 // replay.js — replays recorded notes and advances the sheet cursor per beat
 
 import { pianoNoteOn, pianoNoteOff } from './sound.js';
-import { volume, scheduleReplayDrums } from './beatStateMgr.js';
+import { volume, scheduleReplayDrums, isReplayDrumbeatDisabled } from './beatStateMgr.js';
 import * as noteRecorder from './noteRecorder.js';
 
 let _timeouts = [];
@@ -87,7 +87,7 @@ export function startReplay(notes, beats) {
   }
 
   // Schedule drum pattern across all recorded measures
-  if (measureDurMs && measure1StartMs) {
+  if (measureDurMs && measure1StartMs && !isReplayDrumbeatDisabled()) {
     const lastBeatTime = beats.length ? beats[beats.length - 1].time : measure1StartMs + measureDurMs;
     const numMeasures = Math.ceil((lastBeatTime - measure1StartMs) / measureDurMs) + 1;
 

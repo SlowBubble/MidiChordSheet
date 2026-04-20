@@ -92,6 +92,10 @@ export function isDrumbeatDisabled() {
   return document.getElementById('disable-drumbeat-cb')?.checked;
 }
 
+export function isReplayDrumbeatDisabled() {
+  return document.getElementById('no-replay-drumbeat-cb')?.checked;
+}
+
 // ── mute / unmute scheduling ──────────────────────────────────────────────────
 
 export function scheduleUnmute(now) {

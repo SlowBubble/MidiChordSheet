@@ -6,6 +6,9 @@
 
 # wishlist
 
+# m3i
+Add a checkbox to not play drumbeat when replaying
+
 # m3h
 - Currently, I feel lag in certain places
 - Explain how the recorded time for the beat and the notes happen

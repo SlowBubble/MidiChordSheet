@@ -112,4 +112,9 @@ export function setupButtons(sheetApi) {
   const disableDrumbeatCb = document.getElementById('disable-drumbeat-cb');
   if (getUrlParam('DisableDrumbeat') === '1') disableDrumbeatCb.checked = true;
   disableDrumbeatCb.onchange = () => setUrlParam('DisableDrumbeat', disableDrumbeatCb.checked ? '1' : null);
+
+  // no-replay-drumbeat checkbox
+  const noReplayDrumbeatCb = document.getElementById('no-replay-drumbeat-cb');
+  if (getUrlParam('NoReplayDrumbeat') === '1') noReplayDrumbeatCb.checked = true;
+  noReplayDrumbeatCb.onchange = () => setUrlParam('NoReplayDrumbeat', noReplayDrumbeatCb.checked ? '1' : null);
 }

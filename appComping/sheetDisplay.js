@@ -252,7 +252,7 @@ export function init(noteRecorder) {
   let _lastWindowStart8n = null;
   let _startCursorMs = null; // when set, renders cursor at this beat time after each build
 
-  function buildAndRender(notes, beats, cursorTime8n = null) {
+  function buildAndRender(notes, beats, cursorTime8n = null, capMeasureCount = null) {
     const measureDurMs = noteRecorder.getMeasureDurMs();
     const beatsPerMeasure = noteRecorder.getBeatsPerMeasure();
     const threshold = noteRecorder.getLowNoteThreshold();
@@ -309,6 +309,11 @@ export function init(noteRecorder) {
     const lastNoteSlot = allNoteSlots.length ? Math.max(...allNoteSlots) : measure1Slot0;
     // Find which measure (0-indexed from measure1) the last note falls in.
     let lastNoteMeasureIdx = Math.floor((lastNoteSlot - measure1Slot0) / slotsPerMeasure);
+
+    // Cap to caller-specified measure count (used during live recording to hide incomplete measures)
+    if (capMeasureCount != null) {
+      lastNoteMeasureIdx = Math.min(lastNoteMeasureIdx, capMeasureCount - 1);
+    }
 
     // Trim the final measure if it only contains rests or notes that are tied over
     // from the previous measure with a duration greater than a quarter note.
@@ -402,16 +407,40 @@ export function init(noteRecorder) {
     }
   }
 
-  noteRecorder.subscribe(({ notes, beats, idleFired }) => {
-    // When the drum pattern stops (idle), re-render the full sheet with no window.
+  noteRecorder.subscribe(({ notes, beats, beatFired, idleFired }) => {
+    // When the drum pattern stops (idle), re-render capping to completed measures only.
     if (idleFired) {
-      buildAndRender(notes, beats, null);
+      const completedMeasures = beats.filter((b, i) =>
+        b.beat === 1 && (i === 0 || beats[i - 1].beat !== 1)
+      ).length;
+      buildAndRender(notes, beats, null, completedMeasures > 0 ? completedMeasures : null);
       return;
     }
 
-    // During live recording, suppress all rendering — the sheet will update once
-    // the session goes idle (above). This avoids layout work on every beat/note.
-    if (isDrumRunning()) return;
+    // During live recording, only re-render on beat events (not every note).
+    if (isDrumRunning()) {
+      if (!beatFired) return;
+      if (beats.length > 0) {
+        const lastBeat = beats[beats.length - 1];
+        if (lastBeat.beat === 1) {
+          // Only act on the first subdivision of beat-1 (transition from previous beat)
+          const prevBeat = beats.length >= 2 ? beats[beats.length - 2] : null;
+          if (prevBeat && prevBeat.beat === 1) return; // still in beat-1 subdivisions, skip
+          // Count measure downbeats = number of transitions into beat-1
+          const measureCount = beats.filter((b, i) =>
+            b.beat === 1 && (i === 0 || beats[i - 1].beat !== 1)
+          ).length;
+          if (measureCount % 2 === 0) {
+            const trimmedNotes = notes.filter(n => n.onTime < lastBeat.time);
+            buildAndRender(trimmedNotes, beats, null, measureCount - 1);
+          }
+        }
+      }
+      return;
+    }
+
+    // Don't render anything until the drum pattern has started
+    if (!isDrumRunning()) return;
 
     buildAndRender(notes, beats, null);
   });

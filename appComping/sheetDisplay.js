@@ -440,8 +440,8 @@ export function init(noteRecorder) {
       return;
     }
 
-    // Don't render anything until the drum pattern has started
-    if (!isDrumRunning()) return;
+    // Don't render anything until the drum pattern has started (live recording only)
+    if (!isDrumRunning() && !noteRecorder.isDisabled()) return;
 
     buildAndRender(notes, beats, null);
   });

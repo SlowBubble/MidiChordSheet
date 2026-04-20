@@ -98,6 +98,13 @@ export function setupButtons(sheetApi) {
     if (snapBiasPct > 0) { snapBiasPct = Math.max(0, snapBiasPct - 5); noteRecorder.setSnapBias(snapBiasPct / 100); updateSnapBiasDisplay(); sheetApi?.rerender(); }
   };
 
+  // render lag
+  function updateRenderLagDisplay() {
+    document.getElementById('render-lag-display').textContent = sheetApi?.getRenderLag() ?? 1;
+  }
+  document.getElementById('incr-render-lag-btn').onclick = () => { sheetApi?.setRenderLag((sheetApi?.getRenderLag() ?? 1) + 1); updateRenderLagDisplay(); };
+  document.getElementById('decr-render-lag-btn').onclick = () => { if ((sheetApi?.getRenderLag() ?? 1) > 1) { sheetApi?.setRenderLag((sheetApi?.getRenderLag() ?? 1) - 1); updateRenderLagDisplay(); } };
+
   // silent-til-double-bass checkbox
   const silentCb = document.getElementById('silent-til-double-bass-cb');
   if (getUrlParam('SilentTilDoubleBass') === '1') silentCb.checked = true;

@@ -251,6 +251,7 @@ export function init(noteRecorder) {
   let _lastGrid = null;
   let _lastWindowStart8n = null;
   let _startCursorMs = null; // when set, renders cursor at this beat time after each build
+  let _renderLag = 1; // number of measures to lag behind during live recording
 
   function buildAndRender(notes, beats, cursorTime8n = null, capMeasureCount = null) {
     const measureDurMs = noteRecorder.getMeasureDurMs();
@@ -430,7 +431,7 @@ export function init(noteRecorder) {
           const measureCount = beats.filter((b, i) =>
             b.beat === 1 && (i === 0 || beats[i - 1].beat !== 1)
           ).length;
-          if (measureCount % 2 === 0) {
+          if (measureCount % _renderLag === 0) {
             const trimmedNotes = notes.filter(n => n.onTime < lastBeat.time);
             buildAndRender(trimmedNotes, beats, null, measureCount - 1);
           }
@@ -448,6 +449,8 @@ export function init(noteRecorder) {
   // Called by replay to advance the cursor per beat.
   // beatTime: Date.now() ms of the beat; gridStart: ms of grid slot 0.
   return {
+    getRenderLag() { return _renderLag; },
+    setRenderLag(v) { _renderLag = Math.max(1, v); },
     rerender() {
       const { notes, beats } = { notes: noteRecorder.getNotes(), beats: noteRecorder.getBeats() };
       buildAndRender(notes, beats, null);

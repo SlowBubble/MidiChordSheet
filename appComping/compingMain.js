@@ -41,6 +41,7 @@ if (recordingId) {
     noteRecorder.loadInto(rec.notes, rec.beats, rec.measureDurMs, rec.beatsPerMeasure, rec.lowNoteThreshold, rec.noteLengthDenom, rec.noteStartDenom, rec.measure1StartMs, rec.label, rec.beatSubdivision);
     const status = document.getElementById('status');
     if (status) status.textContent = `📼 ${rec.label}`;
+    if (rec.beats?.length) setTimeout(() => sheetApi?.setStartCursor(rec.measure1StartMs ?? rec.beats[0].time - rec.measureDurMs), 0);
   } else {
     console.warn('[RecordingId] no recording found for id:', recordingId);
   }
@@ -51,6 +52,7 @@ if (recordingId) {
     noteRecorder.loadInto(rec.notes, rec.beats, rec.measureDurMs, rec.beatsPerMeasure, rec.lowNoteThreshold, rec.noteLengthDenom, rec.noteStartDenom, rec.measure1StartMs, rec.label, rec.beatSubdivision);
     const status = document.getElementById('status');
     if (status) status.textContent = `🔗 ${rec.label || 'Shared recording'}`;
+    if (rec.beats?.length) setTimeout(() => sheetApi?.setStartCursor(rec.measure1StartMs ?? rec.beats[0].time - rec.measureDurMs), 0);
   } else {
     console.warn('[data] failed to decode recording from hash param');
   }

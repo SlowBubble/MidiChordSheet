@@ -250,6 +250,7 @@ export function init(noteRecorder) {
   let _lastSong = null;
   let _lastGrid = null;
   let _lastWindowStart8n = null;
+  let _startCursorMs = null; // when set, renders cursor at this beat time after each build
 
   function buildAndRender(notes, beats, cursorTime8n = null) {
     const measureDurMs = noteRecorder.getMeasureDurMs();
@@ -263,6 +264,7 @@ export function init(noteRecorder) {
     if (!beats.length || !notes.length || !measureDurMs || !measure1StartMs) {
       renderMgr.clear();
       _lastSong = null;
+      _startCursorMs = null;
       return;
     }
 
@@ -384,8 +386,17 @@ export function init(noteRecorder) {
     _lastGrid = { grid, sixteenthDurMs, gridStartMs: grid[0], measureDurMs, beatsPerMeasure, startSlot, trimmedEndSlot };
     _lastWindowStart8n = null;
 
+    // Resolve cursor: explicit arg takes priority, then _startCursorMs, then none.
+    let resolvedCursor8n = cursorTime8n;
+    if (resolvedCursor8n == null && _startCursorMs != null) {
+      const rawSlot = Math.round((_startCursorMs - grid[0]) / sixteenthDurMs);
+      const slotIdx = rawSlot - startSlot;
+      const pickupOffset8n = song.pickup8n ?? makeFrac(0);
+      resolvedCursor8n = makeFrac(Math.max(0, slotIdx), 2).plus(pickupOffset8n);
+    }
+
     try {
-      renderMgr.render(song, false, null, cursorTime8n);
+      renderMgr.render(song, false, null, resolvedCursor8n);
     } catch (e) {
       console.warn('RenderMgr error:', e);
     }
@@ -428,7 +439,13 @@ export function init(noteRecorder) {
         console.warn('RenderMgr cursor error:', e);
       }
     },
+    /** Persist a cursor position so it survives re-renders (e.g. after replay ends). */
+    setStartCursor(beatTimeMs) {
+      _startCursorMs = beatTimeMs;
+      this.renderWithCursor(beatTimeMs);
+    },
     clearCursor() {
+      _startCursorMs = null;
       if (!_lastSong) return;
       try {
         renderMgr.render(_lastSong, false, null, null);

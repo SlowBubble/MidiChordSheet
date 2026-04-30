@@ -13,7 +13,7 @@ let noteLengthIdx = 2; // default: 1/4
 
 let noteStartDenom = 16; // default: 1/16
 
-let snapBiasPct = 70; // default: 70%
+let snapBiasPct = 60; // default: 60%
 
 export function getNoteLengthDenom() {
   return NOTE_LENGTH_STEPS[noteLengthIdx];

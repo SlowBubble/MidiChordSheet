@@ -358,8 +358,28 @@ export function init(noteRecorder) {
       }
     }
 
-    // Trim grid to end of that measure.
-    const trimmedEndSlot = measure1Slot0 + (lastNoteMeasureIdx + 1) * slotsPerMeasure;
+    // Trim grid to end of that measure, but extend by one extra measure if the final
+    // note's duration reaches beyond the measure boundary. Also stretch the final note's
+    // dur16 to fill the extra measure completely (avoids a trailing rest from rounding).
+    let trimmedEndSlot = measure1Slot0 + (lastNoteMeasureIdx + 1) * slotsPerMeasure;
+    const allMapEntries = [...rhMap.entries(), ...lhMap.entries()];
+    const lastNoteEndSlot = allMapEntries.length
+      ? Math.max(...allMapEntries.map(([s, e]) => s + e.dur16))
+      : trimmedEndSlot;
+    if (lastNoteEndSlot > trimmedEndSlot) {
+      // Extend to the next measure boundary that covers the note's end
+      const measuresNeeded = Math.ceil((lastNoteEndSlot - measure1Slot0) / slotsPerMeasure);
+      trimmedEndSlot = measure1Slot0 + measuresNeeded * slotsPerMeasure;
+      // Stretch any note whose end falls inside the extra measure to fill it completely.
+      for (const map of [rhMap, lhMap]) {
+        for (const [s, entry] of map.entries()) {
+          const noteEnd = s + entry.dur16;
+          if (noteEnd > trimmedEndSlot - slotsPerMeasure && noteEnd < trimmedEndSlot) {
+            entry.dur16 = trimmedEndSlot - s;
+          }
+        }
+      }
+    }
     const totalSlots = Math.min(grid.length, trimmedEndSlot);
 
     const bpmVal = Math.round((beatsPerMeasure / measureDurMs) * 60000);

@@ -5,6 +5,10 @@
 - ../lib and ../esModules have tools that can be shared with other apps
 
 # wishlist
+- TODO see if we need replay to play a beat measure
+
+# m4c
+- When I press enter after there is a recording, it should start up the beat and recording again (and append the the recording, assuming the first measure is the pickup, so that you may need to overwrite the last measure of the existing recording), but currently it doesn't
 
 # m4b
 - When in replay mode, disable the triggering of beat and recording mode

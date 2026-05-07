@@ -26,7 +26,10 @@ function notify(beatFired = false, idleFired = false) {
 }
 
 export function recordNote(evt) {
-  if (disabled) return;
+  if (disabled) {
+    console.log('recordNote: disabled, ignoring');
+    return;
+  }
   if (evt.type !== midiEvent.midiEvtType.NoteOn && evt.type !== midiEvent.midiEvtType.NoteOff) return;
   if (pendingClear) {
     notes = [];
@@ -62,11 +65,47 @@ export function markIdle() {
   notify(false, true);
 }
 
+// Cancel pending clear (used when explicitly restarting recording)
+// Returns true if there was a pending clear that was cancelled
+export function cancelPendingClear() {
+  const was = pendingClear;
+  pendingClear = false;
+  return was;
+}
+
+// Adjust all note and beat timestamps by an offset
+// Used when appending to shift the existing recording to align with new recording
+export function adjustTimestamps(offsetMs) {
+  notes = notes.map(n => ({ ...n, onTime: n.onTime + offsetMs, offTime: n.offTime ? n.offTime + offsetMs : null }));
+  beats = beats.map(b => ({ ...b, time: b.time + offsetMs }));
+  if (_measure1StartMs !== null) _measure1StartMs += offsetMs;
+  notify();
+}
+// pickupStartTime: when the pickup started (Date.now() domain)
+// measureStartToTrim: the start time of the measure to trim if pickup has notes
+// Returns true if trimming was performed
+export function trimLastMeasureIfPickupHasNotes(pickupStartTime, measureStartToTrim) {
+  if (!measureStartToTrim) return false;
+  
+  // Check if any notes were recorded during the pickup (after pickupStartTime)
+  const pickupNotes = notes.filter(n => n.onTime >= pickupStartTime);
+  
+  if (pickupNotes.length > 0) {
+    // There are notes in the pickup, so trim the last measure
+    beats = beats.filter(b => b.time < measureStartToTrim);
+    notes = notes.filter(n => n.onTime < measureStartToTrim || n.onTime >= pickupStartTime);
+    openNotes.clear();
+    return true;
+  }
+  
+  return false;
+}
+
 export function getNotes() { return [...notes]; }
 export function getBeats() { return [...beats]; }
 
 // Trim notes and beats that fall within the last measure
-export function trimLastMeasure() {
+export function trimLastMeasure(silent = false) {
   if (!_measureDurMs || !_measure1StartMs || beats.length === 0) return;
   
   // Find the start of the last complete measure
@@ -91,7 +130,7 @@ export function trimLastMeasure() {
     // Close any open notes
     openNotes.clear();
     
-    notify();
+    if (!silent) notify();
   }
 }
 
@@ -161,6 +200,7 @@ export function listRecordings() { return getIndex(); }
 /** Disable live recording (used when viewing a saved recording). */
 let disabled = false;
 export function disable() { disabled = true; }
+export function enable() { disabled = false; }
 export function isDisabled() { return disabled; }
 
 /** Populate recorder state from saved data (triggers subscribers). */

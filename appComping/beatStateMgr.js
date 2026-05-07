@@ -212,13 +212,26 @@ export function playDrumPattern(durMs, measure1StartMs, startImmediately = false
   function tick(now) {
     if (!drumRunning) return;
 
-    if (lastMidiEventTime !== null && (now - lastMidiEventTime) > idleMeasures * durMs) {
-      console.log('m1i: idle timeout, stopping drums');      stopDrumPattern();
+    // During pickup append mode, continuously update lastMidiEventTime to prevent idle timeout
+    if (isInPickupAppendMode) {
+      lastMidiEventTime = now;
+    }
+    
+    // During pickup append mode, give extra time before idle timeout
+    const idleTimeoutMs = isInPickupAppendMode ? (idleMeasures + 1) * durMs : idleMeasures * durMs;
+    
+    if (lastMidiEventTime !== null && (now - lastMidiEventTime) > idleTimeoutMs) {
+      console.log('m1i: idle timeout, stopping drums');
+      stopDrumPattern();
       measureDurMs = null;
       lowNoteList.length = 0;
       markIdle();
       updateMeasureStatus();
       document.getElementById('beat-display').textContent = '';
+      isInPickupAppendMode = false;
+      pickupAppendStartTime = null;
+      pickupAppendMeasureStart = null;
+      pickupAppendFirstBeat1Seen = false;
       return;
     }
 
@@ -232,6 +245,24 @@ export function playDrumPattern(durMs, measure1StartMs, startImmediately = false
       );
       const beatDateMs = now + perfToDateOffset;
       recordBeat(beat, beatDateMs);
+      
+      // Check if we just hit beat 1 while in pickup append mode
+      // Only check on the first subdivision of beat 1 (divInMeasure === 0)
+      if (isInPickupAppendMode && beat === 1 && divInMeasure === 0) {
+        if (!pickupAppendFirstBeat1Seen) {
+          // This is the first beat 1 after starting the pickup - mark it
+          pickupAppendFirstBeat1Seen = true;
+        } else {
+          // This is the SECOND beat 1 - we've completed one full measure after the pickup
+          // Now check if there were notes in the pickup and trim if so
+          noteRecorder.trimLastMeasureIfPickupHasNotes(pickupAppendStartTime, pickupAppendMeasureStart);
+          isInPickupAppendMode = false;
+          pickupAppendStartTime = null;
+          pickupAppendMeasureStart = null;
+          pickupAppendFirstBeat1Seen = false;
+        }
+      }
+      
       nextDivIdx++;
       nextFireTime += divisionMs;
     }
@@ -339,6 +370,11 @@ export function onNoteEvent(evt, withSound) {
 
 // ── manual start (m4a) ────────────────────────────────────────────────────────
 
+let isInPickupAppendMode = false; // Track if we're in pickup append mode
+let pickupAppendStartTime = null; // When the pickup append started
+let pickupAppendMeasureStart = null; // Where the measure to potentially trim starts
+let pickupAppendFirstBeat1Seen = false; // Track if we've seen the first beat 1 after pickup starts
+
 // Start beat at the configured manualBpm without waiting for measure timing
 export function startManualBeat() {
   // m4b: Don't allow manual start during replay
@@ -346,23 +382,87 @@ export function startManualBeat() {
 
   const now = Date.now();
   
-  // If already running, continue recording (append mode)
-  if (measureDurMs !== null || drumRunning) {
+  // Enable recording (in case it was disabled for viewing a saved recording)
+  noteRecorder.enable();
+  
+  // Cancel any pending clear FIRST, before checking for existing recording
+  // This prevents the recording from being cleared between idle and restart
+  noteRecorder.cancelPendingClear();
+  
+  // Check if there's an existing recording (even if drums stopped)
+  const notes = noteRecorder.getNotes();
+  const beats = noteRecorder.getBeats();
+  const hasExistingRecording = notes.length > 0 || beats.length > 0;
+  const storedMeasureDurMs = noteRecorder.getMeasureDurMs();
+  const storedMeasure1StartMs = noteRecorder.getMeasure1StartMs();
+  
+  // If already running OR there's an existing recording, continue recording (append mode)
+  if (measureDurMs !== null || drumRunning || (hasExistingRecording && storedMeasureDurMs !== null && storedMeasure1StartMs !== null)) {
     stopDrumPattern();
     
-    // Trim the last measure so the new pickup can overwrite it
-    noteRecorder.trimLastMeasure();
+    // Use stored duration if measureDurMs was reset
+    const dur = measureDurMs || storedMeasureDurMs || (beatsPerMeasure / manualBpm) * 60000;
     
-    // Calculate new measure1StartMs: continue from where we left off
-    // The new pickup measure starts now, and measure 1 starts one measure later
-    const dur = measureDurMs || (beatsPerMeasure / manualBpm) * 60000;
-    const newMeasure1StartMs = now + dur;
+    // Find the last beat time to determine where the recording ends
+    const beats = noteRecorder.getBeats();
+    let lastBeatTime = storedMeasure1StartMs;
+    if (beats.length > 0) {
+      lastBeatTime = beats[beats.length - 1].time;
+    }
+    
+    // Calculate how many measures exist in the old recording
+    const elapsedMs = lastBeatTime - storedMeasure1StartMs;
+    const measuresInRecording = Math.ceil(elapsedMs / dur);
+    
+    // Position the new recording so the pickup measure OVERLAPS the last measure of the old recording
+    // This way:
+    // - If there are notes in the pickup, we trim the last measure (handled later)
+    // - If there are NO notes in the pickup, the recordings connect seamlessly
+    // New measure 1 starts at: now + dur
+    // We want the old recording's last measure to align with the pickup
+    const newMeasure1StartMs = now + dur - (measuresInRecording - 1) * dur;
+    
+    // Calculate the time offset needed to shift the old recording
+    const timeOffset = newMeasure1StartMs - storedMeasure1StartMs;
+    
+    // Adjust all existing timestamps to align with the new recording
+    noteRecorder.adjustTimestamps(timeOffset);
+    
+    // Now mark that we're in pickup append mode
+    isInPickupAppendMode = true;
+    pickupAppendStartTime = now;
+    pickupAppendFirstBeat1Seen = false;
+    
+    // Calculate where the last measure starts (the one we might trim) - AFTER adjustment
+    const adjustedBeats = noteRecorder.getBeats();
+    let pickupAppendMeasureStart = null;
+    if (adjustedBeats.length > 0) {
+      // Find the start of the last measure
+      const measureBoundaries = [newMeasure1StartMs];
+      for (let i = 0; i < adjustedBeats.length; i++) {
+        if (adjustedBeats[i].beat === 1 && (i === 0 || adjustedBeats[i - 1].beat !== 1)) {
+          measureBoundaries.push(adjustedBeats[i].time);
+        }
+      }
+      if (measureBoundaries.length >= 2) {
+        pickupAppendMeasureStart = measureBoundaries[measureBoundaries.length - 1];
+      }
+    }
+    
+    // Restore measureDurMs if it was reset
+    measureDurMs = dur;
+    
+    // Reset lastMidiEventTime so idle timeout doesn't trigger immediately
+    lastMidiEventTime = performance.now();
     
     if (!noteRecorder.isDisabled()) {
-      noteRecorder.setMeasure1StartMs(newMeasure1StartMs);
+      noteRecorder.setMeasureDurMs(dur);
+      // measure1StartMs was already updated by adjustTimestamps
     }
     
     updateMeasureStatus();
+    
+    // Start drum pattern immediately as a pickup measure
     playDrumPattern(dur, newMeasure1StartMs, true);
     lowNoteList.length = 0;
     return;
@@ -375,6 +475,14 @@ export function startManualBeat() {
   const measure1StartMs = now + dur;
   
   measureDurMs = dur;
+  lastMidiEventTime = performance.now();
+  
+  // Also use pickup append mode for fresh recordings to prevent early idle timeout
+  isInPickupAppendMode = true;
+  pickupAppendStartTime = now;
+  pickupAppendMeasureStart = null; // No last measure to trim for fresh recording
+  pickupAppendFirstBeat1Seen = false;
+  
   if (!noteRecorder.isDisabled()) {
     noteRecorder.setMeasureDurMs(dur);
     noteRecorder.setMeasure1StartMs(measure1StartMs);

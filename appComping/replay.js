@@ -95,11 +95,9 @@ export function startReplay(notes, beats) {
         const beatTime = pickupStartTime + i * beatDurMs;
         firstMeasureBeats.push({ beat: beatNum, time: beatTime });
       }
-    } else if (!hasPickupNotes) {
-      // No pickup notes: generate a full measure of beats before the first recorded beat
-      for (let i = 0; i < beatsPerMeasureVal; i++) {
-        firstMeasureBeats.push({ beat: i + 1, time: gridStartMs + i * beatDurMs });
-      }
+    } else if (!hasPickupNotes && firstRecordedBeatTime != null) {
+      // No pickup notes: start replay from the first recorded beat, not a measure before
+      adjustedOriginTime = firstRecordedBeatTime;
     }
   }
 

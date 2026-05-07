@@ -65,6 +65,36 @@ export function markIdle() {
 export function getNotes() { return [...notes]; }
 export function getBeats() { return [...beats]; }
 
+// Trim notes and beats that fall within the last measure
+export function trimLastMeasure() {
+  if (!_measureDurMs || !_measure1StartMs || beats.length === 0) return;
+  
+  // Find the start of the last complete measure
+  // Count measure boundaries (beat 1 transitions)
+  const measureBoundaries = [_measure1StartMs];
+  for (let i = 0; i < beats.length; i++) {
+    if (beats[i].beat === 1 && (i === 0 || beats[i - 1].beat !== 1)) {
+      measureBoundaries.push(beats[i].time);
+    }
+  }
+  
+  // If we have at least 2 measures, trim everything from the start of the last measure
+  if (measureBoundaries.length >= 2) {
+    const lastMeasureStart = measureBoundaries[measureBoundaries.length - 1];
+    
+    // Remove beats from last measure
+    beats = beats.filter(b => b.time < lastMeasureStart);
+    
+    // Remove notes that start in the last measure
+    notes = notes.filter(n => n.onTime < lastMeasureStart);
+    
+    // Close any open notes
+    openNotes.clear();
+    
+    notify();
+  }
+}
+
 // Store the last known non-null measureDurMs so it survives idle reset
 export function setMeasureDurMs(v) { if (v != null) _measureDurMs = v; }
 export function getMeasureDurMs() { return _measureDurMs; }

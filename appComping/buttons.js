@@ -1,8 +1,8 @@
 // buttons.js — button and checkbox wiring
 
 import {
-  beatsPerMeasure, beatSubdivision, lowNoteThreshold, idleMeasures,
-  setBeatsPerMeasure, setBeatSubdivision, setLowNoteThreshold, setIdleMeasures,
+  beatsPerMeasure, beatSubdivision, lowNoteThreshold, idleMeasures, manualBpm,
+  setBeatsPerMeasure, setBeatSubdivision, setLowNoteThreshold, setIdleMeasures, setManualBpm,
   midiToNoteName,
 } from './beatStateMgr.js';
 import * as noteRecorder from './noteRecorder.js';
@@ -47,6 +47,9 @@ function updateThresholdDisplay() {
 function updateIdleMeasuresDisplay() {
   document.getElementById('idle-measures-display').textContent = idleMeasures;
 }
+function updateManualBpmDisplay() {
+  document.getElementById('manual-bpm-display').textContent = manualBpm;
+}
 
 export function setupButtons(sheetApi) {
   // beats per measure
@@ -64,6 +67,10 @@ export function setupButtons(sheetApi) {
   // idle measures
   document.getElementById('incr-idle-btn').onclick = () => { setIdleMeasures(idleMeasures + 1); updateIdleMeasuresDisplay(); };
   document.getElementById('decr-idle-btn').onclick = () => { if (idleMeasures > 1) { setIdleMeasures(idleMeasures - 1); updateIdleMeasuresDisplay(); } };
+
+  // manual BPM (m4a)
+  document.getElementById('incr-manual-bpm-btn').onclick = () => { setManualBpm(manualBpm + 5); updateManualBpmDisplay(); };
+  document.getElementById('decr-manual-bpm-btn').onclick = () => { if (manualBpm > 5) { setManualBpm(manualBpm - 5); updateManualBpmDisplay(); } };
 
   // note length (off-quantization)
   function updateNoteLengthDisplay() {

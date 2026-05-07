@@ -13,11 +13,13 @@ export let beatSubdivision = 1;
 export let lowNoteThreshold = 62;
 export let idleMeasures = 1;
 export const highNoteThreshold = 72;
+export let manualBpm = 75; // m4a: default BPM for Enter key start
 
 export function setBeatsPerMeasure(v) { beatsPerMeasure = v; noteRecorder.setBeatsPerMeasure(v); }
 export function setBeatSubdivision(v) { beatSubdivision = v; noteRecorder.setBeatSubdivision(v); }
 export function setLowNoteThreshold(v) { lowNoteThreshold = v; noteRecorder.setLowNoteThreshold(v); }
 export function setIdleMeasures(v) { idleMeasures = v; }
+export function setManualBpm(v) { manualBpm = v; }
 
 // ── runtime state ─────────────────────────────────────────────────────────────
 
@@ -161,7 +163,7 @@ export function stopDrumPattern() {
 
 export function isDrumRunning() { return drumRunning; }
 
-export function playDrumPattern(durMs, measure1StartMs) {
+export function playDrumPattern(durMs, measure1StartMs, startImmediately = false) {
   stopDrumPattern();
   drumMuted = isSilentTilDoubleBass();
 
@@ -183,18 +185,26 @@ export function playDrumPattern(durMs, measure1StartMs) {
   // measure1StartMs is in Date.now() domain; convert to perf domain
   const measure1StartPerf = measure1StartMs - perfToDateOffset;
 
-  // The first beat of measure 2 fires at measure1StartMs + durMs
-  // Skip any divisions that are already in the past
-  const measure2StartPerf = measure1StartPerf + durMs;
+  // Determine when the pattern should start firing
+  let patternStartPerf;
+  if (startImmediately) {
+    // Start immediately (now), treating this as the pickup measure
+    // The pattern will fire starting from now, but beats are timestamped relative to measure1StartMs
+    patternStartPerf = nowPerf;
+  } else {
+    // Normal mode: start at measure 2 (one measure after measure1StartMs)
+    patternStartPerf = measure1StartPerf + durMs;
+  }
+  
   nextDivIdx = 0;
-  let nextFireTime = measure2StartPerf;
+  let nextFireTime = patternStartPerf;
 
-  // If measure2StartPerf is in the past (shouldn't happen normally), start from now
+  // If patternStartPerf is in the past (shouldn't happen normally), start from now
   if (nextFireTime < nowPerf) {
     nextFireTime = nowPerf;
   }
 
-  drumPatternStartTime = measure2StartPerf;
+  drumPatternStartTime = patternStartPerf;
 
   function tick(now) {
     if (!drumRunning) return;
@@ -283,7 +293,7 @@ function handleMeasureTiming(evt) {
         noteRecorder.setMeasure1StartMs(measure1StartMs);
       }
       updateMeasureStatus();
-      playDrumPattern(dur, measure1StartMs);
+      playDrumPattern(dur, measure1StartMs, false);
       lowNoteList.length = 0;
     }
   }
@@ -306,6 +316,52 @@ export function onNoteEvent(evt, withSound) {
   }
   if (!isDrumbeatDisabled()) recordNote(evt);
   handleMeasureTiming(evt);
+}
+
+// ── manual start (m4a) ────────────────────────────────────────────────────────
+
+// Start beat at the configured manualBpm without waiting for measure timing
+export function startManualBeat() {
+  const now = Date.now();
+  
+  // If already running, continue recording (append mode)
+  if (measureDurMs !== null || drumRunning) {
+    stopDrumPattern();
+    
+    // Trim the last measure so the new pickup can overwrite it
+    noteRecorder.trimLastMeasure();
+    
+    // Calculate new measure1StartMs: continue from where we left off
+    // The new pickup measure starts now, and measure 1 starts one measure later
+    const dur = measureDurMs || (beatsPerMeasure / manualBpm) * 60000;
+    const newMeasure1StartMs = now + dur;
+    
+    if (!noteRecorder.isDisabled()) {
+      noteRecorder.setMeasure1StartMs(newMeasure1StartMs);
+    }
+    
+    updateMeasureStatus();
+    playDrumPattern(dur, newMeasure1StartMs, true);
+    lowNoteList.length = 0;
+    return;
+  }
+  
+  // First time: start fresh
+  const dur = (beatsPerMeasure / manualBpm) * 60000;
+  
+  // Treat the initial beats as pickup: measure1StartMs is one measure in the future
+  const measure1StartMs = now + dur;
+  
+  measureDurMs = dur;
+  if (!noteRecorder.isDisabled()) {
+    noteRecorder.setMeasureDurMs(dur);
+    noteRecorder.setMeasure1StartMs(measure1StartMs);
+  }
+  updateMeasureStatus();
+  
+  // Start drum pattern immediately (at what will be the pickup measure)
+  playDrumPattern(dur, measure1StartMs, true);
+  lowNoteList.length = 0;
 }
 
 // ── reset ─────────────────────────────────────────────────────────────────────

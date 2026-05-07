@@ -1,6 +1,6 @@
 // keyboardHandler.js — keyboard shortcuts and keyboard MIDI event routing
 
-import { reset, onNoteEvent, volume } from './beatStateMgr.js';
+import { reset, onNoteEvent, volume, startManualBeat, manualBpm, setManualBpm } from './beatStateMgr.js';
 import { initMidi, whenMidiReady } from './sound.js';
 import { getNotes, getBeats, saveRecording, setNoteLengthDenom, getMeasureDurMs, getMeasure1StartMs, getBeatsPerMeasure, getLowNoteThreshold, getNoteLengthDenom_, getNoteStartDenom, getLabel, getBeatSubdivision } from './noteRecorder.js';
 import { startReplay, stopReplay, isReplaying } from './replay.js';
@@ -18,6 +18,7 @@ function encodeRecording(rec) {
 
 export function setupKeyboardHandler(keyboardEvtSub) {
   let keyboardSubscribed = false;
+  let lastBackslashTime = 0; // m4a: track consecutive backslash presses
 
   window.addEventListener('keydown', e => {
     // Always try to init MIDI on any keydown (idempotent after first call)
@@ -28,6 +29,26 @@ export function setupKeyboardHandler(keyboardEvtSub) {
       }
       beatStateMgr.updateMeasureStatus();
     });
+
+    // m4a: Enter key — start beat at manual BPM
+    if (e.code === 'Enter') {
+      e.preventDefault();
+      startManualBeat();
+      return;
+    }
+
+    // m4a: Backslash key — increment BPM by 5 when pressed consecutively
+    if (e.code === 'Backslash') {
+      e.preventDefault();
+      const now = Date.now();
+      if (now - lastBackslashTime < 1000) { // within 1 second = consecutive
+        setManualBpm(manualBpm + 5);
+        const display = document.getElementById('manual-bpm-display');
+        if (display) display.textContent = manualBpm;
+      }
+      lastBackslashTime = now;
+      return;
+    }
 
     // cmd+s (Mac) / ctrl+s (Win) — save recording
     if ((e.metaKey || e.ctrlKey) && e.key === 's') {

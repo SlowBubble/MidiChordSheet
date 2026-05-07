@@ -6,6 +6,39 @@
 
 # wishlist
 
+# m4a
+- Have another way to start the beat (and recording), defaulting to 75 bpm, when `Enter` is pressed.
+  - Stop the beat/recording as before.
+  - Have a way to configure how fast the beat is via an up and down button that increments by 5 bpm
+    - Have another way to configure this, when the users press the "\" key consecutively.
+
+## Implementation
+
+Added manual BPM start feature with Enter key and configurable BPM controls.
+
+**beatStateMgr.js**:
+- Added `manualBpm` state (default 75) and `setManualBpm()` setter
+- Modified `playDrumPattern()` to accept `startImmediately` parameter (starts immediately when true, at measure 2 when false)
+- Added `startManualBeat()` function:
+  - First press: calculates measure duration from BPM, starts drum pattern immediately with pickup
+  - Subsequent presses: trims last measure, continues recording with new pickup
+  - Sets measure1StartMs to `now + dur` (one measure in the future) so initial beats are pickup
+
+**noteRecorder.js**:
+- Added `trimLastMeasure()` function to remove the last complete measure (beats and notes)
+- Used when Enter is pressed again to allow new pickup to overwrite last measure
+
+**buttons.js**:
+- Added manual BPM increment/decrement buttons (±5 BPM)
+- Added `updateManualBpmDisplay()` to sync UI
+
+**keyboardHandler.js**:
+- Enter key: starts/continues beat at configured BPM with pickup measure
+- Backslash key: consecutive presses (within 1 second) increment BPM by 5
+
+**index.html**:
+- Added "Manual BPM (Enter)" row with display and up/down buttons
+
 # m3i
 Add a checkbox to not play drumbeat when replaying
 

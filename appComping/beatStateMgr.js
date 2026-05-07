@@ -28,9 +28,12 @@ export let measureDurMs = null;
 export let drumMuted = false;
 export let drumPatternStartTime = null;
 export let drumCurrentBeat = 0;
+let _isInReplayMode = false; // m4b: track replay mode to disable recording
 
 export function setLastMidiEventTime(v) { lastMidiEventTime = v; }
 export function setMeasureDurMs(v) { measureDurMs = v; noteRecorder.setMeasureDurMs(v); }
+export function setReplayMode(v) { _isInReplayMode = v; } // m4b
+export function isInReplayMode() { return _isInReplayMode; } // m4b
 
 export const bassNoteOnTimes = new Map();
 export const sopranoNoteOnTimes = new Map();
@@ -281,6 +284,9 @@ function handleMeasureTiming(evt) {
   if (evt.type !== midiEvent.midiEvtType.NoteOn) return;
   if (evt.noteNum > lowNoteThreshold) return;
 
+  // m4b: Don't trigger beat/recording during replay
+  if (_isInReplayMode) return;
+
   if (measureDurMs === null) {
     const distinctAsc = [...new Set(lowNoteList.map(n => n.noteNum))].sort((a, b) => a - b);
     const triggerThreshold = distinctAsc.length >= 2 ? distinctAsc[1] : distinctAsc[0];
@@ -305,6 +311,19 @@ function handleMeasureTiming(evt) {
 // Called for every incoming MIDI event.
 // withSound=true for keyboard input, false for physical MIDI input (timing only).
 export function onNoteEvent(evt, withSound) {
+  // m4b: Don't record or trigger during replay
+  if (_isInReplayMode) {
+    // Still play the sound for keyboard input during replay
+    if (withSound) {
+      if (evt.type === midiEvent.midiEvtType.NoteOn) {
+        pianoNoteOn(evt.noteNum, evt.velocity);
+      } else if (evt.type === midiEvent.midiEvtType.NoteOff) {
+        pianoNoteOff(evt.noteNum);
+      }
+    }
+    return;
+  }
+
   lastMidiEventTime = performance.now();
   resetIdleClearTimer();
   if (evt.type === midiEvent.midiEvtType.NoteOn) {
@@ -322,6 +341,9 @@ export function onNoteEvent(evt, withSound) {
 
 // Start beat at the configured manualBpm without waiting for measure timing
 export function startManualBeat() {
+  // m4b: Don't allow manual start during replay
+  if (_isInReplayMode) return;
+
   const now = Date.now();
   
   // If already running, continue recording (append mode)

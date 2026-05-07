@@ -6,6 +6,30 @@
 
 # wishlist
 
+# m4b
+- When in replay mode, disable the triggering of beat and recording mode
+
+## Implementation
+
+Prevents beat triggering and note recording during replay mode to avoid interference.
+
+**beatStateMgr.js**:
+- Added `_isInReplayMode` flag to track replay state
+- Added `setReplayMode(v)` and `isInReplayMode()` functions
+- Modified `handleMeasureTiming()` to skip beat triggering when in replay mode
+- Modified `onNoteEvent()` to skip recording when in replay mode (but still plays sound for keyboard input)
+- Modified `startManualBeat()` to prevent Enter key from starting beats during replay
+
+**replay.js**:
+- Imported `setReplayMode` from beatStateMgr
+- Calls `setReplayMode(true)` when replay starts
+- Calls `setReplayMode(false)` when replay stops
+- Fixed replay to generate appropriate beats for pickup measures
+  - Detects if any notes occur before the first recorded beat
+  - If so, generates only the beats needed to cover the pickup duration (not a full empty measure)
+  - Calculates beat numbers appropriately for the pickup
+  - Prevents long delays without beats before the pickup starts
+
 # m4a
 - Have another way to start the beat (and recording), defaulting to 75 bpm, when `Enter` is pressed.
   - Stop the beat/recording as before.

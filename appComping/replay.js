@@ -1,7 +1,7 @@
 // replay.js — replays recorded notes and advances the sheet cursor per beat
 
 import { pianoNoteOn, pianoNoteOff } from './sound.js';
-import { volume, isReplayDrumbeatDisabled } from './beatStateMgr.js';
+import { volume, isReplayDrumbeatDisabled, setReplayMode } from './beatStateMgr.js';
 import { drumNoteOn } from './sound.js';
 import * as noteRecorder from './noteRecorder.js';
 
@@ -24,6 +24,7 @@ export function stopReplay() {
   _timeouts.forEach(t => clearTimeout(t));
   _timeouts = [];
   _isReplaying = false;
+  setReplayMode(false); // m4b: clear replay mode flag
   _sheetApi?.clearCursor();
   const beatDisplay = document.getElementById('beat-display');
   if (beatDisplay) beatDisplay.textContent = '';
@@ -55,15 +56,66 @@ export function startReplay(notes, beats) {
     : null;
 
   _isReplaying = true;
+  setReplayMode(true); // m4b: set replay mode flag
+
+  // Deduplicate recorded beats to one per quarter-note beat (collapse subdivisions).
+  const dedupedRecorded = beats.filter((b, i) =>
+    i === 0 || b.beat !== beats[i - 1].beat
+  );
+
+  // Extrapolate beats for the pickup measure if needed.
+  const beatDurMs = measureDurMs ? measureDurMs / beatsPerMeasureVal : 0;
+  const firstMeasureBeats = [];
+  
+  // Check if there are notes in the pickup measure (before the first recorded beat)
+  const notesWithOnTime = notes.filter(n => n.onTime != null);
+  const earliestNoteOnTime = notesWithOnTime.length > 0 ? Math.min(...notesWithOnTime.map(n => n.onTime)) : null;
+  const firstRecordedBeatTime = beats.length > 0 ? beats[0].time : null;
+  const hasPickupNotes = earliestNoteOnTime != null && firstRecordedBeatTime != null && 
+                         earliestNoteOnTime < firstRecordedBeatTime;
+  
+  let adjustedOriginTime = originTime;
+  
+  if (beatDurMs > 0) {
+    if (hasPickupNotes && firstRecordedBeatTime != null && earliestNoteOnTime != null) {
+      // Generate beats for the pickup measure starting from the earliest note
+      // Align beats so they lead up to the first recorded beat
+      const pickupDuration = firstRecordedBeatTime - earliestNoteOnTime;
+      const beatsNeeded = Math.ceil(pickupDuration / beatDurMs);
+      
+      // Start beats from earliestNoteOnTime, aligned to the beat grid
+      const pickupStartTime = firstRecordedBeatTime - beatsNeeded * beatDurMs;
+      
+      // Adjust origin time to start from the pickup beat (not a full measure before)
+      adjustedOriginTime = Math.min(pickupStartTime, earliestNoteOnTime);
+      
+      for (let i = 0; i < beatsNeeded; i++) {
+        // Beat numbers for pickup: if we need 2 beats in 4/4, they should be beats 3 and 4
+        const beatNum = ((beatsPerMeasureVal - beatsNeeded + i) % beatsPerMeasureVal) + 1;
+        const beatTime = pickupStartTime + i * beatDurMs;
+        firstMeasureBeats.push({ beat: beatNum, time: beatTime });
+      }
+    } else if (!hasPickupNotes) {
+      // No pickup notes: generate a full measure of beats before the first recorded beat
+      for (let i = 0; i < beatsPerMeasureVal; i++) {
+        firstMeasureBeats.push({ beat: i + 1, time: gridStartMs + i * beatDurMs });
+      }
+    }
+  }
+
+  // Use adjusted origin time for scheduling when there are pickup notes
+  const replayOriginTime = adjustedOriginTime;
 
   // Schedule piano notes (skip anything starting after the trimmed end)
   for (const note of notes) {
     if (note.onTime == null) continue;
     if (trimmedEndMs != null && note.onTime >= trimmedEndMs) continue;
-    const onDelay = note.onTime - originTime;
+    const onDelay = note.onTime - replayOriginTime;
     const offDelay = note.offTime != null
-      ? note.offTime - originTime
+      ? note.offTime - replayOriginTime
       : onDelay + 500;
+
+    if (onDelay < 0) continue;
 
     _timeouts.push(setTimeout(() => {
       if (_isReplaying) pianoNoteOn(note.noteNum, note.velocity ?? volume);
@@ -73,26 +125,13 @@ export function startReplay(notes, beats) {
       if (_isReplaying) pianoNoteOff(note.noteNum);
     }, offDelay));
   }
-
-  // Deduplicate recorded beats to one per quarter-note beat (collapse subdivisions).
-  const dedupedRecorded = beats.filter((b, i) =>
-    i === 0 || b.beat !== beats[i - 1].beat
-  );
-
-  // Extrapolate first-measure beats using the true beat duration.
-  const beatDurMs = measureDurMs ? measureDurMs / beatsPerMeasureVal : 0;
-  const firstMeasureBeats = [];
-  if (beatDurMs > 0) {
-    for (let i = 0; i < beatsPerMeasureVal; i++) {
-      firstMeasureBeats.push({ beat: i + 1, time: gridStartMs + i * beatDurMs });
-    }
-  }
+  
   const allBeats = [...firstMeasureBeats, ...dedupedRecorded]
     .filter(b => trimmedEndMs == null || b.time < trimmedEndMs);
 
   // Schedule cursor advances per beat
   for (const beat of allBeats) {
-    const delay = beat.time - originTime;
+    const delay = beat.time - replayOriginTime;
     _timeouts.push(setTimeout(() => {
       if (_isReplaying && _sheetApi) {
         _sheetApi.renderWithCursor(beat.time);
@@ -104,7 +143,7 @@ export function startReplay(notes, beats) {
   if (!isReplayDrumbeatDisabled()) {
     const beatDisplay = document.getElementById('beat-display');
     for (const beat of allBeats) {
-      const delay = beat.time - originTime;
+      const delay = beat.time - replayOriginTime;
       if (delay < 0) continue;
       _timeouts.push(setTimeout(() => {
         if (_isReplaying) {
@@ -130,5 +169,5 @@ export function startReplay(notes, beats) {
     stopReplay();
     // Return cursor to the beginning of the piece
     if (firstBeatTime != null) _sheetApi?.setStartCursor(firstBeatTime);
-  }, lastTime - originTime + 500));
+  }, lastTime - replayOriginTime + 500));
 }
